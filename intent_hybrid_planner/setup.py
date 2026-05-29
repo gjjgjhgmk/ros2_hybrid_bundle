@@ -30,6 +30,7 @@ setup(
             "plot_planning_vis_snapshot = intent_hybrid_planner.plot_planning_vis_snapshot:main",
             "ee_trace_marker = intent_hybrid_planner.ee_trace_marker_node:main",
             "offline_debug_recorder = intent_hybrid_planner.offline_debug_recorder:main",
+            "intent_hybrid_evaluator = intent_hybrid_planner.intent_hybrid_evaluator:main",
         ],
     },
 )
