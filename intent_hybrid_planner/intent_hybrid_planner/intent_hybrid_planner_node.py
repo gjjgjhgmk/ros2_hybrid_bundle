@@ -2367,6 +2367,7 @@ class IntentHybridPlannerNode(Node):
             f"first_invalid_state={int(motion.get('first_invalid_state', -1)) if motion else -1}, "
             f"first_invalid_edge={int(motion.get('first_invalid_edge', -1)) if motion else -1}, "
             f"invalid_state_count={state_bad}, invalid_edge_count={edge_bad}, "
+            f"trajectory_point_count={int(expected_states)}, "
             f"state_valid_len={state_size}/{int(expected_states)}, "
             f"edge_valid_len={edge_size}/{expected_edges}, "
             f"elapsed_ms={float(motion.get('elapsed_ms', 0.0)) if motion else 0.0:.3f}, "
@@ -4509,6 +4510,14 @@ class IntentHybridPlannerNode(Node):
         mod_ms = (time.monotonic() - t_mod0) * 1000.0
         self._timing_samples["fmp_modulate_ms"].append(float(mod_ms))
         self.get_logger().info(f"FMP modulation finished in {mod_ms:.1f} ms.")
+        if int(modulated.shape[1]) < 2:
+            self.get_logger().error(
+                "Offline post-check rejected modulated trajectory: "
+                f"trajectory_point_count={int(modulated.shape[1])} < 2."
+            )
+            self._record_postcheck_metrics(None, passed=False)
+            self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+            return False
         if self.nominal_source == "ee_plane":
             self.get_logger().info(
                 "EE metrics: "
@@ -4539,8 +4548,12 @@ class IntentHybridPlannerNode(Node):
                 post_motion,
                 expected_states=int(modulated.shape[1]),
             )
-            self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
-            return False
+            if self.execute_only_if_postcheck_passed:
+                self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+                return False
+            self.get_logger().warn(
+                "Unsafe experimental mode: dispatching trajectory even though post-check failed."
+            )
 
         self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
 

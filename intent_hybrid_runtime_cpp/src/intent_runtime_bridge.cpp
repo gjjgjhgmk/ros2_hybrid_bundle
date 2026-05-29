@@ -491,8 +491,8 @@ class IntentRuntimeBridge : public rclcpp::Node {
     const auto planned = planner.plan(plan_req, state_valid, edge_valid);
 
     res->ok = planned.ok;
-    res->path_points = static_cast<uint32_t>(planned.path.size());
-    res->via_times = planned.via_times;
+    res->path_points = planned.ok ? static_cast<uint32_t>(planned.path.size()) : 0U;
+    res->via_times = planned.ok ? planned.via_times : std::vector<double>{};
     res->stop_reason = planned.stop_reason;
     res->error_message = planned.error_message;
     res->elapsed_ms = planned.elapsed_ms;
@@ -516,6 +516,11 @@ class IntentRuntimeBridge : public rclcpp::Node {
         res->elapsed_ms,
         res->collision_queries,
         res->path_points);
+    if (res->ok && res->stop_reason == "direct") {
+      RCLCPP_INFO(
+          this->get_logger(),
+          "PlanLocalSegment direct path valid; return 2-point path.");
+    }
   }
 
   std::vector<double> build_time_axis(size_t n_points, double nominal_dt) const {

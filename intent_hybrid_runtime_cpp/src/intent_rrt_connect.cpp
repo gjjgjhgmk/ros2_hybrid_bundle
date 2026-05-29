@@ -141,8 +141,17 @@ bool connect_tree(
     return false;
   }
   const double dist = distance_l2(tree.nodes[static_cast<std::size_t>(near_idx)].q, target);
+  if (!std::isfinite(dist) || dist < 0.0) {
+    err = "invalid connect distance";
+    return false;
+  }
+  const double safe_step = std::max(req.step_size, 1e-9);
+  if (!std::isfinite(safe_step) || safe_step <= 0.0) {
+    err = "invalid step_size";
+    return false;
+  }
   const auto max_connect_steps = static_cast<std::size_t>(
-      std::ceil(dist / std::max(req.step_size, 1e-9))) + 2U;
+      std::ceil(dist / safe_step)) + 2U;
   for (std::size_t step = 0; step < max_connect_steps; ++step) {
     int idx = -1;
     if (!extend_once(tree, target, req, state_valid, edge_valid, err, idx)) {
@@ -178,21 +187,52 @@ std::vector<double> make_times(
 }
 
 bool validate_path_edges(
-    const std::vector<std::vector<double>> &path,
+    std::vector<std::vector<double>> &path,
     const RRTConnectRequestData &req,
+    const IntentRRTConnect::StateValidityFn &state_valid,
     const IntentRRTConnect::EdgeValidityFn &edge_valid,
     std::string &err) {
   if (path.size() < 2U) {
     err = "path has fewer than 2 points";
     return false;
   }
-  if (!near_state(path.front(), req.start, 1e-6)) {
+  for (std::size_t i = 0; i < path.size(); ++i) {
+    if (path[i].size() != req.dof) {
+      err = "path point dimension mismatch";
+      return false;
+    }
+  }
+  const double endpoint_tolerance = std::min(std::max(req.goal_tolerance, 1e-9), 1e-3);
+  if (!near_state(path.front(), req.start, endpoint_tolerance)) {
     err = "path does not start at requested start";
     return false;
   }
-  if (!near_state(path.back(), req.goal, 1e-6)) {
-    err = "path does not end at requested goal";
+  if (!near_state(path.back(), req.goal, endpoint_tolerance)) {
+    err = "path does not end near requested goal";
     return false;
+  }
+  if (!near_state(path.back(), req.goal, 1e-9)) {
+    if (path.size() < 2U) {
+      err = "path has fewer than 2 points before goal append";
+      return false;
+    }
+    if (!edge_valid(path[path.size() - 2U], req.goal, req.edge_resolution, err)) {
+      std::ostringstream oss;
+      oss << "failed to append exact goal: " << err;
+      err = oss.str();
+      return false;
+    }
+    path.back() = req.goal;
+  }
+  path.front() = req.start;
+  path.back() = req.goal;
+  for (std::size_t i = 0; i < path.size(); ++i) {
+    if (!state_valid(path[i], err)) {
+      std::ostringstream oss;
+      oss << "invalid path state " << i << ": " << err;
+      err = oss.str();
+      return false;
+    }
   }
   for (std::size_t i = 0; i + 1U < path.size(); ++i) {
     if (!edge_valid(path[i], path[i + 1U], req.edge_resolution, err)) {
@@ -216,33 +256,30 @@ RRTConnectResult IntentRRTConnect::plan(
   auto elapsed_ms = [&]() {
     return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
   };
+  auto mark_failure = [&](const std::string &reason, const std::string &message = std::string()) {
+    res.ok = false;
+    res.stop_reason = reason;
+    res.error_message = message;
+    res.path.clear();
+    res.via_times.clear();
+    res.elapsed_ms = elapsed_ms();
+    return res;
+  };
 
   if (req.dof == 0U || req.start.size() != req.dof || req.goal.size() != req.dof ||
       req.joint_names.size() != req.dof) {
-    res.stop_reason = "invalid_request";
-    res.error_message = "dimension mismatch in local planner request";
-    res.elapsed_ms = elapsed_ms();
-    return res;
+    return mark_failure("invalid_request", "dimension mismatch in local planner request");
   }
   if (req.state_min.size() != req.dof || req.state_max.size() != req.dof) {
-    res.stop_reason = "invalid_request";
-    res.error_message = "state bounds size mismatch";
-    res.elapsed_ms = elapsed_ms();
-    return res;
+    return mark_failure("invalid_request", "state bounds size mismatch");
   }
 
   std::string err;
   if (!state_valid(req.start, err)) {
-    res.stop_reason = "collision_start";
-    res.error_message = err;
-    res.elapsed_ms = elapsed_ms();
-    return res;
+    return mark_failure("collision_start", err);
   }
   if (!state_valid(req.goal, err)) {
-    res.stop_reason = "collision_goal";
-    res.error_message = err;
-    res.elapsed_ms = elapsed_ms();
-    return res;
+    return mark_failure("collision_goal", err);
   }
   if (edge_valid(req.start, req.goal, req.edge_resolution, err)) {
     res.path = {req.start, req.goal};
@@ -271,9 +308,7 @@ RRTConnectResult IntentRRTConnect::plan(
   for (uint32_t iter = 0; iter < max_iter; ++iter) {
     res.iter_used = iter + 1U;
     if (timeout_ms > 0.0 && elapsed_ms() >= timeout_ms) {
-      res.stop_reason = "timeout";
-      res.elapsed_ms = elapsed_ms();
-      return res;
+      return mark_failure("timeout");
     }
 
     const double r = unit(rng);
@@ -319,7 +354,7 @@ RRTConnectResult IntentRRTConnect::plan(
       }
     }
     candidate.insert(candidate.end(), from_goal.begin(), from_goal.end());
-    if (!validate_path_edges(candidate, req, edge_valid, err)) {
+    if (!validate_path_edges(candidate, req, state_valid, edge_valid, err)) {
       continue;
     }
     res.path = candidate;
@@ -330,9 +365,7 @@ RRTConnectResult IntentRRTConnect::plan(
     return res;
   }
 
-  res.stop_reason = "max_iter";
-  res.elapsed_ms = elapsed_ms();
-  return res;
+  return mark_failure("max_iter");
 }
 
 }  // namespace intent_hybrid_runtime_cpp
