@@ -753,11 +753,25 @@ class IntentHybridPlannerNode(Node):
                 "collision_queries": cpp_plan_queries_stats,
             },
             "postcheck": {
+                "passed": bool(self._postcheck_passed),
                 "first_invalid_state": int(self._postcheck_first_invalid_state),
                 "first_invalid_edge": int(self._postcheck_first_invalid_edge),
+                "state_invalid_count": int(self._postcheck_state_invalid_count),
+                "edge_invalid_count": int(self._postcheck_edge_invalid_count),
                 "elapsed_ms": float(self._postcheck_elapsed_ms),
                 "collision_queries": int(self._postcheck_collision_queries),
-                "check_edges": bool(self.postcheck_check_edges),
+                "check_edges": True,
+            },
+            "dispatch_safety": {
+                "execution_aborted": bool(self._execution_aborted),
+                "dispatch_action_status": int(self._dispatch_action_status),
+                "dispatch_error_code": int(self._dispatch_error_code),
+                "dispatch_error_string": str(self._dispatch_error_string),
+                "trajectory_duration_sec": float(self._trajectory_duration_sec),
+                "trajectory_point_count": int(self._trajectory_point_count),
+                "trajectory_max_joint_delta": float(self._trajectory_max_joint_delta),
+                "start_state_error_max": float(self._start_state_error_max),
+                "start_state_error_norm": float(self._start_state_error_norm),
             },
             "compat": {
                 "segment_count": segment_stats,
@@ -798,10 +812,22 @@ class IntentHybridPlannerNode(Node):
             "cpp_plan_collision_queries_mean": data["cpp_local_planner"]["collision_queries"]["mean"],
             "cpp_plan_collision_queries_p95": data["cpp_local_planner"]["collision_queries"]["p95"],
             "cpp_plan_collision_queries_max": data["cpp_local_planner"]["collision_queries"]["max"],
+            "postcheck_passed": int(data["postcheck"]["passed"]),
             "postcheck_first_invalid_state": data["postcheck"]["first_invalid_state"],
             "postcheck_first_invalid_edge": data["postcheck"]["first_invalid_edge"],
+            "postcheck_state_invalid_count": data["postcheck"]["state_invalid_count"],
+            "postcheck_edge_invalid_count": data["postcheck"]["edge_invalid_count"],
             "postcheck_elapsed_ms": data["postcheck"]["elapsed_ms"],
             "postcheck_collision_queries": data["postcheck"]["collision_queries"],
+            "execution_aborted": int(data["dispatch_safety"]["execution_aborted"]),
+            "dispatch_action_status": data["dispatch_safety"]["dispatch_action_status"],
+            "dispatch_error_code": data["dispatch_safety"]["dispatch_error_code"],
+            "dispatch_error_string": data["dispatch_safety"]["dispatch_error_string"],
+            "trajectory_duration_sec": data["dispatch_safety"]["trajectory_duration_sec"],
+            "trajectory_point_count": data["dispatch_safety"]["trajectory_point_count"],
+            "trajectory_max_joint_delta": data["dispatch_safety"]["trajectory_max_joint_delta"],
+            "start_state_error_max": data["dispatch_safety"]["start_state_error_max"],
+            "start_state_error_norm": data["dispatch_safety"]["start_state_error_norm"],
             "segment_count_mean": data["compat"]["segment_count"]["mean"],
             "segment_count_p95": data["compat"]["segment_count"]["p95"],
             "refine_budget_mean": data["compat"]["refine_budget"]["mean"],
@@ -897,6 +923,7 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("cpp_planner_step_size", 0.15)
         self.declare_parameter("cpp_planner_goal_tolerance", 0.08)
         self.declare_parameter("cpp_edge_resolution", 0.02)
+        self.declare_parameter("postcheck_edge_resolution", 0.02)
         self.declare_parameter("execute_only_if_postcheck_passed", True)
         self.declare_parameter("postcheck_check_edges", True)
         self.declare_parameter("offline_export_plot_enable", True)
@@ -942,6 +969,8 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("offline_wait_action_result", True)
         self.declare_parameter("offline_action_result_timeout_sec", 20.0)
         self.declare_parameter("offline_allow_stale_state_stitch", True)
+        self.declare_parameter("offline_stitch_start_from_current", False)
+        self.declare_parameter("start_state_tolerance", 0.03)
         self.declare_parameter("joint_limits_file", "")
         self.declare_parameter("max_joint_velocity", [1.0] * len(self.DEFAULT_JOINT_NAMES))
         self.declare_parameter("max_joint_acceleration", [2.0] * len(self.DEFAULT_JOINT_NAMES))
@@ -1056,6 +1085,9 @@ class IntentHybridPlannerNode(Node):
         )
         self.cpp_edge_resolution = float(
             self.get_parameter("cpp_edge_resolution").get_parameter_value().double_value
+        )
+        self.postcheck_edge_resolution = float(
+            self.get_parameter("postcheck_edge_resolution").get_parameter_value().double_value
         )
         self.execute_only_if_postcheck_passed = (
             self.get_parameter("execute_only_if_postcheck_passed").get_parameter_value().bool_value
@@ -1190,6 +1222,12 @@ class IntentHybridPlannerNode(Node):
         self.offline_allow_stale_state_stitch = (
             self.get_parameter("offline_allow_stale_state_stitch").get_parameter_value().bool_value
         )
+        self.offline_stitch_start_from_current = (
+            self.get_parameter("offline_stitch_start_from_current").get_parameter_value().bool_value
+        )
+        self.start_state_tolerance = float(
+            self.get_parameter("start_state_tolerance").get_parameter_value().double_value
+        )
         self.joint_limits_file = (
             self.get_parameter("joint_limits_file").get_parameter_value().string_value
         )
@@ -1229,6 +1267,7 @@ class IntentHybridPlannerNode(Node):
         self.cpp_planner_step_size = max(float(self.cpp_planner_step_size), 1e-4)
         self.cpp_planner_goal_tolerance = max(float(self.cpp_planner_goal_tolerance), 1e-4)
         self.cpp_edge_resolution = max(float(self.cpp_edge_resolution), 1e-5)
+        self.postcheck_edge_resolution = max(float(self.postcheck_edge_resolution), 1e-5)
         self.execute_only_if_postcheck_passed = bool(self.execute_only_if_postcheck_passed)
         self.postcheck_check_edges = bool(self.postcheck_check_edges)
         if self.nominal_source not in ("joint", "ee_plane"):
@@ -1267,6 +1306,8 @@ class IntentHybridPlannerNode(Node):
             float(self.offline_action_result_timeout_sec), 0.1
         )
         self.offline_allow_stale_state_stitch = bool(self.offline_allow_stale_state_stitch)
+        self.offline_stitch_start_from_current = bool(self.offline_stitch_start_from_current)
+        self.start_state_tolerance = max(float(self.start_state_tolerance), 1e-6)
         self.offline_export_plot_dir = self.offline_export_plot_dir.strip()
         if not self.offline_export_plot_dir:
             self.offline_export_plot_dir = str(Path.cwd() / "png")
@@ -1571,10 +1612,18 @@ class IntentHybridPlannerNode(Node):
             "Offline safety: "
             f"postcheck_enable={self.offline_postcheck_collision_enable}, "
             f"postcheck_allow_colliding_points={self.offline_postcheck_max_colliding_points}, "
+            f"postcheck_edge_resolution={self.postcheck_edge_resolution:.4f}, "
             f"wait_action_result={self.offline_wait_action_result}, "
             f"allow_stale_state_stitch={self.offline_allow_stale_state_stitch}, "
+            f"stitch_start_from_current={self.offline_stitch_start_from_current}, "
+            f"start_state_tolerance={self.start_state_tolerance:.4f}, "
             f"action_result_timeout={self.offline_action_result_timeout_sec:.2f}s"
         )
+        if not self.postcheck_check_edges:
+            self.get_logger().warn(
+                "postcheck_check_edges=false is ignored in offline strict safety mode; "
+                "FMP post-check always checks states and edges."
+            )
         self.get_logger().info(
             "Via settings: "
             f"interp_dist={self.via_interp_dist:.4f}, "
@@ -1670,10 +1719,23 @@ class IntentHybridPlannerNode(Node):
         self._cpp_plan_failure_count = 0
         self._cpp_plan_time_ms_samples: List[float] = []
         self._cpp_plan_collision_queries_samples: List[float] = []
+        self._postcheck_passed = False
         self._postcheck_first_invalid_state = -1
         self._postcheck_first_invalid_edge = -1
+        self._postcheck_state_invalid_count = 0
+        self._postcheck_edge_invalid_count = 0
         self._postcheck_elapsed_ms = 0.0
         self._postcheck_collision_queries = 0
+        self._execution_aborted = False
+        self._dispatch_action_status = -1
+        self._dispatch_error_code = 0
+        self._dispatch_error_string = ""
+        self._trajectory_duration_sec = 0.0
+        self._trajectory_point_count = 0
+        self._trajectory_max_joint_delta = 0.0
+        self._start_state_error_max = 0.0
+        self._start_state_error_norm = 0.0
+        self._last_dispatch_diag: Dict[str, Any] = {}
         self._timing_samples: Dict[str, List[float]] = {
             "collision_check_ms": [],
             "rrt_plan_ms": [],
@@ -2102,8 +2164,12 @@ class IntentHybridPlannerNode(Node):
         *,
         check_edges: bool,
         where: str,
+        edge_resolution: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
-        if not self._use_cpp_runtime_for_offline():
+        if self.execution_mode != "offline":
+            self._set_last_cpp_collision_error("CheckMotionBatch is only used by the offline safety path")
+            return None
+        if not self._cpp_runtime_ready():
             self._set_last_cpp_collision_error(self._describe_cpp_collision_unavailable())
             return None
         states = np.asarray(states_row_major, dtype=float)
@@ -2126,7 +2192,9 @@ class IntentHybridPlannerNode(Node):
         req.dof = int(len(self.joint_names))
         req.states_flat = states.reshape(-1).tolist()
         req.check_edges = bool(check_edges)
-        req.edge_resolution = float(self.cpp_edge_resolution)
+        req.edge_resolution = float(
+            self.cpp_edge_resolution if edge_resolution is None else edge_resolution
+        )
         fut = self.cpp_motion_check_client.call_async(req)
         timeout_sec = max(
             self.cpp_bridge_timeout_sec + 0.01 * float(states.shape[0]) + (0.02 * float(states.shape[0]) if check_edges else 0.0),
@@ -2165,6 +2233,93 @@ class IntentHybridPlannerNode(Node):
             "elapsed_ms": float(resp.elapsed_ms),
             "collision_queries": int(resp.collision_queries),
         }
+
+    @staticmethod
+    def _motion_invalid_counts(motion: Optional[Dict[str, Any]]) -> Tuple[int, int]:
+        if motion is None:
+            return 0, 0
+        state_valid = np.asarray(motion.get("state_valid", []), dtype=bool).reshape(-1)
+        edge_valid = np.asarray(motion.get("edge_valid", []), dtype=bool).reshape(-1)
+        return int(np.count_nonzero(~state_valid)), int(np.count_nonzero(~edge_valid))
+
+    def _record_postcheck_metrics(self, motion: Optional[Dict[str, Any]], *, passed: bool) -> None:
+        state_bad, edge_bad = self._motion_invalid_counts(motion)
+        self._postcheck_passed = bool(passed)
+        self._postcheck_state_invalid_count = int(state_bad)
+        self._postcheck_edge_invalid_count = int(edge_bad)
+        self._postcheck_first_invalid_state = int(motion.get("first_invalid_state", -1)) if motion else -1
+        self._postcheck_first_invalid_edge = int(motion.get("first_invalid_edge", -1)) if motion else -1
+        self._postcheck_elapsed_ms = float(motion.get("elapsed_ms", 0.0)) if motion else 0.0
+        self._postcheck_collision_queries = int(motion.get("collision_queries", 0)) if motion else 0
+
+    def _strict_motion_check_passed(
+        self,
+        motion: Optional[Dict[str, Any]],
+        *,
+        expected_states: int,
+        require_edges: bool,
+    ) -> bool:
+        if motion is None:
+            return False
+        state_valid = np.asarray(motion.get("state_valid", []), dtype=bool).reshape(-1)
+        edge_valid = np.asarray(motion.get("edge_valid", []), dtype=bool).reshape(-1)
+        if state_valid.size != int(expected_states):
+            return False
+        expected_edges = max(int(expected_states) - 1, 0) if require_edges else 0
+        if require_edges and edge_valid.size != expected_edges:
+            return False
+        if not bool(np.all(state_valid)):
+            return False
+        if require_edges and not bool(np.all(edge_valid)):
+            return False
+        if int(motion.get("first_invalid_state", -2)) != -1:
+            return False
+        if require_edges and int(motion.get("first_invalid_edge", -2)) != -1:
+            return False
+        return True
+
+    def _log_motion_check_failure(
+        self,
+        label: str,
+        motion: Optional[Dict[str, Any]],
+        *,
+        expected_states: int,
+    ) -> None:
+        state_bad, edge_bad = self._motion_invalid_counts(motion)
+        state_size = int(np.asarray(motion.get("state_valid", []), dtype=bool).size) if motion else 0
+        edge_size = int(np.asarray(motion.get("edge_valid", []), dtype=bool).size) if motion else 0
+        expected_edges = max(int(expected_states) - 1, 0)
+        self.get_logger().error(
+            f"{label} failed: "
+            f"first_invalid_state={int(motion.get('first_invalid_state', -1)) if motion else -1}, "
+            f"first_invalid_edge={int(motion.get('first_invalid_edge', -1)) if motion else -1}, "
+            f"invalid_state_count={state_bad}, invalid_edge_count={edge_bad}, "
+            f"state_valid_len={state_size}/{int(expected_states)}, "
+            f"edge_valid_len={edge_size}/{expected_edges}, "
+            f"elapsed_ms={float(motion.get('elapsed_ms', 0.0)) if motion else 0.0:.3f}, "
+            f"collision_queries={int(motion.get('collision_queries', 0)) if motion else 0}, "
+            f"reason={self._last_cpp_collision_error or 'strict motion check failed'}"
+        )
+
+    def _validate_local_path_with_cpp_motion(self, path: np.ndarray, label: str) -> bool:
+        arr = np.asarray(path, dtype=float)
+        if arr.ndim != 2 or arr.shape[0] != len(self.joint_names) or arr.shape[1] < 2:
+            self.get_logger().error(f"{label} local path rejected: invalid shape {arr.shape}.")
+            return False
+        motion = self._check_motion_batch_cpp(
+            arr.T,
+            check_edges=True,
+            where=label,
+            edge_resolution=self.postcheck_edge_resolution,
+        )
+        ok = self._strict_motion_check_passed(
+            motion,
+            expected_states=int(arr.shape[1]),
+            require_edges=True,
+        )
+        if not ok:
+            self._log_motion_check_failure(label, motion, expected_states=int(arr.shape[1]))
+        return ok
 
     def _plan_local_segment_cpp(
         self,
@@ -2269,6 +2424,23 @@ class IntentHybridPlannerNode(Node):
             self._set_last_cpp_collision_error("plan_local_segment returned invalid path shape")
             return None
         path = flat.reshape(path_points, len(self.joint_names)).T
+        if not self._validate_local_path_with_cpp_motion(
+            path,
+            f"C++ local planner path post-check ({segment_label})",
+        ):
+            self._cpp_plan_failure_count += 1
+            return {
+                "path_first": np.empty((len(self.joint_names), 0), dtype=float),
+                "path_refine": np.empty((len(self.joint_names), 0), dtype=float),
+                "stop_reason": "failed_motion_postcheck",
+                "meta": {
+                    "iter_used": int(resp.iter_used),
+                    "time_ms": float(resp.elapsed_ms),
+                    "collision_queries": int(resp.collision_queries),
+                    "timeout_hit": False,
+                    "backend": "cpp_rrt_connect",
+                },
+            }
         self._cpp_plan_success_count += 1
         self.get_logger().info(
             "C++ local planner success "
@@ -2430,6 +2602,9 @@ class IntentHybridPlannerNode(Node):
         dof = len(self.joint_names)
         if traj.ndim != 2 or traj.shape[0] != dof:
             return "rejected_bad_shape"
+        self._update_dispatch_trajectory_diag(traj)
+        if not self._validate_offline_dispatch_start(traj, where="cpp_bridge offline dispatch"):
+            return "failed_start_state_mismatch"
         req = DispatchJointTrajectory.Request()
         req.action_name = str(self.trajectory_action_name)
         req.joint_names = list(self.joint_names)
@@ -2438,7 +2613,7 @@ class IntentHybridPlannerNode(Node):
         req.nominal_dt = float(self.nominal_dt)
         req.vel_limits = np.asarray(self.vel_limits, dtype=float).reshape(-1).tolist()
         req.acc_limits = np.asarray(self.acc_limits, dtype=float).reshape(-1).tolist()
-        req.stitch_from_current = True
+        req.stitch_from_current = bool(self.offline_stitch_start_from_current)
         req.path_tolerance_rad = float(self.action_path_tolerance_rad)
         req.goal_tolerance_rad = float(self.action_goal_tolerance_rad)
         req.goal_time_tolerance_sec = float(self.action_goal_time_tolerance_sec)
@@ -2465,11 +2640,22 @@ class IntentHybridPlannerNode(Node):
             )
             return "failed_cpp_dispatch_timeout"
         if (not bool(resp.accepted)) or str(resp.result_code) != "sent_success":
+            result_code = str(resp.result_code)
+            error_msg = str(resp.error_message)
+            status = int(GoalStatus.STATUS_ABORTED) if result_code == "failed_action_aborted" else -1
+            self._record_dispatch_failure(
+                status=status,
+                error_code=self._extract_follow_error_code(error_msg),
+                error_string=error_msg,
+                aborted=(result_code == "failed_action_aborted"),
+            )
             self.get_logger().warn(
                 "cpp_bridge dispatch_joint_trajectory failed: "
-                f"accepted={bool(resp.accepted)}, result={str(resp.result_code)}, "
-                f"msg={str(resp.error_message)}"
+                f"accepted={bool(resp.accepted)}, result={result_code}, "
+                f"msg={error_msg}"
             )
+            if str(resp.result_code).startswith("failed_action_"):
+                self._log_action_failure_with_diag("cpp_bridge FollowJointTrajectory failed")
         return str(resp.result_code) if str(resp.result_code) else ("sent_success" if bool(resp.accepted) else "failed_cpp_dispatch")
 
     def _run_rrt_with_collision_backend(self, *, detailed: bool, **kwargs):
@@ -2694,6 +2880,106 @@ class IntentHybridPlannerNode(Node):
             return float("inf")
         return float(np.max(np.abs(a[:, :m] - b[:, :m])))
 
+    def _update_dispatch_trajectory_diag(self, traj: np.ndarray, duration_sec: Optional[float] = None) -> None:
+        arr = np.asarray(traj, dtype=float)
+        if arr.ndim != 2 or arr.shape[1] <= 0:
+            self._trajectory_point_count = 0
+            self._trajectory_duration_sec = 0.0
+            self._trajectory_max_joint_delta = 0.0
+            return
+        self._trajectory_point_count = int(arr.shape[1])
+        if duration_sec is None:
+            self._trajectory_duration_sec = float(max(arr.shape[1] - 1, 0) * max(float(self.nominal_dt), 1e-6))
+        else:
+            self._trajectory_duration_sec = float(max(duration_sec, 0.0))
+        if arr.shape[1] >= 2:
+            self._trajectory_max_joint_delta = float(np.max(np.abs(np.diff(arr, axis=1))))
+        else:
+            self._trajectory_max_joint_delta = 0.0
+        self._last_dispatch_diag = {
+            "trajectory_point_count": self._trajectory_point_count,
+            "trajectory_duration_sec": self._trajectory_duration_sec,
+            "trajectory_max_joint_delta": self._trajectory_max_joint_delta,
+            "start_state_error_max": self._start_state_error_max,
+            "start_state_error_norm": self._start_state_error_norm,
+        }
+
+    def _validate_offline_dispatch_start(self, traj: np.ndarray, *, where: str) -> bool:
+        arr = np.asarray(traj, dtype=float)
+        if arr.ndim != 2 or arr.shape[0] != len(self.joint_names) or arr.shape[1] <= 0:
+            self.get_logger().error(f"{where} start-state check rejected invalid trajectory shape {arr.shape}.")
+            return False
+        wait_sec = max(0.5, float(self.state_stale_timeout) + 0.2)
+        if not self._wait_for_fresh_joint_state(wait_sec):
+            self._dispatch_error_string = "no fresh joint state for start-state check"
+            self.get_logger().error(
+                f"{where} rejected: no fresh joint state for start-state check (waited {wait_sec:.2f}s)."
+            )
+            return False
+        q_first = arr[:, 0].copy()
+        q_current = self._q_now.reshape(-1).copy()
+        err = np.abs(q_first - q_current)
+        self._start_state_error_max = float(np.max(err)) if err.size else 0.0
+        self._start_state_error_norm = float(np.linalg.norm(err)) if err.size else 0.0
+        if self._start_state_error_max <= float(self.start_state_tolerance):
+            return True
+        if self.offline_stitch_start_from_current:
+            self.get_logger().warn(
+                f"{where}: start-state mismatch will be handled by explicit stitching "
+                f"(max_error={self._start_state_error_max:.4f}, norm={self._start_state_error_norm:.4f}, "
+                f"tolerance={self.start_state_tolerance:.4f})."
+            )
+            return True
+        self._dispatch_error_string = "start state mismatch"
+        self.get_logger().error(
+            f"{where} rejected: trajectory start does not match current joint state "
+            f"(max_error={self._start_state_error_max:.4f}, norm={self._start_state_error_norm:.4f}, "
+            f"tolerance={self.start_state_tolerance:.4f}, "
+            f"q_current={np.round(q_current, 6).tolist()}, "
+            f"q_first={np.round(q_first, 6).tolist()})."
+        )
+        return False
+
+    def _record_dispatch_failure(
+        self,
+        *,
+        status: int,
+        error_code: int,
+        error_string: str,
+        aborted: bool,
+    ) -> None:
+        self._dispatch_action_status = int(status)
+        self._dispatch_error_code = int(error_code)
+        self._dispatch_error_string = str(error_string)
+        self._execution_aborted = bool(aborted)
+
+    @staticmethod
+    def _extract_follow_error_code(text: str) -> int:
+        marker = "error_code="
+        s = str(text)
+        idx = s.find(marker)
+        if idx < 0:
+            return -1
+        idx += len(marker)
+        end = idx
+        while end < len(s) and (s[end].isdigit() or s[end] in ("-", "+")):
+            end += 1
+        try:
+            return int(s[idx:end])
+        except Exception:
+            return -1
+
+    def _log_action_failure_with_diag(self, prefix: str) -> None:
+        self.get_logger().error(
+            f"{prefix}: action_status={self._dispatch_action_status}, "
+            f"error_code={self._dispatch_error_code}, error_string={self._dispatch_error_string}, "
+            f"trajectory_point_count={self._trajectory_point_count}, "
+            f"trajectory_duration_sec={self._trajectory_duration_sec:.3f}, "
+            f"trajectory_max_joint_delta={self._trajectory_max_joint_delta:.4f}, "
+            f"start_state_error_max={self._start_state_error_max:.4f}, "
+            f"start_state_error_norm={self._start_state_error_norm:.4f}"
+        )
+
     def _is_new_trajectory_better(self, meta: Dict[str, Any]) -> bool:
         """
         Heuristic:
@@ -2827,10 +3113,13 @@ class IntentHybridPlannerNode(Node):
                     self._last_action_result_error_code = error_code
                     self._last_action_result_error_text = error_text
                     if status != int(GoalStatus.STATUS_SUCCEEDED) or error_code != 0:
-                        self.get_logger().warn(
-                            "Trajectory action finished with non-success: "
-                            f"status={status}, error_code={error_code}, msg={error_text}"
+                        self._record_dispatch_failure(
+                            status=status,
+                            error_code=error_code,
+                            error_string=error_text,
+                            aborted=(status == int(GoalStatus.STATUS_ABORTED)),
                         )
+                        self._log_action_failure_with_diag("Trajectory action finished with non-success")
                 except Exception as exc2:  # pylint: disable=broad-except
                     self.get_logger().warn(f"Trajectory result future failed: {exc2}")
                 finally:
@@ -3693,29 +3982,18 @@ class IntentHybridPlannerNode(Node):
                 f"execute_trajectory_offline rejected: expected {len(self.joint_names)}xN, got {traj.shape}"
             )
             return "rejected_bad_shape"
-
-        # Align offline trajectory start with current hardware state to avoid
-        # controller state-tolerance violations and visual "teleport" jumps.
-        wait_sec = max(0.5, float(self.state_stale_timeout) + 0.2)
-        if not self._wait_for_fresh_joint_state(wait_sec):
-            if self._has_joint_state and self.offline_allow_stale_state_stitch:
-                age = time.monotonic() - float(self._state_updated_monotonic)
+        self._update_dispatch_trajectory_diag(traj)
+        if not self._validate_offline_dispatch_start(traj, where="python offline dispatch"):
+            return "failed_start_state_mismatch"
+        if self.offline_stitch_start_from_current:
+            traj = np.hstack([self._q_now.reshape(-1, 1), traj])
+            self._update_dispatch_trajectory_diag(traj)
+            if traj.shape[1] >= 2:
+                start_delta_max = float(np.max(np.abs(traj[:, 1] - traj[:, 0])))
                 self.get_logger().warn(
-                    "Offline execution uses stale joint state for start stitching "
-                    f"(age={age:.2f}s, waited={wait_sec:.2f}s)."
+                    "Offline start stitching is explicitly enabled: "
+                    f"stitched start delta max_abs={start_delta_max:.4f} rad"
                 )
-            else:
-                self.get_logger().error(
-                    "Offline execution aborted: no fresh joint state for start stitching "
-                    f"(waited {wait_sec:.2f}s)."
-                )
-                return "failed_stale_state"
-        traj = np.hstack([self._q_now.reshape(-1, 1), traj])
-        if traj.shape[1] >= 2:
-            start_delta_max = float(np.max(np.abs(traj[:, 1] - traj[:, 0])))
-            self.get_logger().info(
-                f"Offline stitched start delta max_abs={start_delta_max:.4f} rad"
-            )
 
         n_points = traj.shape[1]
         if n_points < 2:
@@ -3724,6 +4002,7 @@ class IntentHybridPlannerNode(Node):
 
         t = self._build_time_array(n_points, self.nominal_dt)
         t = self._scale_time_for_limits(traj, t)
+        self._update_dispatch_trajectory_diag(traj, duration_sec=float(t[-1]) if t.size else 0.0)
         if self.time_param_backend == "ruckig" and ruckig_lib is not None:
             vel, acc = self._time_parameterize(traj, t)
         else:
@@ -3761,6 +4040,7 @@ class IntentHybridPlannerNode(Node):
         return "sent_success"
 
     def execute_trajectory_offline(self, trajectory_matrix: np.ndarray) -> str:
+        self._record_dispatch_failure(status=-1, error_code=0, error_string="", aborted=False)
         if self._use_cpp_runtime_for_offline():
             decision_cpp = self._dispatch_trajectory_cpp_offline(trajectory_matrix)
             if decision_cpp == "sent_success":
@@ -3779,6 +4059,7 @@ class IntentHybridPlannerNode(Node):
                 "failed_send_goal_timeout",
                 "rejected_by_action_server",
                 "failed_action_unknown",
+                "failed_start_state_mismatch",
             }
             if decision_cpp in hard_fail_codes:
                 self.get_logger().error(
@@ -3935,6 +4216,16 @@ class IntentHybridPlannerNode(Node):
                         f"timeout_hit={timeout_hit})."
                     )
                     return False
+                if not self._validate_local_path_with_cpp_motion(
+                    path_for_via,
+                    f"Segment {seg_idx + 1} local path post-check",
+                ):
+                    partial_via = np.hstack(via_points_all) if via_points_all else None
+                    self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
+                    self.get_logger().error(
+                        f"Segment {seg_idx + 1} failed: local path did not pass CheckMotionBatch."
+                    )
+                    return False
 
                 dense_via, dense_time = hm_compat.densify_path_to_vias(
                     path_for_via,
@@ -4002,121 +4293,30 @@ class IntentHybridPlannerNode(Node):
                 f"clearance_min={self._ee_metrics_last['obstacle_clearance_min']:.4f}"
             )
 
-        if self.offline_postcheck_collision_enable:
-            try:
-                post_motion = None
-                if self.execution_mode == "offline" and self._cpp_runtime_requested():
-                    post_motion = self._check_motion_batch_cpp(
-                        modulated.T,
-                        check_edges=self.postcheck_check_edges,
-                        where="offline post-modulation check",
-                    )
-                if post_motion is not None:
-                    self._postcheck_first_invalid_state = int(post_motion["first_invalid_state"])
-                    self._postcheck_first_invalid_edge = int(post_motion["first_invalid_edge"])
-                    self._postcheck_elapsed_ms = float(post_motion["elapsed_ms"])
-                    self._postcheck_collision_queries = int(post_motion["collision_queries"])
-                    bad = set(
-                        int(i)
-                        for i, v in enumerate(post_motion["state_valid"].tolist())
-                        if not bool(v)
-                    )
-                    for i, v in enumerate(post_motion["edge_valid"].tolist()):
-                        if not bool(v):
-                            bad.add(int(i))
-                            bad.add(int(i + 1))
-                    post_colliding = sorted(bad)
-                else:
-                    if self._cpp_collision_required_for_offline():
-                        raise RuntimeError(
-                            "cpp_bridge motion post-check failed: "
-                            f"{self._last_cpp_collision_error or 'unknown error'}"
-                        )
-                    post_colliding = self._collect_collision_indices_for_traj(
-                        modulated,
-                        "offline post-modulation check",
-                    )
-            except RuntimeError as exc:
-                self.get_logger().error(f"Step 3/4 post-check failed: {exc}")
-                return False
-            collide_count = int(len(post_colliding))
-            if collide_count > int(self.offline_postcheck_max_colliding_points):
-                repaired = self._repair_modulated_with_via_projection(
-                    modulated_traj=modulated,
-                    nominal_traj=nominal_traj,
-                    time_axis=time_axis,
-                    via_points=global_via_points,
-                    via_times=global_via_times,
-                    colliding_idx=post_colliding,
-                )
-                if repaired is not None:
-                    try:
-                        repaired_motion = None
-                        if self.execution_mode == "offline" and self._cpp_runtime_requested():
-                            repaired_motion = self._check_motion_batch_cpp(
-                                repaired.T,
-                                check_edges=self.postcheck_check_edges,
-                                where="offline post-modulation repair check",
-                            )
-                        if repaired_motion is not None:
-                            self._postcheck_first_invalid_state = int(repaired_motion["first_invalid_state"])
-                            self._postcheck_first_invalid_edge = int(repaired_motion["first_invalid_edge"])
-                            self._postcheck_elapsed_ms = float(repaired_motion["elapsed_ms"])
-                            self._postcheck_collision_queries = int(repaired_motion["collision_queries"])
-                            repaired_bad = set(
-                                int(i)
-                                for i, v in enumerate(repaired_motion["state_valid"].tolist())
-                                if not bool(v)
-                            )
-                            for i, v in enumerate(repaired_motion["edge_valid"].tolist()):
-                                if not bool(v):
-                                    repaired_bad.add(int(i))
-                                    repaired_bad.add(int(i + 1))
-                            repaired_colliding = sorted(repaired_bad)
-                        else:
-                            if self._cpp_collision_required_for_offline():
-                                raise RuntimeError(
-                                    "cpp_bridge motion repair post-check failed: "
-                                    f"{self._last_cpp_collision_error or 'unknown error'}"
-                                )
-                            repaired_colliding = self._collect_collision_indices_for_traj(
-                                repaired,
-                                "offline post-modulation repair check",
-                            )
-                    except RuntimeError as exc:
-                        self.get_logger().error(f"Step 3/4 repair post-check failed: {exc}")
-                        return False
-                    repaired_count = int(len(repaired_colliding))
-                    if repaired_count <= int(self.offline_postcheck_max_colliding_points):
-                        self.get_logger().warn(
-                            "Offline post-check repair applied: "
-                            f"colliding_points {collide_count} -> {repaired_count} "
-                            f"(margin={self.offline_postcheck_repair_margin_points})."
-                        )
-                        modulated = repaired
-                        post_colliding = repaired_colliding
-                        collide_count = repaired_count
-
-            if collide_count > int(self.offline_postcheck_max_colliding_points):
-                self.get_logger().error(
-                    "Offline post-check rejected modulated trajectory: "
-                    f"colliding_points={collide_count}, "
-                    f"allow={int(self.offline_postcheck_max_colliding_points)}, "
-                    f"first_idx={post_colliding[0] if post_colliding else -1}, "
-                    f"first_invalid_state={self._postcheck_first_invalid_state}, "
-                    f"first_invalid_edge={self._postcheck_first_invalid_edge}."
-                )
-                self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
-                if self.execute_only_if_postcheck_passed:
-                    return False
-                self.get_logger().warn(
-                    "execute_only_if_postcheck_passed=false; continuing despite failed post-check."
-                )
-            if collide_count > 0:
-                self.get_logger().warn(
-                    "Offline post-check has residual collisions but within configured allowance: "
-                    f"{collide_count}/{int(self.offline_postcheck_max_colliding_points)}"
-                )
+        if not self.offline_postcheck_collision_enable:
+            self.get_logger().warn(
+                "offline_postcheck_collision_enable=false is ignored in offline strict safety mode."
+            )
+        post_motion = self._check_motion_batch_cpp(
+            modulated.T,
+            check_edges=True,
+            where="offline post-modulation strict check",
+            edge_resolution=self.postcheck_edge_resolution,
+        )
+        postcheck_ok = self._strict_motion_check_passed(
+            post_motion,
+            expected_states=int(modulated.shape[1]),
+            require_edges=True,
+        )
+        self._record_postcheck_metrics(post_motion, passed=postcheck_ok)
+        if not postcheck_ok:
+            self._log_motion_check_failure(
+                "Offline post-check rejected modulated trajectory",
+                post_motion,
+                expected_states=int(modulated.shape[1]),
+            )
+            self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+            return False
 
         self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
 

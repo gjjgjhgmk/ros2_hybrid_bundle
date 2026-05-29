@@ -30,6 +30,10 @@ double distance_l2(const std::vector<double> &a, const std::vector<double> &b) {
   return std::sqrt(acc);
 }
 
+bool near_state(const std::vector<double> &a, const std::vector<double> &b, double tol) {
+  return distance_l2(a, b) <= std::max(tol, 1e-9);
+}
+
 std::vector<double> steer(const std::vector<double> &from, const std::vector<double> &to, double step_size) {
   std::vector<double> out = from;
   const double dist = distance_l2(from, to);
@@ -131,7 +135,15 @@ bool connect_tree(
     std::string &err,
     int &last_idx) {
   last_idx = -1;
-  while (true) {
+  const int near_idx = nearest_index(tree, target);
+  if (near_idx < 0) {
+    err = "nearest failed";
+    return false;
+  }
+  const double dist = distance_l2(tree.nodes[static_cast<std::size_t>(near_idx)].q, target);
+  const auto max_connect_steps = static_cast<std::size_t>(
+      std::ceil(dist / std::max(req.step_size, 1e-9))) + 2U;
+  for (std::size_t step = 0; step < max_connect_steps; ++step) {
     int idx = -1;
     if (!extend_once(tree, target, req, state_valid, edge_valid, err, idx)) {
       return false;
@@ -141,6 +153,8 @@ bool connect_tree(
       return true;
     }
   }
+  err = "failed_connect";
+  return false;
 }
 
 std::vector<double> make_times(
@@ -161,6 +175,34 @@ std::vector<double> make_times(
     times[i] = t_start + duration * (acc[i] / total);
   }
   return times;
+}
+
+bool validate_path_edges(
+    const std::vector<std::vector<double>> &path,
+    const RRTConnectRequestData &req,
+    const IntentRRTConnect::EdgeValidityFn &edge_valid,
+    std::string &err) {
+  if (path.size() < 2U) {
+    err = "path has fewer than 2 points";
+    return false;
+  }
+  if (!near_state(path.front(), req.start, 1e-6)) {
+    err = "path does not start at requested start";
+    return false;
+  }
+  if (!near_state(path.back(), req.goal, 1e-6)) {
+    err = "path does not end at requested goal";
+    return false;
+  }
+  for (std::size_t i = 0; i + 1U < path.size(); ++i) {
+    if (!edge_valid(path[i], path[i + 1U], req.edge_resolution, err)) {
+      std::ostringstream oss;
+      oss << "invalid path edge " << i << ": " << err;
+      err = oss.str();
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -199,6 +241,14 @@ RRTConnectResult IntentRRTConnect::plan(
   if (!state_valid(req.goal, err)) {
     res.stop_reason = "collision_goal";
     res.error_message = err;
+    res.elapsed_ms = elapsed_ms();
+    return res;
+  }
+  if (edge_valid(req.start, req.goal, req.edge_resolution, err)) {
+    res.path = {req.start, req.goal};
+    res.via_times = {req.t_start, req.t_end};
+    res.ok = true;
+    res.stop_reason = "direct";
     res.elapsed_ms = elapsed_ms();
     return res;
   }
@@ -261,8 +311,18 @@ RRTConnectResult IntentRRTConnect::plan(
     if (!from_start.empty() && !from_goal.empty() && distance_l2(from_start.back(), from_goal.front()) < 1e-9) {
       from_goal.erase(from_goal.begin());
     }
-    res.path = from_start;
-    res.path.insert(res.path.end(), from_goal.begin(), from_goal.end());
+    std::vector<std::vector<double>> candidate = from_start;
+    if (!candidate.empty() && !from_goal.empty() &&
+        distance_l2(candidate.back(), from_goal.front()) > 1e-9) {
+      if (!edge_valid(candidate.back(), from_goal.front(), req.edge_resolution, err)) {
+        continue;
+      }
+    }
+    candidate.insert(candidate.end(), from_goal.begin(), from_goal.end());
+    if (!validate_path_edges(candidate, req, edge_valid, err)) {
+      continue;
+    }
+    res.path = candidate;
     res.via_times = make_times(res.path, req.t_start, req.t_end);
     res.ok = true;
     res.stop_reason = "success";
