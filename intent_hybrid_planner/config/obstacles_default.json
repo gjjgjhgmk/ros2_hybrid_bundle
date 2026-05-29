@@ -1,0 +1,26 @@
+{
+  "world_name": "empty",
+  "frame_id": "base_link",
+  "obstacles": [
+    {
+      "id": "pillar_02",
+      "type": "cylinder",
+      "x": 0.40,
+      "y": 0.0,
+      "z": -0.10,
+      "radius": 0.09,
+      "height": 1.20,
+      "color": [1.0, 0.0, 0.0, 1.0]
+    },
+    {
+      "id": "pillar_03",
+      "type": "cylinder",
+      "x": 0.64,
+      "y": 0.0,
+      "z": -0.10,
+      "radius": 0.08,
+      "height": 1.05,
+      "color": [1.0, 0.0, 0.0, 1.0]
+    }
+  ]
+}

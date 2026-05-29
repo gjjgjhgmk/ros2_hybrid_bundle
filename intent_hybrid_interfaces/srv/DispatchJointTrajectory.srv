@@ -1,0 +1,17 @@
+string action_name
+string[] joint_names
+uint32 dof
+float64[] q_flat
+float64 nominal_dt
+float64[] vel_limits
+float64[] acc_limits
+bool stitch_from_current
+float64 path_tolerance_rad
+float64 goal_tolerance_rad
+float64 goal_time_tolerance_sec
+---
+bool accepted
+string result_code
+float64 jerk_proxy
+uint32 points_sent
+string error_message

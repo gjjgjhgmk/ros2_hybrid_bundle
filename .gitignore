@@ -1,0 +1,21 @@
+# MATLAB autosave / temp
+*.asv
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# local tool cache
+.workbuddy/
+__pycache__/
+*.pyc
+
+# ROS2 / colcon generated artifacts
+build/
+install/
+log/
+
+# local experiment outputs
+result/
+png/
+debug/

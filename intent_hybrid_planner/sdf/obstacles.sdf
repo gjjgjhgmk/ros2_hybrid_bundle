@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="hybrid_obstacles">
+    <static>true</static>
+    <link name="obstacles_link">
+      <collision name="pillar_02_collision">
+        <pose>0.400000 0.000000 -0.100000 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.090000</radius>
+            <length>1.200000</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="pillar_02_visual">
+        <pose>0.400000 0.000000 -0.100000 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.090000</radius>
+            <length>1.200000</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>1.000 0.000 0.000 1.000</ambient>
+          <diffuse>1.000 0.000 0.000 1.000</diffuse>
+        </material>
+      </visual>
+      <collision name="pillar_03_collision">
+        <pose>0.640000 0.000000 -0.100000 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.080000</radius>
+            <length>1.050000</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="pillar_03_visual">
+        <pose>0.640000 0.000000 -0.100000 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.080000</radius>
+            <length>1.050000</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>1.000 0.000 0.000 1.000</ambient>
+          <diffuse>1.000 0.000 0.000 1.000</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

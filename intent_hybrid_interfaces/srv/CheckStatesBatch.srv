@@ -1,0 +1,8 @@
+string group_name
+string[] joint_names
+uint32 dof
+float64[] states_flat
+---
+bool ok
+bool[] collision_free
+string error_message

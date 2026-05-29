@@ -1,0 +1,12 @@
+string base_frame
+string ee_link
+string[] joint_names
+uint32 dof
+float64[] nominal_q_flat
+float64[] via_q_flat
+float64[] modulated_q_flat
+float64[] nominal_ee_xyz_flat
+float64[] obstacle_xyzr_flat
+---
+bool ok
+string error_message
