@@ -61,13 +61,17 @@ except Exception:  # pragma: no cover - optional dependency
 
 try:
     from intent_hybrid_interfaces.srv import (
+        CheckMotionBatch,
         CheckStatesBatch,
         DispatchJointTrajectory,
+        PlanLocalSegment,
         PublishPlanningMarkers,
     )
 except Exception:  # pragma: no cover - optional dependency
+    CheckMotionBatch = None
     CheckStatesBatch = None
     DispatchJointTrajectory = None
+    PlanLocalSegment = None
     PublishPlanningMarkers = None
 
 
@@ -708,6 +712,8 @@ class IntentHybridPlannerNode(Node):
         rrt_iter_stats = self._stats_from_samples(self._rrt_iter_samples)
         rrt_time_stats = self._stats_from_samples(self._rrt_time_ms_samples)
         rrt_queries_stats = self._stats_from_samples(self._rrt_collision_queries_samples)
+        cpp_plan_time_stats = self._stats_from_samples(self._cpp_plan_time_ms_samples)
+        cpp_plan_queries_stats = self._stats_from_samples(self._cpp_plan_collision_queries_samples)
         segment_stats = self._stats_from_samples(self._segment_count_samples)
         refine_budget_stats = self._stats_from_samples(self._refine_budget_samples)
 
@@ -739,6 +745,20 @@ class IntentHybridPlannerNode(Node):
                 },
                 "stop_reason_counts": dict(self._rrt_stop_reason_counts),
             },
+            "cpp_local_planner": {
+                "used": bool(self._cpp_local_planner_used),
+                "success_count": int(self._cpp_plan_success_count),
+                "failure_count": int(self._cpp_plan_failure_count),
+                "time_ms": cpp_plan_time_stats,
+                "collision_queries": cpp_plan_queries_stats,
+            },
+            "postcheck": {
+                "first_invalid_state": int(self._postcheck_first_invalid_state),
+                "first_invalid_edge": int(self._postcheck_first_invalid_edge),
+                "elapsed_ms": float(self._postcheck_elapsed_ms),
+                "collision_queries": int(self._postcheck_collision_queries),
+                "check_edges": bool(self.postcheck_check_edges),
+            },
             "compat": {
                 "segment_count": segment_stats,
                 "refine_budget": refine_budget_stats,
@@ -769,6 +789,19 @@ class IntentHybridPlannerNode(Node):
             "rrt_time_ms_p95": data["rrt"]["time_ms"]["p95"],
             "rrt_time_ms_max": data["rrt"]["time_ms"]["max"],
             "rrt_collision_queries_mean": data["rrt"]["collision_queries"]["mean"],
+            "cpp_local_planner_used": int(data["cpp_local_planner"]["used"]),
+            "cpp_plan_success_count": data["cpp_local_planner"]["success_count"],
+            "cpp_plan_failure_count": data["cpp_local_planner"]["failure_count"],
+            "cpp_plan_time_ms_mean": data["cpp_local_planner"]["time_ms"]["mean"],
+            "cpp_plan_time_ms_p95": data["cpp_local_planner"]["time_ms"]["p95"],
+            "cpp_plan_time_ms_max": data["cpp_local_planner"]["time_ms"]["max"],
+            "cpp_plan_collision_queries_mean": data["cpp_local_planner"]["collision_queries"]["mean"],
+            "cpp_plan_collision_queries_p95": data["cpp_local_planner"]["collision_queries"]["p95"],
+            "cpp_plan_collision_queries_max": data["cpp_local_planner"]["collision_queries"]["max"],
+            "postcheck_first_invalid_state": data["postcheck"]["first_invalid_state"],
+            "postcheck_first_invalid_edge": data["postcheck"]["first_invalid_edge"],
+            "postcheck_elapsed_ms": data["postcheck"]["elapsed_ms"],
+            "postcheck_collision_queries": data["postcheck"]["collision_queries"],
             "segment_count_mean": data["compat"]["segment_count"]["mean"],
             "segment_count_p95": data["compat"]["segment_count"]["p95"],
             "refine_budget_mean": data["compat"]["refine_budget"]["mean"],
@@ -854,6 +887,18 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("cpp_bridge_timeout_sec", 0.2)
         self.declare_parameter("cpp_bridge_collision_required", True)
         self.declare_parameter("fk_vis_ee_link", "tool0")
+        self.declare_parameter("use_cpp_local_planner", True)
+        self.declare_parameter("allow_cpp_local_planner_fallback", True)
+        self.declare_parameter("cpp_local_planner_service", "/intent_runtime/plan_local_segment")
+        self.declare_parameter("cpp_motion_check_service", "/intent_runtime/check_motion_batch")
+        self.declare_parameter("planner_type", "rrt_connect")
+        self.declare_parameter("cpp_planner_timeout_sec", 0.10)
+        self.declare_parameter("cpp_planner_max_iter", 500)
+        self.declare_parameter("cpp_planner_step_size", 0.15)
+        self.declare_parameter("cpp_planner_goal_tolerance", 0.08)
+        self.declare_parameter("cpp_edge_resolution", 0.02)
+        self.declare_parameter("execute_only_if_postcheck_passed", True)
+        self.declare_parameter("postcheck_check_edges", True)
         self.declare_parameter("offline_export_plot_enable", True)
         self.declare_parameter("offline_export_plot_dir", str(Path.cwd() / "png"))
         self.declare_parameter("joint_names", list(self.DEFAULT_JOINT_NAMES))
@@ -981,6 +1026,42 @@ class IntentHybridPlannerNode(Node):
         )
         self.fk_vis_ee_link = (
             self.get_parameter("fk_vis_ee_link").get_parameter_value().string_value
+        )
+        self.use_cpp_local_planner = (
+            self.get_parameter("use_cpp_local_planner").get_parameter_value().bool_value
+        )
+        self.allow_cpp_local_planner_fallback = (
+            self.get_parameter("allow_cpp_local_planner_fallback").get_parameter_value().bool_value
+        )
+        self.cpp_local_planner_service = (
+            self.get_parameter("cpp_local_planner_service").get_parameter_value().string_value
+        )
+        self.cpp_motion_check_service = (
+            self.get_parameter("cpp_motion_check_service").get_parameter_value().string_value
+        )
+        self.planner_type = (
+            self.get_parameter("planner_type").get_parameter_value().string_value
+        )
+        self.cpp_planner_timeout_sec = float(
+            self.get_parameter("cpp_planner_timeout_sec").get_parameter_value().double_value
+        )
+        self.cpp_planner_max_iter = int(
+            self.get_parameter("cpp_planner_max_iter").get_parameter_value().integer_value
+        )
+        self.cpp_planner_step_size = float(
+            self.get_parameter("cpp_planner_step_size").get_parameter_value().double_value
+        )
+        self.cpp_planner_goal_tolerance = float(
+            self.get_parameter("cpp_planner_goal_tolerance").get_parameter_value().double_value
+        )
+        self.cpp_edge_resolution = float(
+            self.get_parameter("cpp_edge_resolution").get_parameter_value().double_value
+        )
+        self.execute_only_if_postcheck_passed = (
+            self.get_parameter("execute_only_if_postcheck_passed").get_parameter_value().bool_value
+        )
+        self.postcheck_check_edges = (
+            self.get_parameter("postcheck_check_edges").get_parameter_value().bool_value
         )
         self.offline_export_plot_enable = (
             self.get_parameter("offline_export_plot_enable").get_parameter_value().bool_value
@@ -1134,6 +1215,22 @@ class IntentHybridPlannerNode(Node):
             )
             self.runtime_backend = "python"
         self.cpp_bridge_collision_required = bool(self.cpp_bridge_collision_required)
+        self.use_cpp_local_planner = bool(self.use_cpp_local_planner)
+        self.allow_cpp_local_planner_fallback = bool(self.allow_cpp_local_planner_fallback)
+        self.cpp_local_planner_service = self.cpp_local_planner_service.strip() or "/intent_runtime/plan_local_segment"
+        self.cpp_motion_check_service = self.cpp_motion_check_service.strip() or "/intent_runtime/check_motion_batch"
+        if self.planner_type not in ("rrt_connect",):
+            self.get_logger().warn(
+                f"Unsupported planner_type={self.planner_type}, fallback to rrt_connect."
+            )
+            self.planner_type = "rrt_connect"
+        self.cpp_planner_timeout_sec = max(float(self.cpp_planner_timeout_sec), 0.0)
+        self.cpp_planner_max_iter = max(int(self.cpp_planner_max_iter), 1)
+        self.cpp_planner_step_size = max(float(self.cpp_planner_step_size), 1e-4)
+        self.cpp_planner_goal_tolerance = max(float(self.cpp_planner_goal_tolerance), 1e-4)
+        self.cpp_edge_resolution = max(float(self.cpp_edge_resolution), 1e-5)
+        self.execute_only_if_postcheck_passed = bool(self.execute_only_if_postcheck_passed)
+        self.postcheck_check_edges = bool(self.postcheck_check_edges)
         if self.nominal_source not in ("joint", "ee_plane"):
             self.get_logger().warn(
                 f"Unsupported nominal_source={self.nominal_source}, fallback to joint."
@@ -1291,10 +1388,14 @@ class IntentHybridPlannerNode(Node):
         self._cpp_runtime_clients_ready = False
         self._runtime_cb_group = ReentrantCallbackGroup()
         self._cpp_check_states_service_name = ""
+        self._cpp_motion_check_service_name = ""
         self._cpp_dispatch_service_name = ""
+        self._cpp_local_planner_service_name = ""
         self._cpp_publish_markers_service_name = ""
         self.cpp_check_states_client = None
+        self.cpp_motion_check_client = None
         self.cpp_dispatch_client = None
+        self.cpp_local_planner_client = None
         self.cpp_publish_markers_client = None
         self._cpp_rrt_fallback_checker: Optional[Callable[[np.ndarray], bool]] = None
         self._cpp_rrt_fallback_edge_checker = None
@@ -1303,24 +1404,38 @@ class IntentHybridPlannerNode(Node):
         self._cpp_rrt_runtime_error = ""
         self._last_cpp_collision_error = ""
         if (
-            CheckStatesBatch is not None
+            CheckMotionBatch is not None
+            and CheckStatesBatch is not None
             and DispatchJointTrajectory is not None
+            and PlanLocalSegment is not None
             and PublishPlanningMarkers is not None
         ):
             ns = (self.cpp_bridge_service_ns or "/intent_runtime").rstrip("/")
             if not ns:
                 ns = "/intent_runtime"
             self._cpp_check_states_service_name = f"{ns}/check_states_batch"
+            self._cpp_motion_check_service_name = self.cpp_motion_check_service
             self._cpp_dispatch_service_name = f"{ns}/dispatch_joint_trajectory"
+            self._cpp_local_planner_service_name = self.cpp_local_planner_service
             self._cpp_publish_markers_service_name = f"{ns}/publish_planning_markers"
             self.cpp_check_states_client = self.create_client(
                 CheckStatesBatch,
                 self._cpp_check_states_service_name,
                 callback_group=self._runtime_cb_group,
             )
+            self.cpp_motion_check_client = self.create_client(
+                CheckMotionBatch,
+                self._cpp_motion_check_service_name,
+                callback_group=self._runtime_cb_group,
+            )
             self.cpp_dispatch_client = self.create_client(
                 DispatchJointTrajectory,
                 self._cpp_dispatch_service_name,
+                callback_group=self._runtime_cb_group,
+            )
+            self.cpp_local_planner_client = self.create_client(
+                PlanLocalSegment,
+                self._cpp_local_planner_service_name,
                 callback_group=self._runtime_cb_group,
             )
             self.cpp_publish_markers_client = self.create_client(
@@ -1418,6 +1533,14 @@ class IntentHybridPlannerNode(Node):
             "CPP collision required: "
             f"{self.cpp_bridge_collision_required} "
             f"(check_service={self._cpp_check_states_service_name or 'n/a'})"
+        )
+        self.get_logger().info(
+            "CPP local planner: "
+            f"enable={self.use_cpp_local_planner}, fallback={self.allow_cpp_local_planner_fallback}, "
+            f"type={self.planner_type}, service={self._cpp_local_planner_service_name or 'n/a'}, "
+            f"motion_check={self._cpp_motion_check_service_name or 'n/a'}, "
+            f"timeout={self.cpp_planner_timeout_sec:.3f}s, max_iter={self.cpp_planner_max_iter}, "
+            f"step={self.cpp_planner_step_size:.3f}, edge_res={self.cpp_edge_resolution:.3f}"
         )
         self.get_logger().info(
             "RRT params: "
@@ -1542,6 +1665,15 @@ class IntentHybridPlannerNode(Node):
         self._segment_count_samples: List[float] = []
         self._refine_budget_samples: List[float] = []
         self._rrt_stop_reason_counts: Dict[str, int] = {}
+        self._cpp_local_planner_used = False
+        self._cpp_plan_success_count = 0
+        self._cpp_plan_failure_count = 0
+        self._cpp_plan_time_ms_samples: List[float] = []
+        self._cpp_plan_collision_queries_samples: List[float] = []
+        self._postcheck_first_invalid_state = -1
+        self._postcheck_first_invalid_edge = -1
+        self._postcheck_elapsed_ms = 0.0
+        self._postcheck_collision_queries = 0
         self._timing_samples: Dict[str, List[float]] = {
             "collision_check_ms": [],
             "rrt_plan_ms": [],
@@ -1829,6 +1961,26 @@ class IntentHybridPlannerNode(Node):
             return bool(self.cpp_check_states_client.service_is_ready())
         return bool(self.cpp_check_states_client.service_is_ready())
 
+    def _wait_for_cpp_motion_service_ready(self, wait_sec: float) -> bool:
+        if self.cpp_motion_check_client is None:
+            return False
+        if self.cpp_motion_check_client.service_is_ready():
+            return True
+        try:
+            return bool(self.cpp_motion_check_client.wait_for_service(timeout_sec=float(max(wait_sec, 0.01))))
+        except Exception:  # pylint: disable=broad-except
+            return bool(self.cpp_motion_check_client.service_is_ready())
+
+    def _wait_for_cpp_local_planner_ready(self, wait_sec: float) -> bool:
+        if self.cpp_local_planner_client is None:
+            return False
+        if self.cpp_local_planner_client.service_is_ready():
+            return True
+        try:
+            return bool(self.cpp_local_planner_client.wait_for_service(timeout_sec=float(max(wait_sec, 0.01))))
+        except Exception:  # pylint: disable=broad-except
+            return bool(self.cpp_local_planner_client.service_is_ready())
+
     def _ensure_cpp_collision_runtime_available(self, where: str) -> bool:
         if not self._cpp_collision_required_for_offline():
             return True
@@ -1943,6 +2095,199 @@ class IntentHybridPlannerNode(Node):
             return None
         self._set_last_cpp_collision_error("")
         return out
+
+    def _check_motion_batch_cpp(
+        self,
+        states_row_major: np.ndarray,
+        *,
+        check_edges: bool,
+        where: str,
+    ) -> Optional[Dict[str, Any]]:
+        if not self._use_cpp_runtime_for_offline():
+            self._set_last_cpp_collision_error(self._describe_cpp_collision_unavailable())
+            return None
+        states = np.asarray(states_row_major, dtype=float)
+        if states.ndim != 2 or states.shape[1] != len(self.joint_names):
+            self._set_last_cpp_collision_error(
+                f"invalid motion batch shape {states.shape}, expected (N,{len(self.joint_names)})"
+            )
+            return None
+        if self.cpp_motion_check_client is None:
+            self._set_last_cpp_collision_error("check_motion_batch client is None")
+            return None
+        if not self._wait_for_cpp_motion_service_ready(max(self.cpp_bridge_timeout_sec, 0.5)):
+            svc = self._cpp_motion_check_service_name or "/intent_runtime/check_motion_batch"
+            self._set_last_cpp_collision_error(f"{svc} not ready")
+            return None
+
+        req = CheckMotionBatch.Request()
+        req.group_name = self.moveit_group_name
+        req.joint_names = list(self.joint_names)
+        req.dof = int(len(self.joint_names))
+        req.states_flat = states.reshape(-1).tolist()
+        req.check_edges = bool(check_edges)
+        req.edge_resolution = float(self.cpp_edge_resolution)
+        fut = self.cpp_motion_check_client.call_async(req)
+        timeout_sec = max(
+            self.cpp_bridge_timeout_sec + 0.01 * float(states.shape[0]) + (0.02 * float(states.shape[0]) if check_edges else 0.0),
+            4.0,
+        )
+        resp = self._wait_future_blocking(fut, timeout_sec)
+        if resp is None:
+            self._set_last_cpp_collision_error(
+                f"check_motion_batch timeout/no-response in {where} (N={states.shape[0]}, timeout={timeout_sec:.2f}s)"
+            )
+            self.get_logger().warn("cpp_bridge check_motion_batch timeout/no-response.")
+            return None
+        if not bool(resp.ok):
+            self._set_last_cpp_collision_error(
+                f"check_motion_batch error in {where}: {str(resp.error_message)}"
+            )
+            return None
+        state_valid = np.asarray(list(resp.state_valid), dtype=bool).reshape(-1)
+        edge_valid = np.asarray(list(resp.edge_valid), dtype=bool).reshape(-1)
+        if state_valid.size != states.shape[0]:
+            self._set_last_cpp_collision_error(
+                f"check_motion_batch state size mismatch: expect {states.shape[0]}, got {state_valid.size}"
+            )
+            return None
+        if check_edges and states.shape[0] >= 2 and edge_valid.size != states.shape[0] - 1:
+            self._set_last_cpp_collision_error(
+                f"check_motion_batch edge size mismatch: expect {states.shape[0] - 1}, got {edge_valid.size}"
+            )
+            return None
+        self._set_last_cpp_collision_error("")
+        return {
+            "state_valid": state_valid,
+            "edge_valid": edge_valid,
+            "first_invalid_state": int(resp.first_invalid_state),
+            "first_invalid_edge": int(resp.first_invalid_edge),
+            "elapsed_ms": float(resp.elapsed_ms),
+            "collision_queries": int(resp.collision_queries),
+        }
+
+    def _plan_local_segment_cpp(
+        self,
+        *,
+        start: np.ndarray,
+        goal: np.ndarray,
+        intent_path: np.ndarray,
+        t_start: float,
+        t_end: float,
+        segment_label: str,
+    ) -> Optional[Dict[str, Any]]:
+        if not (self.execution_mode == "offline" and self.use_cpp_local_planner):
+            return None
+        if self.planner_type != "rrt_connect":
+            self.get_logger().warn(f"Unsupported C++ planner type: {self.planner_type}")
+            return None
+        if not self._use_cpp_runtime_for_offline():
+            self._set_last_cpp_collision_error(self._describe_cpp_collision_unavailable())
+            return None
+        if self.cpp_local_planner_client is None:
+            self._set_last_cpp_collision_error("plan_local_segment client is None")
+            return None
+        if not self._wait_for_cpp_local_planner_ready(max(self.cpp_bridge_timeout_sec, 0.5)):
+            svc = self._cpp_local_planner_service_name or "/intent_runtime/plan_local_segment"
+            self._set_last_cpp_collision_error(f"{svc} not ready")
+            return None
+
+        start_arr = np.asarray(start, dtype=float).reshape(-1)
+        goal_arr = np.asarray(goal, dtype=float).reshape(-1)
+        intent = np.asarray(intent_path, dtype=float)
+        if intent.ndim != 2:
+            self._set_last_cpp_collision_error("intent_path must be 2D")
+            return None
+        if intent.shape[1] != len(self.joint_names) and intent.shape[0] == len(self.joint_names):
+            intent = intent.T
+        if start_arr.size != len(self.joint_names) or goal_arr.size != len(self.joint_names):
+            self._set_last_cpp_collision_error("local planner start/goal size mismatch")
+            return None
+        if intent.shape[1] != len(self.joint_names):
+            self._set_last_cpp_collision_error(f"intent_path shape mismatch: {intent.shape}")
+            return None
+
+        req = PlanLocalSegment.Request()
+        req.group_name = self.moveit_group_name
+        req.joint_names = list(self.joint_names)
+        req.dof = int(len(self.joint_names))
+        req.start = start_arr.tolist()
+        req.goal = goal_arr.tolist()
+        req.intent_flat = intent.reshape(-1).tolist()
+        req.intent_points = int(intent.shape[0])
+        req.t_start = float(t_start)
+        req.t_end = float(t_end)
+        req.state_min = (np.ones(len(self.joint_names), dtype=float) * -2.0 * np.pi).tolist()
+        req.state_max = (np.ones(len(self.joint_names), dtype=float) * 2.0 * np.pi).tolist()
+        req.timeout_sec = float(self.cpp_planner_timeout_sec)
+        req.max_iter = int(self.cpp_planner_max_iter)
+        req.step_size = float(self.cpp_planner_step_size)
+        req.goal_tolerance = float(self.cpp_planner_goal_tolerance)
+        req.edge_resolution = float(self.cpp_edge_resolution)
+        req.p_intent = 0.55
+        req.p_goal = 0.20
+        req.p_uniform = 0.25
+        req.sigma_intent = float(max(self.rrt_sigma_intent_effective, self.cpp_planner_step_size * 0.5))
+        req.rng_seed = int(self.rrt_rng_seed if self.rrt_rng_seed is not None else 42)
+
+        fut = self.cpp_local_planner_client.call_async(req)
+        timeout_sec = max(self.cpp_bridge_timeout_sec + self.cpp_planner_timeout_sec + 1.0, 2.0)
+        resp = self._wait_future_blocking(fut, timeout_sec)
+        if resp is None:
+            self._cpp_plan_failure_count += 1
+            self._set_last_cpp_collision_error(f"plan_local_segment timeout/no-response ({segment_label})")
+            return None
+
+        self._cpp_local_planner_used = True
+        self._cpp_plan_time_ms_samples.append(float(resp.elapsed_ms))
+        self._cpp_plan_collision_queries_samples.append(float(resp.collision_queries))
+        if not bool(resp.ok):
+            self._cpp_plan_failure_count += 1
+            self.get_logger().warn(
+                "C++ local planner failed "
+                f"({segment_label}): stop_reason={resp.stop_reason}, "
+                f"iter={int(resp.iter_used)}, time_ms={float(resp.elapsed_ms):.1f}, "
+                f"queries={int(resp.collision_queries)}, msg={str(resp.error_message)}"
+            )
+            return {
+                "path_first": np.empty((len(self.joint_names), 0), dtype=float),
+                "path_refine": np.empty((len(self.joint_names), 0), dtype=float),
+                "stop_reason": str(resp.stop_reason or "cpp_failed"),
+                "meta": {
+                    "iter_used": int(resp.iter_used),
+                    "time_ms": float(resp.elapsed_ms),
+                    "collision_queries": int(resp.collision_queries),
+                    "timeout_hit": str(resp.stop_reason) == "timeout",
+                    "backend": "cpp_rrt_connect",
+                },
+            }
+
+        path_points = int(resp.path_points)
+        flat = np.asarray(list(resp.path_flat), dtype=float)
+        if path_points <= 0 or flat.size != path_points * len(self.joint_names):
+            self._cpp_plan_failure_count += 1
+            self._set_last_cpp_collision_error("plan_local_segment returned invalid path shape")
+            return None
+        path = flat.reshape(path_points, len(self.joint_names)).T
+        self._cpp_plan_success_count += 1
+        self.get_logger().info(
+            "C++ local planner success "
+            f"({segment_label}): iter={int(resp.iter_used)}, "
+            f"time_ms={float(resp.elapsed_ms):.1f}, queries={int(resp.collision_queries)}, "
+            f"path_points={path_points}, stop_reason={str(resp.stop_reason)}"
+        )
+        return {
+            "path_first": path,
+            "path_refine": path,
+            "stop_reason": str(resp.stop_reason or "success"),
+            "meta": {
+                "iter_used": int(resp.iter_used),
+                "time_ms": float(resp.elapsed_ms),
+                "collision_queries": int(resp.collision_queries),
+                "timeout_hit": False,
+                "backend": "cpp_rrt_connect",
+            },
+        }
 
     def _cpp_collision_checker_single_state(self, state_array: np.ndarray) -> bool:
         q = np.asarray(state_array, dtype=float).reshape(1, -1)
@@ -2985,6 +3330,22 @@ class IntentHybridPlannerNode(Node):
                         f"{self._last_cpp_collision_error or self._describe_cpp_collision_unavailable()}"
                     )
             else:
+                motion = self._check_motion_batch_cpp(
+                    traj.T,
+                    check_edges=True,
+                    where=where,
+                )
+                if motion is not None:
+                    bad = set(
+                        int(i)
+                        for i, v in enumerate(motion["state_valid"].tolist())
+                        if (not bool(v))
+                    )
+                    for i, v in enumerate(motion["edge_valid"].tolist()):
+                        if not bool(v):
+                            bad.add(int(i))
+                            bad.add(int(i + 1))
+                    return sorted(bad)
                 batch = self._check_states_batch_cpp(traj.T)
                 if batch is not None and batch.size == traj.shape[1]:
                     return [int(i) for i, v in enumerate(batch.tolist()) if (not bool(v))]
@@ -3488,24 +3849,58 @@ class IntentHybridPlannerNode(Node):
                 self.get_logger().info(
                     f"Segment {seg_idx + 1}/{len(segments)}: idx [{idx_start}, {idx_goal}]"
                 )
-                try:
-                    detailed = self._run_rrt_with_collision_backend(
-                        detailed=True,
+                detailed = None
+                if self.use_cpp_local_planner:
+                    detailed = self._plan_local_segment_cpp(
                         start=local_start,
                         goal=local_goal,
                         intent_path=intent_local.T,
                         t_start=t_start,
                         t_end=t_end,
-                        refine_budget=chosen_budget,
-                        **self._rrt_detail_sampling,
+                        segment_label=f"segment {seg_idx + 1}/{len(segments)}",
                     )
-                except RuntimeError as exc:
-                    partial_via = np.hstack(via_points_all) if via_points_all else None
-                    self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
-                    self.get_logger().error(
-                        f"Segment {seg_idx + 1} failed before RRT output: {exc}"
-                    )
-                    return False
+                    if detailed is None and not self.allow_cpp_local_planner_fallback:
+                        partial_via = np.hstack(via_points_all) if via_points_all else None
+                        self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
+                        self.get_logger().error(
+                            "C++ local planner unavailable and fallback is disabled: "
+                            f"{self._last_cpp_collision_error or 'unknown error'}"
+                        )
+                        return False
+                    if detailed is not None:
+                        maybe_path = np.asarray(detailed.get("path_refine", np.empty((0, 0))), dtype=float)
+                        if maybe_path.size == 0:
+                            if not self.allow_cpp_local_planner_fallback:
+                                partial_via = np.hstack(via_points_all) if via_points_all else None
+                                self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
+                                self.get_logger().error(
+                                    f"Segment {seg_idx + 1} failed in C++ local planner and fallback is disabled."
+                                )
+                                return False
+                            self.get_logger().warn(
+                                f"Segment {seg_idx + 1}: C++ local planner failed, fallback to Python RRT."
+                            )
+                            detailed = None
+
+                if detailed is None:
+                    try:
+                        detailed = self._run_rrt_with_collision_backend(
+                            detailed=True,
+                            start=local_start,
+                            goal=local_goal,
+                            intent_path=intent_local.T,
+                            t_start=t_start,
+                            t_end=t_end,
+                            refine_budget=chosen_budget,
+                            **self._rrt_detail_sampling,
+                        )
+                    except RuntimeError as exc:
+                        partial_via = np.hstack(via_points_all) if via_points_all else None
+                        self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
+                        self.get_logger().error(
+                            f"Segment {seg_idx + 1} failed before RRT output: {exc}"
+                        )
+                        return False
 
                 stop_reason = str(detailed.get("stop_reason", "unknown"))
                 self._rrt_stop_reason_counts[stop_reason] = (
@@ -3609,10 +4004,38 @@ class IntentHybridPlannerNode(Node):
 
         if self.offline_postcheck_collision_enable:
             try:
-                post_colliding = self._collect_collision_indices_for_traj(
-                    modulated,
-                    "offline post-modulation check",
-                )
+                post_motion = None
+                if self.execution_mode == "offline" and self._cpp_runtime_requested():
+                    post_motion = self._check_motion_batch_cpp(
+                        modulated.T,
+                        check_edges=self.postcheck_check_edges,
+                        where="offline post-modulation check",
+                    )
+                if post_motion is not None:
+                    self._postcheck_first_invalid_state = int(post_motion["first_invalid_state"])
+                    self._postcheck_first_invalid_edge = int(post_motion["first_invalid_edge"])
+                    self._postcheck_elapsed_ms = float(post_motion["elapsed_ms"])
+                    self._postcheck_collision_queries = int(post_motion["collision_queries"])
+                    bad = set(
+                        int(i)
+                        for i, v in enumerate(post_motion["state_valid"].tolist())
+                        if not bool(v)
+                    )
+                    for i, v in enumerate(post_motion["edge_valid"].tolist()):
+                        if not bool(v):
+                            bad.add(int(i))
+                            bad.add(int(i + 1))
+                    post_colliding = sorted(bad)
+                else:
+                    if self._cpp_collision_required_for_offline():
+                        raise RuntimeError(
+                            "cpp_bridge motion post-check failed: "
+                            f"{self._last_cpp_collision_error or 'unknown error'}"
+                        )
+                    post_colliding = self._collect_collision_indices_for_traj(
+                        modulated,
+                        "offline post-modulation check",
+                    )
             except RuntimeError as exc:
                 self.get_logger().error(f"Step 3/4 post-check failed: {exc}")
                 return False
@@ -3628,10 +4051,38 @@ class IntentHybridPlannerNode(Node):
                 )
                 if repaired is not None:
                     try:
-                        repaired_colliding = self._collect_collision_indices_for_traj(
-                            repaired,
-                            "offline post-modulation repair check",
-                        )
+                        repaired_motion = None
+                        if self.execution_mode == "offline" and self._cpp_runtime_requested():
+                            repaired_motion = self._check_motion_batch_cpp(
+                                repaired.T,
+                                check_edges=self.postcheck_check_edges,
+                                where="offline post-modulation repair check",
+                            )
+                        if repaired_motion is not None:
+                            self._postcheck_first_invalid_state = int(repaired_motion["first_invalid_state"])
+                            self._postcheck_first_invalid_edge = int(repaired_motion["first_invalid_edge"])
+                            self._postcheck_elapsed_ms = float(repaired_motion["elapsed_ms"])
+                            self._postcheck_collision_queries = int(repaired_motion["collision_queries"])
+                            repaired_bad = set(
+                                int(i)
+                                for i, v in enumerate(repaired_motion["state_valid"].tolist())
+                                if not bool(v)
+                            )
+                            for i, v in enumerate(repaired_motion["edge_valid"].tolist()):
+                                if not bool(v):
+                                    repaired_bad.add(int(i))
+                                    repaired_bad.add(int(i + 1))
+                            repaired_colliding = sorted(repaired_bad)
+                        else:
+                            if self._cpp_collision_required_for_offline():
+                                raise RuntimeError(
+                                    "cpp_bridge motion repair post-check failed: "
+                                    f"{self._last_cpp_collision_error or 'unknown error'}"
+                                )
+                            repaired_colliding = self._collect_collision_indices_for_traj(
+                                repaired,
+                                "offline post-modulation repair check",
+                            )
                     except RuntimeError as exc:
                         self.get_logger().error(f"Step 3/4 repair post-check failed: {exc}")
                         return False
@@ -3651,10 +4102,16 @@ class IntentHybridPlannerNode(Node):
                     "Offline post-check rejected modulated trajectory: "
                     f"colliding_points={collide_count}, "
                     f"allow={int(self.offline_postcheck_max_colliding_points)}, "
-                    f"first_idx={post_colliding[0] if post_colliding else -1}."
+                    f"first_idx={post_colliding[0] if post_colliding else -1}, "
+                    f"first_invalid_state={self._postcheck_first_invalid_state}, "
+                    f"first_invalid_edge={self._postcheck_first_invalid_edge}."
                 )
                 self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
-                return False
+                if self.execute_only_if_postcheck_passed:
+                    return False
+                self.get_logger().warn(
+                    "execute_only_if_postcheck_passed=false; continuing despite failed post-check."
+                )
             if collide_count > 0:
                 self.get_logger().warn(
                     "Offline post-check has residual collisions but within configured allowance: "

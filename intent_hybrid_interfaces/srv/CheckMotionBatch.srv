@@ -1,0 +1,15 @@
+string group_name
+string[] joint_names
+uint32 dof
+float64[] states_flat
+bool check_edges
+float64 edge_resolution
+---
+bool ok
+bool[] state_valid
+bool[] edge_valid
+int32 first_invalid_state
+int32 first_invalid_edge
+string error_message
+float64 elapsed_ms
+uint32 collision_queries

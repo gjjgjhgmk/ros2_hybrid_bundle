@@ -14,9 +14,14 @@
 #include "control_msgs/action/follow_joint_trajectory.hpp"
 #include "control_msgs/msg/joint_tolerance.hpp"
 #include "geometry_msgs/msg/point.hpp"
+#include "intent_hybrid_interfaces/srv/check_motion_batch.hpp"
 #include "intent_hybrid_interfaces/srv/check_states_batch.hpp"
 #include "intent_hybrid_interfaces/srv/dispatch_joint_trajectory.hpp"
+#include "intent_hybrid_interfaces/srv/plan_local_segment.hpp"
 #include "intent_hybrid_interfaces/srv/publish_planning_markers.hpp"
+#include "intent_hybrid_runtime_cpp/collision_checker.hpp"
+#include "intent_hybrid_runtime_cpp/intent_rrt_connect.hpp"
+#include "intent_hybrid_runtime_cpp/planner_types.hpp"
 #include "moveit_msgs/msg/robot_state.hpp"
 #include "moveit_msgs/srv/get_position_fk.hpp"
 #include "moveit_msgs/srv/get_state_validity.hpp"
@@ -34,7 +39,9 @@ using namespace std::chrono_literals;
 class IntentRuntimeBridge : public rclcpp::Node {
  public:
   using CheckStatesBatch = intent_hybrid_interfaces::srv::CheckStatesBatch;
+  using CheckMotionBatch = intent_hybrid_interfaces::srv::CheckMotionBatch;
   using DispatchJointTrajectory = intent_hybrid_interfaces::srv::DispatchJointTrajectory;
+  using PlanLocalSegment = intent_hybrid_interfaces::srv::PlanLocalSegment;
   using PublishPlanningMarkers = intent_hybrid_interfaces::srv::PublishPlanningMarkers;
   using GetStateValidity = moveit_msgs::srv::GetStateValidity;
   using GetPositionFK = moveit_msgs::srv::GetPositionFK;
@@ -42,7 +49,14 @@ class IntentRuntimeBridge : public rclcpp::Node {
   using GoalHandleFollowJointTrajectory = rclcpp_action::ClientGoalHandle<FollowJointTrajectory>;
 
   IntentRuntimeBridge() : Node("intent_runtime_bridge") {
-    moveit_group_name_ = this->declare_parameter<std::string>("moveit_group_name", "manipulator");
+    moveit_group_name_ = this->declare_parameter<std::string>("moveit_group_name", "ur_manipulator");
+    use_planning_scene_monitor_ = this->declare_parameter<bool>("use_planning_scene_monitor", true);
+    robot_description_param_ = this->declare_parameter<std::string>("robot_description_param", "robot_description");
+    default_edge_resolution_ = this->declare_parameter<double>("default_edge_resolution", 0.02);
+    default_planner_timeout_sec_ = this->declare_parameter<double>("default_planner_timeout_sec", 0.10);
+    default_planner_max_iter_ = this->declare_parameter<int>("default_planner_max_iter", 500);
+    default_planner_step_size_ = this->declare_parameter<double>("default_planner_step_size", 0.15);
+    default_goal_tolerance_ = this->declare_parameter<double>("default_goal_tolerance", 0.08);
     state_stale_timeout_sec_ = this->declare_parameter<double>("state_stale_timeout_sec", 1.0);
     state_validity_service_wait_sec_ = this->declare_parameter<double>("state_validity_service_wait_sec", 3.0);
     state_validity_call_timeout_sec_ = this->declare_parameter<double>("state_validity_call_timeout_sec", 1.0);
@@ -80,6 +94,18 @@ class IntentRuntimeBridge : public rclcpp::Node {
         rmw_qos_profile_services_default,
         service_cb_group_);
 
+    check_motion_srv_ = this->create_service<CheckMotionBatch>(
+        "/intent_runtime/check_motion_batch",
+        std::bind(&IntentRuntimeBridge::handle_check_motion, this, std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_services_default,
+        service_cb_group_);
+
+    plan_local_segment_srv_ = this->create_service<PlanLocalSegment>(
+        "/intent_runtime/plan_local_segment",
+        std::bind(&IntentRuntimeBridge::handle_plan_local_segment, this, std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_services_default,
+        service_cb_group_);
+
     dispatch_srv_ = this->create_service<DispatchJointTrajectory>(
         "/intent_runtime/dispatch_joint_trajectory",
         std::bind(&IntentRuntimeBridge::handle_dispatch_trajectory, this, std::placeholders::_1, std::placeholders::_2),
@@ -96,14 +122,16 @@ class IntentRuntimeBridge : public rclcpp::Node {
         this->get_logger(),
         "intent_runtime_bridge started (state_stale_timeout=%.2fs, state_validity_wait=%.2fs, "
         "state_validity_call_timeout=%.2fs, fk_wait=%.2fs, fk_timeout=%.2fs, action_wait=%.2fs, "
-        "dispatch_result_wait=%.2fs).",
+        "dispatch_result_wait=%.2fs, moveit_group=%s, psm=%s).",
         state_stale_timeout_sec_,
         state_validity_service_wait_sec_,
         state_validity_call_timeout_sec_,
         fk_service_wait_sec_,
         fk_timeout_sec_,
         action_server_wait_sec_,
-        dispatch_result_wait_sec_);
+        dispatch_result_wait_sec_,
+        moveit_group_name_.c_str(),
+        use_planning_scene_monitor_ ? "true" : "false");
   }
 
  private:
@@ -272,6 +300,36 @@ class IntentRuntimeBridge : public rclcpp::Node {
       return;
     }
 
+    std::string init_err;
+    if (collision_checker_.ensureInitialized(
+            shared_from_this(),
+            robot_description_param_,
+            use_planning_scene_monitor_,
+            init_err)) {
+      const auto checked = collision_checker_.checkMotionBatch(
+          req->group_name.empty() ? moveit_group_name_ : req->group_name,
+          req->joint_names,
+          mat.rows,
+          false,
+          default_edge_resolution_);
+      if (checked.ok && checked.state_valid.size() == mat.rows.size()) {
+        res->collision_free = checked.state_valid;
+        res->ok = true;
+        return;
+      }
+      RCLCPP_WARN(
+          this->get_logger(),
+          "PlanningScene check_states failed; fallback to /check_state_validity: %s",
+          checked.error_message.c_str());
+    } else {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(),
+          *this->get_clock(),
+          5000,
+          "PlanningSceneMonitor unavailable for check_states; fallback to /check_state_validity: %s",
+          init_err.c_str());
+    }
+
     res->collision_free.reserve(mat.rows.size());
     for (const auto &row : mat.rows) {
       bool ok = false;
@@ -285,6 +343,179 @@ class IntentRuntimeBridge : public rclcpp::Node {
     }
 
     res->ok = true;
+  }
+
+  void handle_check_motion(
+      const std::shared_ptr<CheckMotionBatch::Request> req,
+      std::shared_ptr<CheckMotionBatch::Response> res) {
+    res->ok = false;
+    res->state_valid.clear();
+    res->edge_valid.clear();
+    res->first_invalid_state = -1;
+    res->first_invalid_edge = -1;
+    res->error_message.clear();
+    res->elapsed_ms = 0.0;
+    res->collision_queries = 0U;
+
+    MatrixRows mat;
+    std::string err;
+    if (!parse_flat_rows(req->states_flat, static_cast<size_t>(req->dof), mat, err)) {
+      res->error_message = err;
+      return;
+    }
+    if (req->joint_names.size() != mat.dof) {
+      res->error_message = "joint_names size mismatch with dof";
+      return;
+    }
+    if (mat.rows.empty()) {
+      res->ok = true;
+      return;
+    }
+
+    std::string init_err;
+    if (!collision_checker_.ensureInitialized(
+            shared_from_this(),
+            robot_description_param_,
+            use_planning_scene_monitor_,
+            init_err)) {
+      res->error_message = init_err.empty() ? "PlanningSceneMonitor unavailable" : init_err;
+      return;
+    }
+
+    const auto checked = collision_checker_.checkMotionBatch(
+        req->group_name.empty() ? moveit_group_name_ : req->group_name,
+        req->joint_names,
+        mat.rows,
+        req->check_edges,
+        req->edge_resolution > 0.0 ? req->edge_resolution : default_edge_resolution_);
+    res->ok = checked.ok;
+    res->state_valid = checked.state_valid;
+    res->edge_valid = checked.edge_valid;
+    res->first_invalid_state = checked.first_invalid_state;
+    res->first_invalid_edge = checked.first_invalid_edge;
+    res->error_message = checked.error_message;
+    res->elapsed_ms = checked.elapsed_ms;
+    res->collision_queries = checked.collision_queries;
+  }
+
+  bool parse_intent_rows(
+      const std::vector<double> &flat,
+      size_t points,
+      size_t dof,
+      std::vector<std::vector<double>> &out,
+      std::string &err) const {
+    out.clear();
+    if (points == 0U || flat.empty()) {
+      return true;
+    }
+    if (flat.size() != points * dof) {
+      std::ostringstream oss;
+      oss << "intent_flat size " << flat.size() << " != intent_points*dof " << (points * dof);
+      err = oss.str();
+      return false;
+    }
+    out.assign(points, std::vector<double>(dof, 0.0));
+    for (size_t i = 0; i < points; ++i) {
+      for (size_t j = 0; j < dof; ++j) {
+        out[i][j] = flat[i * dof + j];
+      }
+    }
+    return true;
+  }
+
+  void handle_plan_local_segment(
+      const std::shared_ptr<PlanLocalSegment::Request> req,
+      std::shared_ptr<PlanLocalSegment::Response> res) {
+    res->ok = false;
+    res->path_flat.clear();
+    res->path_points = 0U;
+    res->via_times.clear();
+    res->stop_reason = "invalid_request";
+    res->error_message.clear();
+    res->elapsed_ms = 0.0;
+    res->iter_used = 0U;
+    res->collision_queries = 0U;
+
+    intent_hybrid_runtime_cpp::RRTConnectRequestData plan_req;
+    plan_req.group_name = req->group_name.empty() ? moveit_group_name_ : req->group_name;
+    plan_req.joint_names = req->joint_names;
+    plan_req.dof = static_cast<size_t>(req->dof);
+    plan_req.start = req->start;
+    plan_req.goal = req->goal;
+    plan_req.t_start = req->t_start;
+    plan_req.t_end = req->t_end;
+    plan_req.state_min = req->state_min;
+    plan_req.state_max = req->state_max;
+    plan_req.timeout_sec = req->timeout_sec > 0.0 ? req->timeout_sec : default_planner_timeout_sec_;
+    plan_req.max_iter = req->max_iter > 0U ? req->max_iter : static_cast<uint32_t>(std::max(default_planner_max_iter_, 1));
+    plan_req.step_size = req->step_size > 0.0 ? req->step_size : default_planner_step_size_;
+    plan_req.goal_tolerance = req->goal_tolerance > 0.0 ? req->goal_tolerance : default_goal_tolerance_;
+    plan_req.edge_resolution = req->edge_resolution > 0.0 ? req->edge_resolution : default_edge_resolution_;
+    plan_req.p_intent = req->p_intent;
+    plan_req.p_goal = req->p_goal;
+    plan_req.p_uniform = req->p_uniform;
+    plan_req.sigma_intent = req->sigma_intent;
+    plan_req.rng_seed = req->rng_seed;
+
+    std::string err;
+    if (!parse_intent_rows(req->intent_flat, static_cast<size_t>(req->intent_points), plan_req.dof, plan_req.intent_path, err)) {
+      res->error_message = err;
+      return;
+    }
+    if (plan_req.state_min.empty()) {
+      plan_req.state_min.assign(plan_req.dof, -6.283185307179586);
+    }
+    if (plan_req.state_max.empty()) {
+      plan_req.state_max.assign(plan_req.dof, 6.283185307179586);
+    }
+
+    std::string init_err;
+    if (!collision_checker_.ensureInitialized(
+            shared_from_this(),
+            robot_description_param_,
+            use_planning_scene_monitor_,
+            init_err)) {
+      res->stop_reason = "invalid_request";
+      res->error_message = init_err.empty() ? "PlanningSceneMonitor unavailable" : init_err;
+      return;
+    }
+
+    uint32_t collision_queries = 0U;
+    intent_hybrid_runtime_cpp::IntentRRTConnect planner;
+    auto state_valid = [&](const std::vector<double> &q, std::string &e) {
+      return collision_checker_.isStateValid(plan_req.group_name, plan_req.joint_names, q, e, &collision_queries);
+    };
+    auto edge_valid = [&](const std::vector<double> &a, const std::vector<double> &b, double resolution, std::string &e) {
+      return collision_checker_.isEdgeValid(plan_req.group_name, plan_req.joint_names, a, b, resolution, e, &collision_queries);
+    };
+    const auto planned = planner.plan(plan_req, state_valid, edge_valid);
+
+    res->ok = planned.ok;
+    res->path_points = static_cast<uint32_t>(planned.path.size());
+    res->via_times = planned.via_times;
+    res->stop_reason = planned.stop_reason;
+    res->error_message = planned.error_message;
+    res->elapsed_ms = planned.elapsed_ms;
+    res->iter_used = planned.iter_used;
+    res->collision_queries = collision_queries;
+    if (planned.ok) {
+      res->path_flat.reserve(planned.path.size() * plan_req.dof);
+      for (const auto &row : planned.path) {
+        for (double v : row) {
+          res->path_flat.push_back(v);
+        }
+      }
+    }
+
+    RCLCPP_INFO(
+        this->get_logger(),
+        "plan_local_segment ok=%s stop=%s iter=%u time=%.2fms queries=%u path_points=%u",
+        res->ok ? "true" : "false",
+        res->stop_reason.c_str(),
+        res->iter_used,
+        res->elapsed_ms,
+        res->collision_queries,
+        res->path_points);
   }
 
   std::vector<double> build_time_axis(size_t n_points, double nominal_dt) const {
@@ -783,6 +1014,13 @@ class IntentRuntimeBridge : public rclcpp::Node {
   }
 
   std::string moveit_group_name_;
+  bool use_planning_scene_monitor_{true};
+  std::string robot_description_param_{"robot_description"};
+  double default_edge_resolution_{0.02};
+  double default_planner_timeout_sec_{0.10};
+  int default_planner_max_iter_{500};
+  double default_planner_step_size_{0.15};
+  double default_goal_tolerance_{0.08};
   double state_stale_timeout_sec_{1.0};
   double state_validity_service_wait_sec_{3.0};
   double state_validity_call_timeout_sec_{1.0};
@@ -797,7 +1035,9 @@ class IntentRuntimeBridge : public rclcpp::Node {
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
 
   rclcpp::Service<CheckStatesBatch>::SharedPtr check_states_srv_;
+  rclcpp::Service<CheckMotionBatch>::SharedPtr check_motion_srv_;
   rclcpp::Service<DispatchJointTrajectory>::SharedPtr dispatch_srv_;
+  rclcpp::Service<PlanLocalSegment>::SharedPtr plan_local_segment_srv_;
   rclcpp::Service<PublishPlanningMarkers>::SharedPtr publish_markers_srv_;
   rclcpp::CallbackGroup::SharedPtr client_cb_group_;
   rclcpp::CallbackGroup::SharedPtr service_cb_group_;
@@ -809,6 +1049,8 @@ class IntentRuntimeBridge : public rclcpp::Node {
   sensor_msgs::msg::JointState::SharedPtr latest_joint_state_;
   rclcpp::Time latest_joint_state_time_{0, 0, RCL_ROS_TIME};
   bool has_joint_state_{false};
+
+  intent_hybrid_runtime_cpp::CollisionChecker collision_checker_;
 };
 
 int main(int argc, char **argv) {
