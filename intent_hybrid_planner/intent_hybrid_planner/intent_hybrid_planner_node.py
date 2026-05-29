@@ -770,6 +770,9 @@ class IntentHybridPlannerNode(Node):
                 "trajectory_duration_sec": float(self._trajectory_duration_sec),
                 "trajectory_point_count": int(self._trajectory_point_count),
                 "trajectory_max_joint_delta": float(self._trajectory_max_joint_delta),
+                "trajectory_estimated_max_velocity": float(self._trajectory_estimated_max_velocity),
+                "trajectory_estimated_max_acceleration": float(self._trajectory_estimated_max_acceleration),
+                "time_scaling_factor": float(self._trajectory_time_scaling_factor),
                 "start_state_error_max": float(self._start_state_error_max),
                 "start_state_error_norm": float(self._start_state_error_norm),
             },
@@ -826,6 +829,9 @@ class IntentHybridPlannerNode(Node):
             "trajectory_duration_sec": data["dispatch_safety"]["trajectory_duration_sec"],
             "trajectory_point_count": data["dispatch_safety"]["trajectory_point_count"],
             "trajectory_max_joint_delta": data["dispatch_safety"]["trajectory_max_joint_delta"],
+            "trajectory_estimated_max_velocity": data["dispatch_safety"]["trajectory_estimated_max_velocity"],
+            "trajectory_estimated_max_acceleration": data["dispatch_safety"]["trajectory_estimated_max_acceleration"],
+            "time_scaling_factor": data["dispatch_safety"]["time_scaling_factor"],
             "start_state_error_max": data["dispatch_safety"]["start_state_error_max"],
             "start_state_error_norm": data["dispatch_safety"]["start_state_error_norm"],
             "segment_count_mean": data["compat"]["segment_count"]["mean"],
@@ -971,6 +977,20 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("offline_allow_stale_state_stitch", True)
         self.declare_parameter("offline_stitch_start_from_current", False)
         self.declare_parameter("start_state_tolerance", 0.03)
+        self.declare_parameter("joint_limit_margin", 0.05)
+        self.declare_parameter("velocity_scale", 0.15)
+        self.declare_parameter("acceleration_scale", 0.15)
+        self.declare_parameter("enable_conservative_time_scaling", True)
+        self.declare_parameter("max_time_scaling_factor", 5.0)
+        self.declare_parameter("minimum_dt", 0.05)
+        self.declare_parameter(
+            "joint_position_lower_limit",
+            [-2.0 * np.pi] * len(self.DEFAULT_JOINT_NAMES),
+        )
+        self.declare_parameter(
+            "joint_position_upper_limit",
+            [2.0 * np.pi] * len(self.DEFAULT_JOINT_NAMES),
+        )
         self.declare_parameter("joint_limits_file", "")
         self.declare_parameter("max_joint_velocity", [1.0] * len(self.DEFAULT_JOINT_NAMES))
         self.declare_parameter("max_joint_acceleration", [2.0] * len(self.DEFAULT_JOINT_NAMES))
@@ -1228,6 +1248,32 @@ class IntentHybridPlannerNode(Node):
         self.start_state_tolerance = float(
             self.get_parameter("start_state_tolerance").get_parameter_value().double_value
         )
+        self.joint_limit_margin = float(
+            self.get_parameter("joint_limit_margin").get_parameter_value().double_value
+        )
+        self.velocity_scale = float(
+            self.get_parameter("velocity_scale").get_parameter_value().double_value
+        )
+        self.acceleration_scale = float(
+            self.get_parameter("acceleration_scale").get_parameter_value().double_value
+        )
+        self.enable_conservative_time_scaling = (
+            self.get_parameter("enable_conservative_time_scaling").get_parameter_value().bool_value
+        )
+        self.max_time_scaling_factor = float(
+            self.get_parameter("max_time_scaling_factor").get_parameter_value().double_value
+        )
+        self.minimum_dt = float(
+            self.get_parameter("minimum_dt").get_parameter_value().double_value
+        )
+        self.joint_position_lower_limit = np.asarray(
+            self.get_parameter("joint_position_lower_limit").get_parameter_value().double_array_value,
+            dtype=float,
+        )
+        self.joint_position_upper_limit = np.asarray(
+            self.get_parameter("joint_position_upper_limit").get_parameter_value().double_array_value,
+            dtype=float,
+        )
         self.joint_limits_file = (
             self.get_parameter("joint_limits_file").get_parameter_value().string_value
         )
@@ -1308,6 +1354,20 @@ class IntentHybridPlannerNode(Node):
         self.offline_allow_stale_state_stitch = bool(self.offline_allow_stale_state_stitch)
         self.offline_stitch_start_from_current = bool(self.offline_stitch_start_from_current)
         self.start_state_tolerance = max(float(self.start_state_tolerance), 1e-6)
+        self.joint_limit_margin = max(float(self.joint_limit_margin), 0.0)
+        self.velocity_scale = max(float(self.velocity_scale), 1e-6)
+        self.acceleration_scale = max(float(self.acceleration_scale), 1e-6)
+        self.enable_conservative_time_scaling = bool(self.enable_conservative_time_scaling)
+        self.max_time_scaling_factor = max(float(self.max_time_scaling_factor), 1.0)
+        self.minimum_dt = max(float(self.minimum_dt), 1e-6)
+        if self.joint_position_lower_limit.size != len(self.joint_names):
+            self.joint_position_lower_limit = np.ones(len(self.joint_names), dtype=float) * (-2.0 * np.pi)
+        if self.joint_position_upper_limit.size != len(self.joint_names):
+            self.joint_position_upper_limit = np.ones(len(self.joint_names), dtype=float) * (2.0 * np.pi)
+        self.joint_position_upper_limit = np.maximum(
+            self.joint_position_upper_limit,
+            self.joint_position_lower_limit + 1e-3,
+        )
         self.offline_export_plot_dir = self.offline_export_plot_dir.strip()
         if not self.offline_export_plot_dir:
             self.offline_export_plot_dir = str(Path.cwd() / "png")
@@ -1398,6 +1458,7 @@ class IntentHybridPlannerNode(Node):
         self._ruckig_warned = False
         self._jerk_warned = False
         self._plot_export_warned = False
+        self._joint_bounds_warned = False
 
         self.vel_limits, self.acc_limits = self._load_joint_limits()
 
@@ -1619,6 +1680,15 @@ class IntentHybridPlannerNode(Node):
             f"start_state_tolerance={self.start_state_tolerance:.4f}, "
             f"action_result_timeout={self.offline_action_result_timeout_sec:.2f}s"
         )
+        self.get_logger().info(
+            "Dispatch dynamics safety: "
+            f"joint_limit_margin={self.joint_limit_margin:.4f}, "
+            f"velocity_scale={self.velocity_scale:.3f}, "
+            f"acceleration_scale={self.acceleration_scale:.3f}, "
+            f"enable_conservative_time_scaling={self.enable_conservative_time_scaling}, "
+            f"max_time_scaling_factor={self.max_time_scaling_factor:.2f}, "
+            f"minimum_dt={self.minimum_dt:.4f}"
+        )
         if not self.postcheck_check_edges:
             self.get_logger().warn(
                 "postcheck_check_edges=false is ignored in offline strict safety mode; "
@@ -1733,6 +1803,9 @@ class IntentHybridPlannerNode(Node):
         self._trajectory_duration_sec = 0.0
         self._trajectory_point_count = 0
         self._trajectory_max_joint_delta = 0.0
+        self._trajectory_estimated_max_velocity = 0.0
+        self._trajectory_estimated_max_acceleration = 0.0
+        self._trajectory_time_scaling_factor = 1.0
         self._start_state_error_max = 0.0
         self._start_state_error_norm = 0.0
         self._last_dispatch_diag: Dict[str, Any] = {}
@@ -2591,7 +2664,12 @@ class IntentHybridPlannerNode(Node):
             return False
         return True
 
-    def _dispatch_trajectory_cpp_offline(self, trajectory_matrix: np.ndarray) -> str:
+    def _dispatch_trajectory_cpp_offline(
+        self,
+        trajectory_matrix: np.ndarray,
+        *,
+        nominal_dt_override: Optional[float] = None,
+    ) -> str:
         if not self._use_cpp_runtime_for_offline():
             return "failed_cpp_runtime_not_enabled"
         if not self.cpp_dispatch_client.service_is_ready():
@@ -2610,7 +2688,7 @@ class IntentHybridPlannerNode(Node):
         req.joint_names = list(self.joint_names)
         req.dof = int(dof)
         req.q_flat = traj.T.reshape(-1).tolist()
-        req.nominal_dt = float(self.nominal_dt)
+        req.nominal_dt = float(self.nominal_dt if nominal_dt_override is None else nominal_dt_override)
         req.vel_limits = np.asarray(self.vel_limits, dtype=float).reshape(-1).tolist()
         req.acc_limits = np.asarray(self.acc_limits, dtype=float).reshape(-1).tolist()
         req.stitch_from_current = bool(self.offline_stitch_start_from_current)
@@ -2900,6 +2978,9 @@ class IntentHybridPlannerNode(Node):
             "trajectory_point_count": self._trajectory_point_count,
             "trajectory_duration_sec": self._trajectory_duration_sec,
             "trajectory_max_joint_delta": self._trajectory_max_joint_delta,
+            "trajectory_estimated_max_velocity": self._trajectory_estimated_max_velocity,
+            "trajectory_estimated_max_acceleration": self._trajectory_estimated_max_acceleration,
+            "time_scaling_factor": self._trajectory_time_scaling_factor,
             "start_state_error_max": self._start_state_error_max,
             "start_state_error_norm": self._start_state_error_norm,
         }
@@ -2940,6 +3021,115 @@ class IntentHybridPlannerNode(Node):
         )
         return False
 
+    def _resolve_joint_position_bounds(self) -> Tuple[np.ndarray, np.ndarray]:
+        lower = np.asarray(self.joint_position_lower_limit, dtype=float).reshape(-1)
+        upper = np.asarray(self.joint_position_upper_limit, dtype=float).reshape(-1)
+        if lower.size != len(self.joint_names) or upper.size != len(self.joint_names):
+            lower = np.ones(len(self.joint_names), dtype=float) * (-2.0 * np.pi)
+            upper = np.ones(len(self.joint_names), dtype=float) * (2.0 * np.pi)
+        upper = np.maximum(upper, lower + 1e-3)
+        if (not self._joint_bounds_warned) and np.allclose(lower, -2.0 * np.pi) and np.allclose(upper, 2.0 * np.pi):
+            self.get_logger().warn(
+                "Dispatch safety is using default joint position bounds [-2pi, 2pi]. "
+                "Configure joint_position_lower_limit/joint_position_upper_limit for tighter protection."
+            )
+            self._joint_bounds_warned = True
+        return lower, upper
+
+    def _estimate_dynamics(self, traj: np.ndarray, dt: float) -> Tuple[float, float, np.ndarray, np.ndarray]:
+        arr = np.asarray(traj, dtype=float)
+        if arr.ndim != 2 or arr.shape[1] <= 1:
+            z = np.zeros((arr.shape[0],), dtype=float)
+            return 0.0, 0.0, z, z
+        step = max(float(dt), self.minimum_dt, 1e-6)
+        vel = np.abs(np.diff(arr, axis=1)) / step
+        vel_peak = np.max(vel, axis=1) if vel.size > 0 else np.zeros((arr.shape[0],), dtype=float)
+        if vel.shape[1] >= 2:
+            acc = np.abs(np.diff(vel, axis=1)) / step
+            acc_peak = np.max(acc, axis=1) if acc.size > 0 else np.zeros((arr.shape[0],), dtype=float)
+        else:
+            acc_peak = np.zeros((arr.shape[0],), dtype=float)
+        return float(np.max(vel_peak)), float(np.max(acc_peak)), vel_peak, acc_peak
+
+    def _apply_dispatch_dynamics_safety(self, traj: np.ndarray) -> Tuple[bool, float]:
+        arr = np.asarray(traj, dtype=float)
+        if arr.ndim != 2 or arr.shape[0] != len(self.joint_names) or arr.shape[1] <= 0:
+            self._dispatch_error_string = "invalid trajectory shape for safety check"
+            return False, float(self.nominal_dt)
+
+        lower, upper = self._resolve_joint_position_bounds()
+        margin = float(self.joint_limit_margin)
+        lo = lower + margin
+        hi = upper - margin
+        if np.any(lo >= hi):
+            self._dispatch_error_string = "joint limit margin is too large"
+            self.get_logger().error(
+                "Dispatch safety rejected: joint_limit_margin leaves no valid interval "
+                f"(margin={margin:.4f})."
+            )
+            return False, float(self.nominal_dt)
+
+        for i in range(arr.shape[1]):
+            q = arr[:, i]
+            bad = np.where((q < lo) | (q > hi))[0]
+            if bad.size > 0:
+                j = int(bad[0])
+                self._dispatch_error_string = "joint limit violation"
+                self.get_logger().error(
+                    "Dispatch safety rejected by joint limit margin: "
+                    f"idx={i}, joint={self.joint_names[j]}, value={float(q[j]):.6f}, "
+                    f"lower={float(lower[j]):.6f}, upper={float(upper[j]):.6f}, margin={margin:.6f}"
+                )
+                return False, float(self.nominal_dt)
+
+        base_dt = max(float(self.nominal_dt), self.minimum_dt)
+        max_vel, max_acc, vel_peak, acc_peak = self._estimate_dynamics(arr, base_dt)
+        allowed_vel = np.maximum(self.vel_limits * float(self.velocity_scale), 1e-6)
+        allowed_acc = np.maximum(self.acc_limits * float(self.acceleration_scale), 1e-6)
+        vel_ratio = float(np.max(vel_peak / allowed_vel)) if vel_peak.size > 0 else 0.0
+        acc_ratio = float(np.max(acc_peak / allowed_acc)) if acc_peak.size > 0 else 0.0
+
+        scale_factor = 1.0
+        if vel_ratio > 1.0 or acc_ratio > 1.0:
+            if not self.enable_conservative_time_scaling:
+                self._dispatch_error_string = "velocity/acceleration exceeded and conservative scaling is disabled"
+                self.get_logger().error(
+                    "Dispatch safety rejected: dynamics exceeded "
+                    f"(vel_ratio={vel_ratio:.3f}, acc_ratio={acc_ratio:.3f})."
+                )
+                return False, base_dt
+            scale_factor = max(1.0, vel_ratio, np.sqrt(max(acc_ratio, 0.0)))
+            if scale_factor > float(self.max_time_scaling_factor):
+                self._dispatch_error_string = "required time scaling exceeds max_time_scaling_factor"
+                self.get_logger().error(
+                    "Dispatch safety rejected: required time scaling exceeds configured max "
+                    f"(required={scale_factor:.3f}, max={self.max_time_scaling_factor:.3f})."
+                )
+                return False, base_dt
+
+        scaled_dt = base_dt * scale_factor
+        max_vel_s, max_acc_s, vel_peak_s, acc_peak_s = self._estimate_dynamics(arr, scaled_dt)
+        vel_ratio_s = float(np.max(vel_peak_s / allowed_vel)) if vel_peak_s.size > 0 else 0.0
+        acc_ratio_s = float(np.max(acc_peak_s / allowed_acc)) if acc_peak_s.size > 0 else 0.0
+        if vel_ratio_s > 1.0 + 1e-6 or acc_ratio_s > 1.0 + 1e-6:
+            self._dispatch_error_string = "dynamics still exceed limits after conservative scaling"
+            self.get_logger().error(
+                "Dispatch safety rejected after conservative scaling: "
+                f"vel_ratio={vel_ratio_s:.3f}, acc_ratio={acc_ratio_s:.3f}, "
+                f"scaled_dt={scaled_dt:.4f}, scale_factor={scale_factor:.4f}"
+            )
+            return False, base_dt
+
+        self._trajectory_estimated_max_velocity = float(max_vel_s)
+        self._trajectory_estimated_max_acceleration = float(max_acc_s)
+        self._trajectory_time_scaling_factor = float(scale_factor)
+        if scale_factor > 1.0:
+            self.get_logger().warn(
+                "Dispatch conservative time scaling applied: "
+                f"factor={scale_factor:.4f}, nominal_dt={base_dt:.4f} -> {scaled_dt:.4f}"
+            )
+        return True, scaled_dt
+
     def _record_dispatch_failure(
         self,
         *,
@@ -2976,6 +3166,9 @@ class IntentHybridPlannerNode(Node):
             f"trajectory_point_count={self._trajectory_point_count}, "
             f"trajectory_duration_sec={self._trajectory_duration_sec:.3f}, "
             f"trajectory_max_joint_delta={self._trajectory_max_joint_delta:.4f}, "
+            f"trajectory_estimated_max_velocity={self._trajectory_estimated_max_velocity:.4f}, "
+            f"trajectory_estimated_max_acceleration={self._trajectory_estimated_max_acceleration:.4f}, "
+            f"time_scaling_factor={self._trajectory_time_scaling_factor:.4f}, "
             f"start_state_error_max={self._start_state_error_max:.4f}, "
             f"start_state_error_norm={self._start_state_error_norm:.4f}"
         )
@@ -3973,7 +4166,12 @@ class IntentHybridPlannerNode(Node):
         a = np.clip(a, -self.acc_limits[:, None], self.acc_limits[:, None])
         return v, a
 
-    def _execute_trajectory_offline_python(self, trajectory_matrix: np.ndarray) -> str:
+    def _execute_trajectory_offline_python(
+        self,
+        trajectory_matrix: np.ndarray,
+        *,
+        nominal_dt_override: Optional[float] = None,
+    ) -> str:
         traj = np.asarray(trajectory_matrix, dtype=float)
         if traj.ndim == 1:
             traj = traj.reshape(1, -1)
@@ -4000,7 +4198,8 @@ class IntentHybridPlannerNode(Node):
             traj = np.hstack([traj, traj])
             n_points = 2
 
-        t = self._build_time_array(n_points, self.nominal_dt)
+        dt_nominal = float(self.nominal_dt if nominal_dt_override is None else nominal_dt_override)
+        t = self._build_time_array(n_points, dt_nominal)
         t = self._scale_time_for_limits(traj, t)
         self._update_dispatch_trajectory_diag(traj, duration_sec=float(t[-1]) if t.size else 0.0)
         if self.time_param_backend == "ruckig" and ruckig_lib is not None:
@@ -4041,10 +4240,31 @@ class IntentHybridPlannerNode(Node):
 
     def execute_trajectory_offline(self, trajectory_matrix: np.ndarray) -> str:
         self._record_dispatch_failure(status=-1, error_code=0, error_string="", aborted=False)
+        self._trajectory_estimated_max_velocity = 0.0
+        self._trajectory_estimated_max_acceleration = 0.0
+        self._trajectory_time_scaling_factor = 1.0
+        self._start_state_error_max = 0.0
+        self._start_state_error_norm = 0.0
+        traj_for_dispatch = np.asarray(trajectory_matrix, dtype=float)
+        if traj_for_dispatch.ndim == 1:
+            traj_for_dispatch = traj_for_dispatch.reshape(1, -1)
+        if traj_for_dispatch.ndim != 2 or traj_for_dispatch.shape[0] != len(self.joint_names):
+            self._dispatch_error_string = f"invalid dispatch trajectory shape {traj_for_dispatch.shape}"
+            return "rejected_bad_shape"
+        ok_dyn, nominal_dt_override = self._apply_dispatch_dynamics_safety(traj_for_dispatch)
+        self._update_dispatch_trajectory_diag(
+            traj_for_dispatch,
+            duration_sec=float(max(traj_for_dispatch.shape[1] - 1, 0) * max(nominal_dt_override, 1e-6)),
+        )
+        if not ok_dyn:
+            return "failed_dispatch_safety_gate"
         if self._use_cpp_runtime_for_offline():
-            decision_cpp = self._dispatch_trajectory_cpp_offline(trajectory_matrix)
+            decision_cpp = self._dispatch_trajectory_cpp_offline(
+                traj_for_dispatch,
+                nominal_dt_override=nominal_dt_override,
+            )
             if decision_cpp == "sent_success":
-                traj = np.asarray(trajectory_matrix, dtype=float)
+                traj = np.asarray(traj_for_dispatch, dtype=float)
                 self._last_send_monotonic = time.monotonic()
                 self._last_sent_traj = traj.copy()
                 self._last_sent_signature = self._trajectory_signature(traj)
@@ -4060,6 +4280,7 @@ class IntentHybridPlannerNode(Node):
                 "rejected_by_action_server",
                 "failed_action_unknown",
                 "failed_start_state_mismatch",
+                "failed_dispatch_safety_gate",
             }
             if decision_cpp in hard_fail_codes:
                 self.get_logger().error(
@@ -4074,7 +4295,10 @@ class IntentHybridPlannerNode(Node):
             self.get_logger().warn(
                 f"cpp_bridge dispatch failed ({decision_cpp}), fallback to python trajectory dispatch."
             )
-        return self._execute_trajectory_offline_python(trajectory_matrix)
+        return self._execute_trajectory_offline_python(
+            traj_for_dispatch,
+            nominal_dt_override=nominal_dt_override,
+        )
 
     def plan_and_execute_offline(self) -> bool:
         self.get_logger().info("========== Offline Planning Pipeline ==========")
