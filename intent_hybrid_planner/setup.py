@@ -31,6 +31,7 @@ setup(
             "ee_trace_marker = intent_hybrid_planner.ee_trace_marker_node:main",
             "offline_debug_recorder = intent_hybrid_planner.offline_debug_recorder:main",
             "intent_hybrid_evaluator = intent_hybrid_planner.intent_hybrid_evaluator:main",
+            "run_plan_and_eval = intent_hybrid_planner.run_plan_and_eval:main",
         ],
     },
 )

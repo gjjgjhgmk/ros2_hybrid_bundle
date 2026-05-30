@@ -934,6 +934,8 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("postcheck_check_edges", True)
         self.declare_parameter("offline_export_plot_enable", True)
         self.declare_parameter("offline_export_plot_dir", str(Path.cwd() / "png"))
+        self.declare_parameter("offline_export_eval_input_enable", True)
+        self.declare_parameter("offline_export_eval_input_dir", str(Path.cwd() / "evaluation_inputs"))
         self.declare_parameter("joint_names", list(self.DEFAULT_JOINT_NAMES))
         self.declare_parameter("hybrid_mode", "legacy")
         self.declare_parameter("segment_gap", 10)
@@ -1120,6 +1122,12 @@ class IntentHybridPlannerNode(Node):
         )
         self.offline_export_plot_dir = (
             self.get_parameter("offline_export_plot_dir").get_parameter_value().string_value
+        )
+        self.offline_export_eval_input_enable = (
+            self.get_parameter("offline_export_eval_input_enable").get_parameter_value().bool_value
+        )
+        self.offline_export_eval_input_dir = (
+            self.get_parameter("offline_export_eval_input_dir").get_parameter_value().string_value
         )
         self.joint_names = [
             str(v)
@@ -1371,6 +1379,10 @@ class IntentHybridPlannerNode(Node):
         self.offline_export_plot_dir = self.offline_export_plot_dir.strip()
         if not self.offline_export_plot_dir:
             self.offline_export_plot_dir = str(Path.cwd() / "png")
+        self.offline_export_eval_input_enable = bool(self.offline_export_eval_input_enable)
+        self.offline_export_eval_input_dir = self.offline_export_eval_input_dir.strip()
+        if not self.offline_export_eval_input_dir:
+            self.offline_export_eval_input_dir = str(Path.cwd() / "evaluation_inputs")
         if not self.refine_budget_candidates:
             self.refine_budget_candidates = [25, 50, 100, 150, 200]
         self.rrt_step_size = max(float(self.rrt_step_size), 1e-4)
@@ -3664,6 +3676,73 @@ class IntentHybridPlannerNode(Node):
         plt.close(fig)
         self.get_logger().info(f"Offline trajectory comparison plot written: {out_path}")
 
+    def _export_offline_eval_input(
+        self,
+        nominal_traj: np.ndarray,
+        via_points: Optional[np.ndarray],
+        via_times: Optional[np.ndarray],
+        modulated_traj: np.ndarray,
+        time_axis: np.ndarray,
+        *,
+        dispatch_result: str = "",
+    ) -> None:
+        if not self.offline_export_eval_input_enable:
+            return
+        out_dir = Path(self.offline_export_eval_input_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        out_path = out_dir / f"offline_eval_input_{stamp}.json"
+        latest_path = out_dir / "offline_eval_input_latest.json"
+
+        obstacles: List[Any] = []
+        if self._plane_obstacles:
+            for obs in self._plane_obstacles:
+                p_xyz = self._map_uvz_to_xyz(obs["u"], obs["v"], obs.get("z", 0.0))
+                obstacles.append(
+                    {
+                        "x": float(p_xyz[0]),
+                        "y": float(p_xyz[1]),
+                        "z": float(p_xyz[2]),
+                        "radius": float(obs.get("radius", 0.0)),
+                    }
+                )
+        elif self._analytic_obstacles:
+            for obs in self._analytic_obstacles:
+                arr = np.asarray(obs, dtype=float).reshape(-1)
+                if arr.size == 4:
+                    obstacles.append([float(arr[0]), float(arr[1]), float(arr[2]), float(arr[3])])
+
+        via_arr = np.asarray(via_points, dtype=float) if via_points is not None else np.empty((len(self.joint_names), 0))
+        via_time_arr = np.asarray(via_times, dtype=float).reshape(-1) if via_times is not None else np.empty((0,))
+        payload = {
+            "scenario_name": "offline_latest",
+            "group_name": self.moveit_group_name,
+            "joint_names": list(self.joint_names),
+            "nominal_dt": float(self.nominal_dt),
+            "time_axis": np.asarray(time_axis, dtype=float).reshape(-1).tolist(),
+            "nominal_traj": np.asarray(nominal_traj, dtype=float).tolist(),
+            "modulated_traj": np.asarray(modulated_traj, dtype=float).tolist(),
+            "via_points": via_arr.tolist(),
+            "via_times": via_time_arr.tolist(),
+            "dispatch_result": str(dispatch_result),
+            "dispatch_action_status": int(self._dispatch_action_status),
+            "dispatch_error_code": int(self._dispatch_error_code),
+            "execution_aborted": bool(self._execution_aborted),
+            "rrt_stop_reason": max(self._rrt_stop_reason_counts, key=self._rrt_stop_reason_counts.get)
+            if self._rrt_stop_reason_counts
+            else "",
+            "rrt_elapsed_ms": float(np.mean(self._rrt_time_ms_samples)) if self._rrt_time_ms_samples else 0.0,
+            "rrt_collision_queries": int(np.mean(self._rrt_collision_queries_samples)) if self._rrt_collision_queries_samples else 0,
+            "edge_resolution": float(self.postcheck_edge_resolution),
+            "ee_link": str(self.fk_vis_ee_link),
+            "base_frame": "base_link",
+            "scene": {"obstacles": obstacles},
+        }
+        text = json.dumps(payload, ensure_ascii=False, indent=2)
+        out_path.write_text(text, encoding="utf-8")
+        latest_path.write_text(text, encoding="utf-8")
+        self.get_logger().info(f"Offline evaluator input written: {out_path}")
+
     def _publish_debug_markers(
         self,
         nominal_traj: np.ndarray,
@@ -4517,6 +4596,14 @@ class IntentHybridPlannerNode(Node):
             )
             self._record_postcheck_metrics(None, passed=False)
             self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+            self._export_offline_eval_input(
+                nominal_traj,
+                global_via_points,
+                global_via_times,
+                modulated,
+                time_axis,
+                dispatch_result="failed_postcheck_too_short",
+            )
             return False
         if self.nominal_source == "ee_plane":
             self.get_logger().info(
@@ -4550,6 +4637,14 @@ class IntentHybridPlannerNode(Node):
             )
             if self.execute_only_if_postcheck_passed:
                 self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+                self._export_offline_eval_input(
+                    nominal_traj,
+                    global_via_points,
+                    global_via_times,
+                    modulated,
+                    time_axis,
+                    dispatch_result="failed_postcheck",
+                )
                 return False
             self.get_logger().warn(
                 "Unsafe experimental mode: dispatching trajectory even though post-check failed."
@@ -4560,6 +4655,14 @@ class IntentHybridPlannerNode(Node):
         self.get_logger().info("Step 4/4: execute full offline trajectory.")
         decision = self.execute_trajectory_offline(modulated)
         self.get_logger().info(f"Offline execution dispatch result: {decision}")
+        self._export_offline_eval_input(
+            nominal_traj,
+            global_via_points,
+            global_via_times,
+            modulated,
+            time_axis,
+            dispatch_result=decision,
+        )
         if (
             decision == "sent_success"
             and self.offline_wait_action_result

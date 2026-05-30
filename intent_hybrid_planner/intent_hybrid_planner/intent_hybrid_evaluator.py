@@ -41,6 +41,19 @@ DEFAULT_JOINT_NAMES = [
     "wrist_3_joint",
 ]
 
+EXPECTED_CHECK_MOTION_TYPE = "intent_hybrid_interfaces/srv/CheckMotionBatch"
+
+
+def _bool_arg(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return True
+    if text in ("0", "false", "no", "off"):
+        return False
+    raise argparse.ArgumentTypeError(f"invalid bool value: {value}")
+
 
 def _as_array(data: Any, name: str) -> np.ndarray:
     arr = np.asarray(data, dtype=float)
@@ -170,6 +183,18 @@ class IntentHybridEvaluator(Node):
     def __init__(self, args_ns: argparse.Namespace) -> None:
         super().__init__("intent_hybrid_evaluator")
         self.args = args_ns
+        self.backend_status: Dict[str, Any] = {
+            "collision_backend_available": False,
+            "collision_backend_checked": False,
+            "collision_backend_error": "preflight not run",
+            "dryrun_mode": False,
+            "result_interpretable": False,
+            "failure_reason": "collision_backend_not_checked",
+            "service_name": str(self.args.motion_service),
+            "service_type": "",
+            "preflight_ok": False,
+            "preflight_collision_queries": 0,
+        }
         self._latest_joint_state: Optional[JointState] = None
         self._joint_state_sub = self.create_subscription(
             JointState, "/joint_states", self._on_joint_states, 50
@@ -197,6 +222,112 @@ class IntentHybridEvaluator(Node):
             return False
         return bool(self.motion_client.wait_for_service(timeout_sec=max(timeout, 0.1)))
 
+    def _service_type_status(self) -> Tuple[bool, str, str]:
+        service_name = str(self.args.motion_service)
+        for name, types in self.get_service_names_and_types():
+            if name != service_name:
+                continue
+            type_text = ",".join(types)
+            return EXPECTED_CHECK_MOTION_TYPE in types, type_text, ""
+        return False, "", f"service not found: {service_name}"
+
+    def collision_backend_preflight(
+        self,
+        sample_traj: np.ndarray,
+        joint_names: Sequence[str],
+        group_name: str,
+        edge_resolution: float,
+    ) -> Dict[str, Any]:
+        status = {
+            "collision_backend_available": False,
+            "collision_backend_checked": True,
+            "collision_backend_error": "",
+            "dryrun_mode": False,
+            "result_interpretable": False,
+            "failure_reason": "",
+            "service_name": str(self.args.motion_service),
+            "service_type": "",
+            "preflight_ok": False,
+            "preflight_collision_queries": 0,
+        }
+        if CheckMotionBatch is None:
+            status["collision_backend_error"] = "intent_hybrid_interfaces/CheckMotionBatch import failed"
+            status["failure_reason"] = "collision_backend_unavailable"
+            self.backend_status = status
+            self._log_backend_preflight(status)
+            return status
+        deadline = time.monotonic() + max(float(self.args.collision_service_timeout_sec), 0.1)
+        type_ok = False
+        type_text = ""
+        type_error = ""
+        while time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.05)
+            type_ok, type_text, type_error = self._service_type_status()
+            if type_ok or type_text:
+                break
+        status["service_type"] = type_text
+        if not type_ok:
+            status["collision_backend_error"] = type_error or f"service type mismatch: {type_text}"
+            status["failure_reason"] = "collision_backend_unavailable"
+            self.backend_status = status
+            self._log_backend_preflight(status)
+            return status
+        if self.motion_client is None:
+            status["collision_backend_error"] = "CheckMotionBatch client is not initialized"
+            status["failure_reason"] = "collision_backend_unavailable"
+            self.backend_status = status
+            self._log_backend_preflight(status)
+            return status
+        if not self.motion_client.wait_for_service(timeout_sec=max(float(self.args.collision_service_timeout_sec), 0.1)):
+            status["collision_backend_error"] = f"service not ready: {self.args.motion_service}"
+            status["failure_reason"] = "collision_backend_unavailable"
+            self.backend_status = status
+            self._log_backend_preflight(status)
+            return status
+
+        traj = np.asarray(sample_traj, dtype=float)
+        if traj.ndim != 2 or traj.shape[0] != len(joint_names):
+            status["collision_backend_error"] = f"invalid preflight trajectory shape {traj.shape}"
+            status["failure_reason"] = "collision_backend_unavailable"
+            self.backend_status = status
+            self._log_backend_preflight(status)
+            return status
+        if traj.shape[1] < 2:
+            traj = np.repeat(traj[:, :1], 2, axis=1)
+        motion = self._check_motion(
+            traj[:, :2],
+            joint_names,
+            group_name,
+            edge_resolution,
+            check_edges=True,
+            service_timeout_sec=max(float(self.args.collision_service_timeout_sec), 0.1),
+        )
+        state_len_ok = int(np.asarray(motion.get("state_valid", []), dtype=bool).size) == 2
+        edge_len_ok = int(np.asarray(motion.get("edge_valid", []), dtype=bool).size) == 1
+        response_ok = bool(motion.get("ok", False))
+        queries = int(motion.get("collision_queries", 0))
+        status["preflight_collision_queries"] = queries
+        if response_ok and (queries > 0 or (state_len_ok and edge_len_ok)):
+            status["collision_backend_available"] = True
+            status["preflight_ok"] = True
+            status["result_interpretable"] = True
+        else:
+            status["collision_backend_error"] = (
+                str(motion.get("error_message", ""))
+                or f"preflight response invalid: ok={response_ok}, state_len_ok={state_len_ok}, edge_len_ok={edge_len_ok}, queries={queries}"
+            )
+            status["failure_reason"] = "collision_backend_unavailable"
+        self.backend_status = status
+        self._log_backend_preflight(status)
+        return status
+
+    def _log_backend_preflight(self, status: Dict[str, Any]) -> None:
+        available = "available" if bool(status.get("collision_backend_available", False)) else "not available"
+        self.get_logger().info(f"[Evaluator] check_motion_batch service: {available}")
+        self.get_logger().info(f"[Evaluator] service type: {status.get('service_type', '')}")
+        self.get_logger().info(f"[Evaluator] preflight ok: {bool(status.get('preflight_ok', False))}")
+        self.get_logger().info(f"[Evaluator] collision backend error: {status.get('collision_backend_error', '')}")
+
     def _check_motion(
         self,
         traj_dofxn: np.ndarray,
@@ -205,17 +336,10 @@ class IntentHybridEvaluator(Node):
         edge_resolution: float,
         *,
         check_edges: bool = True,
+        service_timeout_sec: Optional[float] = None,
     ) -> Dict[str, Any]:
         traj = np.asarray(traj_dofxn, dtype=float)
         n = int(traj.shape[1])
-        req = CheckMotionBatch.Request()
-        req.group_name = str(group_name)
-        req.joint_names = list(joint_names)
-        req.dof = int(len(joint_names))
-        req.states_flat = traj.T.reshape(-1).tolist()
-        req.check_edges = bool(check_edges)
-        req.edge_resolution = float(edge_resolution)
-
         if CheckMotionBatch is None or self.motion_client is None:
             return {
                 "ok": False,
@@ -227,6 +351,13 @@ class IntentHybridEvaluator(Node):
                 "elapsed_ms": 0.0,
                 "collision_queries": 0,
             }
+        req = CheckMotionBatch.Request()
+        req.group_name = str(group_name)
+        req.joint_names = list(joint_names)
+        req.dof = int(len(joint_names))
+        req.states_flat = traj.T.reshape(-1).tolist()
+        req.check_edges = bool(check_edges)
+        req.edge_resolution = float(edge_resolution)
         if not self._wait_motion_service(self.args.service_wait_sec):
             return {
                 "ok": False,
@@ -239,7 +370,8 @@ class IntentHybridEvaluator(Node):
                 "collision_queries": 0,
             }
         fut = self.motion_client.call_async(req)
-        timeout_sec = max(self.args.service_timeout_sec, 0.5) + 0.01 * float(n)
+        timeout_base = self.args.service_timeout_sec if service_timeout_sec is None else service_timeout_sec
+        timeout_sec = max(float(timeout_base), 0.5) + 0.01 * float(n)
         if not self._spin_until_future(fut, timeout_sec):
             return {
                 "ok": False,
@@ -473,7 +605,20 @@ class IntentHybridEvaluator(Node):
         mod_bad_s, mod_bad_e = self._motion_invalid_counts(modulated_motion)
         mod_pass = self._strict_motion_pass(modulated_motion, expected_states=int(modulated.shape[1]))
         nominal_total = nom_bad_s + nom_bad_e
-        avoidance_success = bool(mod_pass and (mod_bad_s == 0) and (mod_bad_e == 0) and (nominal_total >= 0))
+        backend_available = bool(self.backend_status.get("collision_backend_available", False))
+        dryrun_mode = bool(self.backend_status.get("dryrun_mode", False))
+        result_interpretable = bool(self.backend_status.get("result_interpretable", False))
+        failure_reason = str(self.backend_status.get("failure_reason", ""))
+        if not backend_available:
+            result_interpretable = False
+            failure_reason = "collision_backend_unavailable"
+        avoidance_success = bool(
+            result_interpretable
+            and mod_pass
+            and (mod_bad_s == 0)
+            and (mod_bad_e == 0)
+            and (nominal_total >= 0)
+        )
 
         smooth = compute_joint_metrics(modulated, dt)
         current_map = self._current_joint_state_map()
@@ -560,6 +705,12 @@ class IntentHybridEvaluator(Node):
         result = {
             "scenario_name": name,
             "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
+            "collision_backend_available": backend_available,
+            "collision_backend_checked": bool(self.backend_status.get("collision_backend_checked", False)),
+            "collision_backend_error": str(self.backend_status.get("collision_backend_error", "")),
+            "dryrun_mode": dryrun_mode,
+            "result_interpretable": result_interpretable,
+            "failure_reason": failure_reason,
             "inputs": {
                 "group_name": group_name,
                 "joint_names": joint_names,
@@ -615,6 +766,7 @@ class IntentHybridEvaluator(Node):
         )
         self.get_logger().info(
             f"[{name}] avoidance_success={result['avoidance']['avoidance_success']}, "
+            f"interpretable={result['result_interpretable']}, "
             f"modulated_invalid=({mod_bad_s},{mod_bad_e}), "
             f"dispatch_status={result['executability']['dispatch_action_status']}, "
             f"aborted={result['executability']['execution_aborted']}"
@@ -628,8 +780,11 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
         "timestamp": ts,
         "scenario_count": len(results),
         "success_count": int(
-            sum(1 for r in results if bool(r["avoidance"]["avoidance_success"]))
+            sum(1 for r in results if bool(r.get("result_interpretable", False)) and bool(r["avoidance"]["avoidance_success"]))
         ),
+        "interpretable_count": int(sum(1 for r in results if bool(r.get("result_interpretable", False)))),
+        "backend_available_count": int(sum(1 for r in results if bool(r.get("collision_backend_available", False)))),
+        "backend_unavailable_count": int(sum(1 for r in results if not bool(r.get("collision_backend_available", False)))),
         "results": results,
     }
     (out_dir / f"evaluation_summary_{ts}.json").write_text(
@@ -640,6 +795,12 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         fieldnames = [
             "scenario_name",
+            "collision_backend_available",
+            "collision_backend_checked",
+            "collision_backend_error",
+            "dryrun_mode",
+            "result_interpretable",
+            "failure_reason",
             "avoidance_success",
             "nominal_invalid_state_count",
             "nominal_invalid_edge_count",
@@ -668,6 +829,12 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
             w.writerow(
                 {
                     "scenario_name": r["scenario_name"],
+                    "collision_backend_available": int(r.get("collision_backend_available", False)),
+                    "collision_backend_checked": int(r.get("collision_backend_checked", False)),
+                    "collision_backend_error": r.get("collision_backend_error", ""),
+                    "dryrun_mode": int(r.get("dryrun_mode", False)),
+                    "result_interpretable": int(r.get("result_interpretable", False)),
+                    "failure_reason": r.get("failure_reason", ""),
                     "avoidance_success": int(r["avoidance"]["avoidance_success"]),
                     "nominal_invalid_state_count": r["avoidance"]["nominal_invalid_state_count"],
                     "nominal_invalid_edge_count": r["avoidance"]["nominal_invalid_edge_count"],
@@ -702,28 +869,133 @@ def _load_eval_config(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]
     return global_cfg, scenarios
 
 
+def _load_planner_output(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    joint_names = list(data.get("joint_names", DEFAULT_JOINT_NAMES))
+    time_axis = data.get("time_axis", [])
+    nominal_dt = 0.1
+    if isinstance(time_axis, list) and len(time_axis) >= 2:
+        try:
+            nominal_dt = float(time_axis[1]) - float(time_axis[0])
+        except Exception:
+            nominal_dt = 0.1
+    scenario = {
+        "name": str(data.get("scenario_name", path.stem)),
+        "joint_names": joint_names,
+        "nominal_dt": float(data.get("nominal_dt", nominal_dt)),
+        "nominal_trajectory": data.get("nominal_trajectory", data.get("nominal_traj", [])),
+        "modulated_trajectory": data.get("modulated_trajectory", data.get("modulated_traj", [])),
+        "local_paths": data.get("local_paths", []),
+        "rrt_stop_reason": data.get("rrt_stop_reason", ""),
+        "rrt_elapsed_ms": data.get("rrt_elapsed_ms", 0.0),
+        "rrt_collision_queries": data.get("rrt_collision_queries", 0),
+        "dispatch_action_status": data.get("dispatch_action_status", -1),
+        "dispatch_error_code": data.get("dispatch_error_code", 0),
+        "execution_aborted": data.get("execution_aborted", False),
+    }
+    if data.get("via_points"):
+        scenario["local_paths"] = scenario["local_paths"] or [
+            {
+                "path": data.get("via_points", []),
+                "stop_reason": data.get("rrt_stop_reason", "via_points"),
+                "elapsed_ms": data.get("rrt_elapsed_ms", 0.0),
+                "collision_queries": data.get("rrt_collision_queries", 0),
+            }
+        ]
+    if data.get("scene"):
+        scenario["scene"] = data["scene"]
+    global_cfg = {
+        "joint_names": joint_names,
+        "nominal_dt": float(scenario["nominal_dt"]),
+        "group_name": str(data.get("group_name", "ur_manipulator")),
+        "edge_resolution": float(data.get("edge_resolution", 0.02)),
+        "ee_link": str(data.get("ee_link", "tool0")),
+        "base_frame": str(data.get("base_frame", "base_link")),
+    }
+    return global_cfg, [scenario]
+
+
+def _sample_for_preflight(global_cfg: Dict[str, Any], scenarios: List[Dict[str, Any]]) -> Tuple[np.ndarray, List[str], str, float]:
+    joint_names = list(global_cfg.get("joint_names", DEFAULT_JOINT_NAMES))
+    dof = int(len(joint_names))
+    group_name = str(global_cfg.get("group_name", "ur_manipulator"))
+    edge_resolution = float(global_cfg.get("edge_resolution", 0.02))
+    if scenarios:
+        sc = scenarios[0]
+        joint_names = list(sc.get("joint_names", joint_names))
+        dof = int(len(joint_names))
+        group_name = str(sc.get("group_name", group_name))
+        edge_resolution = float(sc.get("edge_resolution", edge_resolution))
+        if sc.get("nominal_trajectory") is not None:
+            traj = normalize_traj_dofxn(sc["nominal_trajectory"], dof, "preflight.nominal_trajectory")
+            if traj.shape[1] >= 2:
+                return traj[:, :2], joint_names, group_name, edge_resolution
+            if traj.shape[1] == 1:
+                return np.repeat(traj, 2, axis=1), joint_names, group_name, edge_resolution
+    return np.zeros((dof, 2), dtype=float), joint_names, group_name, edge_resolution
+
+
 def main(args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, help="Evaluation config JSON with global/scenarios.")
+    parser.add_argument("--config", default="", help="Evaluation config JSON with global/scenarios.")
+    parser.add_argument("--planner-output", default="", help="Minimal planner output JSON: nominal_traj/modulated_traj/via_points.")
     parser.add_argument("--out-dir", default=str(Path.cwd() / "evaluation"))
     parser.add_argument("--motion-service", default="/intent_runtime/check_motion_batch")
     parser.add_argument("--fk-service", default="/compute_fk")
     parser.add_argument("--enable-fk", action="store_true")
     parser.add_argument("--enable-plot", action="store_true")
+    parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--require-collision-backend", type=_bool_arg, default=True)
+    parser.add_argument("--collision-service-timeout-sec", type=float, default=3.0)
+    parser.add_argument("--dryrun-allow-missing-backend", type=_bool_arg, default=False)
     parser.add_argument("--service-timeout-sec", type=float, default=2.0)
     parser.add_argument("--service-wait-sec", type=float, default=2.0)
     parser.add_argument("--fk-timeout-sec", type=float, default=1.0)
     parser.add_argument("--current-state-wait-sec", type=float, default=0.5)
     ns, ros_args = parser.parse_known_args(args=args)
 
-    cfg_path = Path(ns.config).expanduser()
     out_dir = Path(ns.out_dir).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
-    global_cfg, scenarios = _load_eval_config(cfg_path)
+    if ns.planner_output:
+        global_cfg, scenarios = _load_planner_output(Path(ns.planner_output).expanduser())
+    elif ns.config:
+        global_cfg, scenarios = _load_eval_config(Path(ns.config).expanduser())
+    elif ns.preflight_only:
+        global_cfg, scenarios = {"joint_names": DEFAULT_JOINT_NAMES, "group_name": "ur_manipulator", "edge_resolution": 0.02}, []
+    else:
+        raise SystemExit("--config or --planner-output is required unless --preflight-only is used")
 
     rclpy.init(args=ros_args)
     node = IntentHybridEvaluator(ns)
     try:
+        sample, sample_joints, sample_group, sample_edge_resolution = _sample_for_preflight(global_cfg, scenarios)
+        backend = node.collision_backend_preflight(
+            sample,
+            sample_joints,
+            sample_group,
+            sample_edge_resolution,
+        )
+        if not bool(backend.get("collision_backend_available", False)):
+            if bool(ns.dryrun_allow_missing_backend):
+                backend["dryrun_mode"] = True
+                backend["result_interpretable"] = False
+                backend["failure_reason"] = "collision_backend_unavailable"
+                node.backend_status = backend
+                node.get_logger().warn(
+                    "Collision backend is unavailable; continuing only because dryrun_allow_missing_backend=true. "
+                    "Results will be marked result_interpretable=false."
+                )
+            elif bool(ns.require_collision_backend):
+                node.get_logger().error(
+                    "Collision backend preflight failed; stop evaluation. "
+                    f"reason={backend.get('collision_backend_error', '')}"
+                )
+                raise SystemExit(2)
+        if ns.preflight_only:
+            if bool(backend.get("collision_backend_available", False)):
+                node.get_logger().info("Preflight-only finished successfully.")
+                return
+            raise SystemExit(2)
         results: List[Dict[str, Any]] = []
         for sc in scenarios:
             results.append(node.evaluate_scenario(sc, global_cfg, out_dir))
