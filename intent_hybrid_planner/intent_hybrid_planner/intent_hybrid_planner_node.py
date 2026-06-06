@@ -1739,6 +1739,7 @@ class IntentHybridPlannerNode(Node):
         self._joint_name_to_idx: Dict[str, int] = {}
         self._last_stale_warn_ts = 0.0
         self._stale_warn_interval_sec = 5.0
+        self._joint_state_cb_group = ReentrantCallbackGroup()
 
         qos = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
@@ -1746,7 +1747,11 @@ class IntentHybridPlannerNode(Node):
             depth=50,
         )
         self.joint_state_sub = self.create_subscription(
-            JointState, "/joint_states", self._on_joint_states, qos
+            JointState,
+            "/joint_states",
+            self._on_joint_states,
+            qos,
+            callback_group=self._joint_state_cb_group,
         )
 
         # -------------------------

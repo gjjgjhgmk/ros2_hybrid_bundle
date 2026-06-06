@@ -33,22 +33,32 @@ def main(args: Optional[List[str]] = None) -> None:
 
     if ns.run_planner:
         cmd = ["ros2", "run", "intent_hybrid_planner", "intent_hybrid_planner_node"]
+        # Keep a demo-friendly offline profile unless the caller overrides it.
+        default_planner_args = [
+            "--ros-args",
+            "-p",
+            "runtime_backend:=cpp_bridge",
+            "-p",
+            "execution_mode:=offline",
+            "-p",
+            "hybrid_mode:=matlab_compat",
+            "-p",
+            "offline_export_eval_input_enable:=true",
+            "-p",
+            "action_path_tolerance_rad:=0.5",
+            "-p",
+            "action_goal_tolerance_rad:=0.2",
+            "-p",
+            "action_goal_time_tolerance_sec:=5.0",
+            "-p",
+            "nominal_dt:=0.12",
+        ]
+        cmd.extend(default_planner_args)
         if ns.planner_extra.strip():
-            cmd.extend(shlex.split(ns.planner_extra))
-        else:
-            cmd.extend(
-                [
-                    "--ros-args",
-                    "-p",
-                    "runtime_backend:=cpp_bridge",
-                    "-p",
-                    "execution_mode:=offline",
-                    "-p",
-                    "hybrid_mode:=matlab_compat",
-                    "-p",
-                    "offline_export_eval_input_enable:=true",
-                ]
-            )
+            extra_tokens = shlex.split(ns.planner_extra)
+            if extra_tokens and extra_tokens[0] == "--ros-args":
+                extra_tokens = extra_tokens[1:]
+            cmd.extend(extra_tokens)
         print(f"[run_plan_and_eval] running planner: {' '.join(cmd)}", flush=True)
         subprocess.run(cmd, check=True, timeout=max(float(ns.planner_timeout_sec), 1.0))
 

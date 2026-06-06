@@ -522,7 +522,11 @@ ros2 run intent_hybrid_planner intent_hybrid_planner_node --ros-args \
   -p use_sim_time:=true \
   -p execution_mode:=offline \
   -p hybrid_mode:=matlab_compat \
-  -p trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory
+  -p trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory \
+  -p action_path_tolerance_rad:=0.5 \
+  -p action_goal_tolerance_rad:=0.2 \
+  -p action_goal_time_tolerance_sec:=5.0 \
+  -p nominal_dt:=0.12
 EOF
   else
     log "Robot is NOT pre-aligned."
