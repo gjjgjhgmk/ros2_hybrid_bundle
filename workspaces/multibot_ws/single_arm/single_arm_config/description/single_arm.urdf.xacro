@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="single_arm">
+    
+    <!-- 用于区分左右臂的参数 -->
+    <xacro:arg name="arm_name" default="left_arm"/>
+    <xacro:arg name="tf_prefix" default=""/>
+    <xacro:property name="arm_name_val" value="$(arg arm_name)"/>
+    <xacro:if value="${arm_name_val == 'left_arm'}">
+      <xacro:property name="robot_origin" value="0.212 0.5 0.9102"/>
+      <xacro:property name="kinematics_parameters_file" value="$(find single_arm_config)/config/left_arm_kinematics.yaml"/>
+      <xacro:property name="handeye_calibration_params" value="$(find single_arm_config)/config/left_handeye_calibration.yaml"/>
+      <xacro:property name="initial_positions_file" value="$(find single_arm_config)/config/left_arm_initial_positions.yaml"/>
+    </xacro:if>
+    <xacro:if value="${arm_name_val == 'right_arm'}">
+      <xacro:property name="robot_origin" value="0.212 -0.5 0.9102"/>
+      <xacro:property name="kinematics_parameters_file" value="$(find single_arm_config)/config/right_arm_kinematics.yaml"/>
+      <xacro:property name="handeye_calibration_params" value="$(find single_arm_config)/config/right_handeye_calibration.yaml"/>
+      <xacro:property name="initial_positions_file" value="$(find single_arm_config)/config/right_arm_initial_positions.yaml"/>
+    </xacro:if>
+
+    <xacro:property name="joint_limit_params" value="$(find ur_description)/config/ur7e/joint_limits.yaml"/>
+    <xacro:property name="kinematics_params" value="$(find ur_description)/config/ur7e/default_kinematics.yaml"/>
+    <xacro:property name="physical_params" value="$(find ur_description)/config/ur7e/physical_parameters.yaml"/>
+    <xacro:property name="visual_params" value="$(find ur_description)/config/ur7e/visual_parameters.yaml"/>
+    
+    <!-- ros2_control 参数 -->
+    <xacro:arg name="mock_sensor_commands" default="false"/>
+    <xacro:arg name="use_mock_hardware" default="true"/>
+    <xacro:arg name="robot_ip" default="192.168.56.101"/>
+    <xacro:arg name="reverse_ip" default="192.168.56.1"/>
+    <xacro:arg name="use_tool_communication" default="true"/>
+    <xacro:arg name="gripper_com_port" default="/tmp/ttyUR"/>
+    <xacro:arg name="gripper_slave_address" default="0x09"/>
+    <xacro:arg name="script_filename" default=""/>
+    <xacro:arg name="input_recipe_filename" default=""/>
+    <xacro:arg name="output_recipe_filename" default=""/>
+
+    <!-- 定义世界坐标系 -->
+    <link name="world" />
+
+    <!-- 引入工作台定义 -->
+    <xacro:include filename="$(find single_arm_config)/description/workstation.urdf.xacro"/>
+    <xacro:workstation prefix="workstation_" parent="world" robot_origin="${robot_origin}">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:workstation>
+    
+    <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+    <xacro:include filename="$(find ur_robot_driver)/urdf/ur.ros2_control.xacro" />
+    <xacro:include filename="$(find ur_description)/urdf/inc/ur_transmissions.xacro" />
+
+    <xacro:ur_robot
+      name="$(arg arm_name)"
+      tf_prefix="$(arg tf_prefix)"
+      parent="arm_interface_link"
+      joint_limits_parameters_file="${joint_limit_params}"
+      kinematics_parameters_file="${kinematics_params}"
+      physical_parameters_file="${physical_params}"
+      visual_parameters_file="${visual_params}"
+      >
+      <origin xyz="0 0 0" rpy="0 0 ${-math.pi/2}" />
+    </xacro:ur_robot>
+
+    <xacro:ur_ros2_control
+      name="$(arg arm_name)"
+      tf_prefix="$(arg tf_prefix)"
+      use_mock_hardware="$(arg use_mock_hardware)"
+      mock_sensor_commands="$(arg mock_sensor_commands)"
+      kinematics_parameters_file="${kinematics_parameters_file}"
+      initial_positions="${xacro.load_yaml(initial_positions_file)}"
+      use_tool_communication="$(arg use_tool_communication)"
+      tool_voltage="24"
+      tool_device_name="$(arg gripper_com_port)"
+      robot_ip="$(arg robot_ip)"
+      reverse_ip="$(arg reverse_ip)"
+      script_filename="$(arg script_filename)"
+      input_recipe_filename="$(arg input_recipe_filename)"
+      output_recipe_filename="$(arg output_recipe_filename)"
+    />
+    
+    <!-- 加载手眼标定参数 -->
+    <xacro:property name="handeye_calibration_data" value="${xacro.load_yaml(handeye_calibration_params)}"/>
+    
+    <!-- 引入相机定义 -->
+    <xacro:include filename="$(find single_arm_config)/description/camera.urdf.xacro"/>
+    <xacro:camera 
+        prefix="$(arg tf_prefix)camera_" 
+        parent="$(arg tf_prefix)tool0"
+        camera_link_xyz="${handeye_calibration_data['camera_link_xyz']}"
+        camera_link_rpy="${handeye_calibration_data['camera_link_rpy']}">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:camera>
+    
+    <!-- 引入夹爪定义 -->
+    <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro" />
+    <xacro:robotiq_gripper 
+      name="RobotiqGripperHardwareInterface" 
+      prefix="$(arg tf_prefix)"
+      parent="$(arg tf_prefix)camera_adapter" 
+      use_fake_hardware="$(arg use_mock_hardware)" 
+      com_port="$(arg gripper_com_port)"
+      slave_address="$(arg gripper_slave_address)"
+      gripper_speed_multiplier="1.0"
+      gripper_force_multiplier="0.5"
+      gripper_max_speed="0.150"
+      gripper_max_force="235.0"
+      gripper_closed_position="0.7929"
+      >
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:robotiq_gripper>
+
+    <!-- 待TCP标定 -->
+    <link name="$(arg tf_prefix)eef"/>
+    <joint name="$(arg tf_prefix)ee_joint" type="fixed">
+        <origin xyz="0 0 0.15" rpy="3.14 0 -1.57"/>
+        <parent link="$(arg tf_prefix)tool0"/>
+        <child link="$(arg tf_prefix)eef"/>
+    </joint>
+
+</robot>

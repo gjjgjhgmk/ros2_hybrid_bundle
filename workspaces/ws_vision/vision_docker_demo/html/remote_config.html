@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置文件查看器</title>
+    <link rel="stylesheet" href="/static/common.css">
+    <style>
+        body {
+            background: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #f5f5f5;
+            padding: 8px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333333;
+        }
+
+        .header .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 按钮样式已移至 common.css */
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f9f9f9;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 500;
+            color: #333333;
+        }
+
+        .tree-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .tree-item {
+            padding: 3px 6px;
+            cursor: pointer;
+            border-radius: 3px;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tree-item:hover {
+            background: #e8e8e8;
+        }
+
+        .tree-item.selected {
+            background: #cce5ff;
+        }
+
+        .tree-item-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .tree-item-name {
+            flex: 1;
+            font-size: 13px;
+            color: #333333;
+        }
+
+        .tree-item.selected .tree-item-name {
+            color: #0066cc;
+        }
+
+        .tree-children {
+            margin-left: 20px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .content-header {
+            padding: 6px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-header .path {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #666666;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .config-form {
+            width: 100%;
+        }
+
+        /* 配置文件查看器专用的横向布局 */
+        .config-form .form-group,
+        .content-body .form-group {
+            margin-bottom: 2px;
+            /* 使用横向布局（common.css 的默认布局） */
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .form-label {
+            display: inline-block;
+            min-width: 120px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #333333;
+            flex-shrink: 0;
+            flex-grow: 0;
+            padding-top: 4px;
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: #f48771;
+        }
+
+        .form-control {
+            padding: 4px 8px;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            color: #333333;
+            font-size: 13px;
+            font-family: inherit;
+            flex: 0 0 auto;
+            width: auto;
+            min-width: 150px;
+            max-width: 1200px;
+            overflow: visible;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0e639c;
+            background: #ffffff;
+            box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.1);
+        }
+
+        /* 统一 form-control 的基础 flex 和 width 属性 */
+        .form-control,
+        .form-control[type="checkbox"],
+        .form-control[type="number"] {
+            flex: 0 0 auto;
+            width: auto;
+        }
+
+        /* checkbox 特有样式 */
+        .form-control[type="checkbox"] {
+            min-width: auto;
+            max-width: none;
+            cursor: pointer;
+            margin-top: 0;
+            align-self: center;
+        }
+
+        /* number 和 text 类型统一使用相同的最大最小值 */
+        .form-control[type="number"],
+        .form-control[type="text"] {
+            min-width: 150px;
+            max-width: 1200px;
+        }
+
+        /* textarea 也使用相同的最大最小值 */
+        .form-control[type="textarea"],
+        textarea.form-control {
+            min-width: 150px;
+            max-width: 1200px;
+            resize: vertical;
+        }
+
+        /* 合并 form-object 和 form-array 的公共样式 */
+        .form-object,
+        .form-array {
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            background: #f9f9f9;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        /* form-object 特有样式 */
+        .form-object {
+            padding: 6px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            max-width: 100%;
+        }
+
+        /* form-array 特有样式 */
+        .form-array {
+            padding: 6px;
+        }
+
+        .form-array-item {
+            padding: 0;
+            margin-bottom: 4px;
+            background: transparent;
+            border-radius: 3px;
+            position: relative;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .form-array-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-array-item .form-object-header {
+            margin-bottom: 2px;
+        }
+
+        .form-array-item .form-object-content {
+            margin-left: 16px;
+        }
+
+        .form-array-actions {
+            margin-top: 4px;
+            display: flex;
+            gap: 4px;
+        }
+
+        /* 统一所有嵌套对象的尺寸、padding 和 margin 配置 */
+        .form-object-content .form-object,
+        .form-group .form-object,
+        .form-array-item .form-object {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 6px 0 6px 6px;
+            margin-right: 0;
+        }
+
+        /* 不同层级的颜色 - 使用浅色背景 */
+        .form-object.level-0 {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .form-object.level-1 {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+
+        .form-object.level-2 {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+
+        .form-object.level-3 {
+            background: #f1f8e9;
+            border-color: #8bc34a;
+        }
+
+        .form-object.level-4 {
+            background: #fce4ec;
+            border-color: #e91e63;
+        }
+
+        .form-object.level-5 {
+            background: #e0f2f1;
+            border-color: #009688;
+        }
+
+        .form-object-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            padding: 2px 0;
+            margin-bottom: 4px;
+            margin-left: 0;
+        }
+
+        /* form-group 中的 form-object 特有属性 */
+        .form-group .form-object {
+            margin-left: 0;
+            margin-top: 0;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .form-group .form-object-header {
+            padding-left: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            align-items: center;
+        }
+
+        .form-group .form-label {
+            padding-top: 0;
+            align-self: center;
+        }
+
+        /* 统一左侧 padding 为 0 */
+        .form-group .form-object-content,
+        .form-object-content .form-object-content,
+        .form-group .form-array-item {
+            padding-left: 0;
+        }
+
+        /* form-object-content 嵌套时的右边 padding */
+        .form-object-content .form-object-content {
+            padding-right: 6px;
+        }
+
+        /* 统一 form-object-content 的右边 padding */
+        .form-object>.form-object-content,
+        .form-object .form-object-content {
+            padding-right: 6px;
+        }
+
+        .form-object-header .btn {
+            cursor: pointer;
+        }
+
+        .form-object-header:hover {
+            opacity: 0.8;
+        }
+
+        .form-object-toggle {
+            font-size: 11px;
+            color: #666666;
+            transition: transform 0.2s;
+        }
+
+        .form-object-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .form-object-key {
+            font-weight: 500;
+            color: #1976d2;
+            font-size: 13px;
+            flex: 0 0 auto;
+        }
+
+        .form-object.level-0 .form-object-key {
+            color: #2e7d32;
+        }
+
+        .form-object.level-1 .form-object-key {
+            color: #1565c0;
+        }
+
+        .form-object.level-2 .form-object-key {
+            color: #e65100;
+        }
+
+        .form-object.level-3 .form-object-key {
+            color: #558b2f;
+        }
+
+        .form-object.level-4 .form-object-key {
+            color: #c2185b;
+        }
+
+        .form-object.level-5 .form-object-key {
+            color: #00695c;
+        }
+
+        .form-object-content {
+            display: block;
+            transition: opacity 0.2s ease;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        /* 根对象例外：不需要右边 padding */
+        .form-object.level-0>.form-object-content {
+            padding-right: 0;
+        }
+
+        .form-object-content.collapsed {
+            display: none;
+        }
+
+        /* 自定义对话框样式 */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .dialog-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .dialog-content {
+            margin-bottom: 20px;
+        }
+
+        .dialog-field {
+            margin-bottom: 16px;
+        }
+
+        .dialog-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .dialog-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .dialog-input:focus {
+            outline: none;
+            border-color: #0e639c;
+        }
+
+        .dialog-radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .dialog-radio {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dialog-radio input[type="radio"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .dialog-radio label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* 空状态和加载样式已移至 common.css */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999999;
+        }
+
+        /* 错误和成功消息样式已移至 common.css */
+        /* 滚动条样式已移至 common.css */
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📁 配置文件查看器</h1>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="refreshTree()">🔄 刷新</button>
+            <button class="btn btn-info" id="backupBtn" onclick="backupConfig()" disabled>📦 备份</button>
+            <button class="btn btn-danger" id="deleteBtn" onclick="deleteConfig()" disabled>🗑️ 删除</button>
+            <button class="btn btn-primary" id="saveBtn" onclick="saveConfig()" disabled>💾 保存</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">配置目录</div>
+            <div class="tree-container" id="treeContainer">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-header">
+                <div class="path" id="currentPath">未选择文件</div>
+            </div>
+            <div class="content-body" id="contentBody">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
+                    <div>请从左侧选择配置文件</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/common.js"></script>
+    <script>
+        // ==================== 常量定义 ====================
+        const MAX_LEVEL = 5;
+        // 注意: INPUT_MIN_WIDTH 和 INPUT_MAX_WIDTH 已移至 common.js
+        const TOGGLE_EXPANDED = '▼';
+        const TOGGLE_COLLAPSED = '▶';
+
+        // ==================== 全局变量 ====================
+        let currentConfigPath = null;
+        let currentConfigData = null;
+        let expandedPaths = new Set(); // 保存展开的目录路径
+
+        // ==================== 工具函数 ====================
+        // 注意: createElement, createButton, apiCall, getApiUrl 已移至 common.js
+        // 统一消息显示（使用公共函数）
+        function showConfigMessage(message, type = 'error') {
+            showMessage(message, type, 'contentBody');
+        }
+
+        // 解析路径字符串为路径数组
+        function parsePath(key) {
+            const pathParts = [];
+            let current = '';
+            for (let i = 0; i < key.length; i++) {
+                const char = key[i];
+                if (char === '.') {
+                    if (current) {
+                        pathParts.push(current);
+                        current = '';
+                    }
+                } else if (char === '[') {
+                    if (current) {
+                        pathParts.push(current);
+                        current = '';
+                    }
+                } else if (char === ']') {
+                    if (current) {
+                        pathParts.push(parseInt(current));
+                        current = '';
+                    }
+                } else {
+                    current += char;
+                }
+            }
+            if (current) pathParts.push(current);
+            return pathParts;
+        }
+
+        // 导航到路径指定的目标对象
+        function navigateToPath(data, pathParts, createMissing = false) {
+            let target = data;
+            for (let i = 0; i < pathParts.length; i++) {
+                const part = pathParts[i];
+                if (typeof part === 'number') {
+                    if (!Array.isArray(target) || part >= target.length) {
+                        if (!createMissing) return null;
+                        if (!Array.isArray(target)) target = [];
+                        while (target.length <= part) target.push(null);
+                    }
+                    target = target[part];
+                } else {
+                    if (!target[part]) {
+                        if (!createMissing) return null;
+                        target[part] = {};
+                    }
+                    target = target[part];
+                }
+            }
+            return target;
+        }
+
+        // ==================== 目录树相关 ====================
+
+        // 加载目录树
+        async function loadTree() {
+            try {
+                const result = await apiCall('/api/config/tree');
+                if (result.success) {
+                    renderTree(result.tree);
+                } else {
+                    showConfigMessage('加载目录树失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showConfigMessage('加载目录树失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染目录树
+        function renderTree(tree, container = null) {
+            if (!container) {
+                container = document.getElementById('treeContainer');
+                container.innerHTML = '';
+            }
+
+            const item = createElement('div', 'tree-item');
+            const icon = createElement('span', 'tree-item-icon');
+
+            // 检查是否应该展开（如果是目录且有子项，且路径在expandedPaths中）
+            // 注意：tree.path 可能是空字符串（根目录），需要明确处理
+            const path = tree.path !== undefined && tree.path !== null ? String(tree.path) : '';
+            // 在DOM元素上存储路径，方便后续获取
+            item.dataset.path = path;
+
+            const shouldExpand = tree.type === 'directory' &&
+                tree.children?.length > 0 &&
+                expandedPaths.has(path);
+
+            icon.textContent = tree.type === 'directory'
+                ? (shouldExpand ? '📂' : '📁')
+                : '📄';
+            const name = createElement('span', 'tree-item-name', tree.name);
+
+            item.appendChild(icon);
+            item.appendChild(name);
+
+            if (tree.type === 'file') {
+                item.onclick = () => loadConfigFile(tree.path, item);
+            } else if (tree.type === 'directory') {
+                item.onclick = () => toggleTreeItem(item, tree);
+            }
+
+            container.appendChild(item);
+
+            if (tree.children?.length > 0) {
+                const childrenContainer = createElement('div', 'tree-children');
+                // 根据expandedPaths决定是否展开
+                childrenContainer.style.display = shouldExpand ? 'block' : 'none';
+                tree.children.forEach(child => renderTree(child, childrenContainer));
+                container.appendChild(childrenContainer);
+            }
+        }
+
+        // 切换树节点展开/收起
+        function toggleTreeItem(item, tree) {
+            const childrenContainer = item.nextElementSibling;
+            if (childrenContainer?.classList.contains('tree-children')) {
+                const isHidden = childrenContainer.style.display === 'none';
+                childrenContainer.style.display = isHidden ? 'block' : 'none';
+                const icon = item.querySelector('.tree-item-icon');
+                icon.textContent = isHidden ? '📂' : '📁';
+
+                // 更新expandedPaths状态
+                // 优先从DOM元素获取路径（更可靠），如果没有则从tree对象获取
+                const path = item.dataset.path !== undefined ? item.dataset.path :
+                    (tree && tree.path !== undefined && tree.path !== null ? String(tree.path) : '');
+
+                // 更新展开状态（路径可以是空字符串，表示根目录）
+                if (isHidden) {
+                    expandedPaths.add(path);
+                } else {
+                    expandedPaths.delete(path);
+                }
+            }
+        }
+
+        // ==================== 配置文件相关 ====================
+
+        // 加载配置文件
+        async function loadConfigFile(path, itemElement = null) {
+            try {
+                document.querySelectorAll('.tree-item').forEach(item => item.classList.remove('selected'));
+                itemElement?.classList.add('selected');
+
+                currentConfigPath = path;
+                document.getElementById('currentPath').textContent = path;
+                document.getElementById('contentBody').innerHTML = '<div class="loading">加载中...</div>';
+
+                const result = await apiCall(`/api/config/file?path=${encodeURIComponent(path)}`);
+
+                if (result.success) {
+                    currentConfigData = result.data;
+                    renderConfigForm(result.data);
+                    document.getElementById('saveBtn').disabled = false;
+                    document.getElementById('backupBtn').disabled = false;
+                    document.getElementById('deleteBtn').disabled = false;
+                } else {
+                    showConfigMessage('加载配置文件失败: ' + result.error, 'error');
+                    document.getElementById('backupBtn').disabled = true;
+                    document.getElementById('deleteBtn').disabled = true;
+                }
+            } catch (error) {
+                showConfigMessage('加载配置文件失败: ' + error.message, 'error');
+            }
+        }
+
+        // 计算层级深度
+        function getLevel(parentKey) {
+            return parentKey ? parentKey.split('.').length : 0;
+        }
+
+        // 获取层级类名
+        function getLevelClass(parentKey) {
+            return `form-object level-${Math.min(getLevel(parentKey), MAX_LEVEL)}`;
+        }
+
+        // 创建折叠/展开功能
+        function createCollapsibleHandler(toggle, content) {
+            return () => {
+                const isCollapsed = toggle.dataset.collapsed === 'true';
+                toggle.dataset.collapsed = isCollapsed ? 'false' : 'true';
+                content.classList.toggle('collapsed', !isCollapsed);
+                toggle.textContent = isCollapsed ? TOGGLE_EXPANDED : TOGGLE_COLLAPSED;
+                toggle.classList.toggle('collapsed', !isCollapsed);
+            };
+        }
+
+        // 创建折叠头部
+        function createCollapsibleHeader(keyLabelText, buttons = []) {
+            const header = createElement('div', 'form-object-header');
+            const toggle = createElement('span', 'form-object-toggle', TOGGLE_EXPANDED);
+            toggle.dataset.collapsed = 'false';
+
+            header.appendChild(toggle);
+
+            if (keyLabelText) {
+                const keyLabel = createElement('span', 'form-object-key');
+                keyLabel.textContent = keyLabelText;
+                header.appendChild(keyLabel);
+            }
+
+            buttons.forEach(btn => {
+                if (btn) {
+                    btn.style.flexShrink = '0';
+                    btn.style.marginLeft = '8px';
+                    header.appendChild(btn);
+                }
+            });
+
+            return { header, toggle };
+        }
+
+        // 创建内容区域
+        function createContentArea() {
+            const content = createElement('div', 'form-object-content');
+            content.style.width = '100%';
+            content.style.minWidth = '0';
+            return content;
+        }
+
+        // 创建值容器（用于键值对）
+        function createValueContainer() {
+            const valueContainer = createElement('div');
+            Object.assign(valueContainer.style, {
+                display: 'flex',
+                flex: '1 1 auto',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                padding: '0',
+                minWidth: '0',
+                width: '100%'
+            });
+            return valueContainer;
+        }
+
+        // 创建带样式的按钮
+        function createStyledButton(text, onClick, className = 'btn btn-secondary') {
+            const btn = createButton(text, className, onClick);
+            btn.style.flexShrink = '0';
+            btn.style.marginLeft = '8px';
+            return btn;
+        }
+
+        // 渲染配置表单
+        function renderConfigForm(data, parentKey = '', container = null) {
+            if (!container) {
+                container = document.getElementById('contentBody');
+                container.innerHTML = '';
+            }
+
+            if (data === null || data === undefined) {
+                const input = createInputForValue('null', parentKey);
+                container.appendChild(input);
+                return;
+            }
+
+            if (Array.isArray(data)) {
+                const isNestedInObject = parentKey && container.classList?.contains('form-object-content');
+                const arrayContainer = createElement('div', getLevelClass(parentKey));
+                const addBtn = createStyledButton('+ 添加', (e) => {
+                    e.stopPropagation();
+                    showAddArrayItemDialog(parentKey);
+                });
+                const deleteBtn = isNestedInObject ? createStyledButton('删除', (e) => {
+                    e.stopPropagation();
+                    removeObjectKey(parentKey);
+                }) : null;
+
+                // 创建折叠头部
+                const keyLabelText = isNestedInObject ? null : (parentKey || '配置根数组');
+                const { header, toggle } = createCollapsibleHeader(keyLabelText, [addBtn, deleteBtn].filter(Boolean));
+
+                // 创建内容区域
+                const content = createContentArea();
+                header.onclick = createCollapsibleHandler(toggle, content);
+
+                arrayContainer.appendChild(header);
+                arrayContainer.appendChild(content);
+
+                // 渲染数组项
+                data.forEach((item, index) => {
+                    const itemDiv = createElement('div', 'form-array-item');
+                    renderConfigForm(item, `${parentKey}[${index}]`, itemDiv);
+                    content.appendChild(itemDiv);
+                });
+
+                // 如果在字典中，需要包装在form-group中
+                if (isNestedInObject) {
+                    const group = createElement('div', 'form-group');
+                    const label = createElement('label', 'form-label');
+                    label.textContent = parentKey.split('.').pop() || parentKey;
+                    group.appendChild(label);
+                    group.appendChild(arrayContainer);
+                    container.appendChild(group);
+                } else {
+                    container.appendChild(arrayContainer);
+                }
+                return;
+            }
+
+            if (typeof data === 'object') {
+                const objectContainer = createElement('div', getLevelClass(parentKey));
+
+                // 创建折叠头部
+                const keyLabelText = parentKey
+                    ? (parentKey.split('.').pop() || parentKey)
+                    : '配置根对象';
+                const addBtn = createStyledButton('+ 添加', (e) => {
+                    e.stopPropagation();
+                    showAddKeyDialog(parentKey);
+                });
+                const deleteBtn = parentKey ? createStyledButton('删除', (e) => {
+                    e.stopPropagation();
+                    removeObjectKey(parentKey);
+                }) : null;
+
+                const { header, toggle } = createCollapsibleHeader(keyLabelText, [addBtn, deleteBtn].filter(Boolean));
+
+                // 创建内容区域
+                const content = createContentArea();
+                header.onclick = createCollapsibleHandler(toggle, content);
+
+                objectContainer.appendChild(header);
+                objectContainer.appendChild(content);
+
+                // 渲染对象内容
+                Object.keys(data).forEach(key => {
+                    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+                    const value = data[key];
+
+                    // 如果值是字典对象，直接渲染字典，不显示外层的label
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                        renderConfigForm(value, fullKey, content);
+                    } else if (Array.isArray(value)) {
+                        // 如果是数组，让数组自己处理删除按钮（在折叠行中）
+                        renderConfigForm(value, fullKey, content);
+                    } else {
+                        // 普通键值对，显示label和值
+                        const group = createElement('div', 'form-group');
+                        const label = createElement('label', 'form-label', key);
+                        const valueContainer = createValueContainer();
+                        const deleteBtn = createButton('删除', 'btn btn-secondary', () => removeKeyValuePair(parentKey, key));
+                        deleteBtn.style.flexShrink = '0';
+
+                        renderConfigForm(value, fullKey, valueContainer);
+                        valueContainer.appendChild(deleteBtn);
+                        group.appendChild(label);
+                        group.appendChild(valueContainer);
+                        content.appendChild(group);
+                    }
+                });
+
+                container.appendChild(objectContainer);
+                return;
+            }
+
+            // 基本类型
+            const input = createInputForValue(data, parentKey);
+            container.appendChild(input);
+        }
+
+        // 注意: adjustInputWidth 和 enableAutoWidthAdjust 函数已移至 common.js
+        // 这里直接使用公共版本，无需重新定义
+
+        // 创建输入控件
+        function createInputForValue(value, key) {
+            const inputMap = {
+                boolean: () => {
+                    const input = createElement('input', 'form-control');
+                    input.type = 'checkbox';
+                    input.checked = value;
+                    input.onchange = () => updateConfigValue(key, input.checked);
+                    return input;
+                },
+                number: () => {
+                    const input = createElement('input', 'form-control');
+                    input.type = 'number';
+                    input.value = value;
+                    // 使用公共的自动宽度调整功能
+                    enableAutoWidthAdjust(input);
+                    input.oninput = () => {
+                        const numValue = input.value.includes('.') ? parseFloat(input.value) : parseInt(input.value);
+                        updateConfigValue(key, isNaN(numValue) ? 0 : numValue);
+                    };
+                    return input;
+                },
+                string: () => {
+                    const isLongText = value.includes('\n') || value.length > 100;
+                    const input = createElement(isLongText ? 'textarea' : 'input', 'form-control');
+                    input.value = value;
+
+                    if (isLongText) {
+                        input.rows = Math.min(10, value.split('\n').length + 2);
+                        // textarea 也使用动态宽度调整
+                        enableAutoWidthAdjust(input);
+                        input.oninput = () => {
+                            updateConfigValue(key, input.value);
+                        };
+                    } else {
+                        input.type = 'text';
+                        enableAutoWidthAdjust(input);
+                        input.oninput = () => {
+                            updateConfigValue(key, input.value);
+                        };
+                    }
+                    return input;
+                }
+            };
+
+            const handler = inputMap[typeof value];
+            if (handler) return handler();
+
+            // 默认处理：转换为字符串输入
+            const input = createElement('input', 'form-control');
+            input.type = 'text';
+            input.value = String(value);
+            enableAutoWidthAdjust(input);
+            input.oninput = () => {
+                updateConfigValue(key, input.value);
+            };
+            return input;
+        }
+
+        // ==================== 配置值操作 ====================
+
+        // 更新配置值
+        function updateConfigValue(key, value) {
+            if (!currentConfigData) return;
+            const pathParts = parsePath(key);
+            if (pathParts.length === 0) return;
+
+            const target = navigateToPath(currentConfigData, pathParts.slice(0, -1), true);
+            if (!target) return;
+
+            const lastKey = pathParts[pathParts.length - 1];
+            target[lastKey] = value;
+        }
+
+        // 解析路径到目标对象（返回父对象和最后一个key）
+        function resolvePath(key) {
+            if (!currentConfigData) return null;
+            const pathParts = parsePath(key);
+            if (pathParts.length === 0) return null;
+
+            const target = navigateToPath(currentConfigData, pathParts.slice(0, -1), false);
+            return target ? { target, lastKey: pathParts[pathParts.length - 1] } : null;
+        }
+
+        // 获取路径对应的对象本身（用于添加到该对象中）
+        function getTargetObject(key) {
+            if (!currentConfigData) return null;
+            if (!key) return currentConfigData; // 根对象
+
+            const pathParts = parsePath(key);
+            if (pathParts.length === 0) return currentConfigData;
+
+            // 导航到key对应的对象本身
+            const target = navigateToPath(currentConfigData, pathParts, false);
+            return target;
+        }
+
+        // ==================== 对话框管理模块 ====================
+        const DialogManager = {
+            /**
+             * 创建基础对话框结构
+             * @param {string} title - 对话框标题
+             * @param {Function} onClose - 关闭回调函数
+             * @returns {Object} {overlay, dialog, titleElement, content, actions}
+             */
+            createBase(title, onClose) {
+                const overlay = createElement('div', 'dialog-overlay');
+                const dialog = createElement('div', 'dialog');
+                const titleElement = createElement('div', 'dialog-title', title);
+                const content = createElement('div', 'dialog-content');
+                const actions = createElement('div', 'dialog-actions');
+
+                dialog.appendChild(titleElement);
+                dialog.appendChild(content);
+                dialog.appendChild(actions);
+                overlay.appendChild(dialog);
+
+                // 点击遮罩关闭
+                overlay.onclick = (e) => {
+                    if (e.target === overlay) {
+                        this.close(overlay);
+                        if (onClose) onClose(false);
+                    }
+                };
+
+                return { overlay, dialog, titleElement, content, actions };
+            },
+
+            /**
+             * 创建标准按钮组
+             * @param {Function} onCancel - 取消回调
+             * @param {Function} onConfirm - 确认回调
+             * @param {string} confirmText - 确认按钮文本
+             * @returns {Object} {cancelBtn, confirmBtn, container}
+             */
+            createButtons(onCancel, onConfirm, confirmText = '确定') {
+                const container = createElement('div', 'dialog-actions');
+                const cancelBtn = createButton('取消', 'btn btn-secondary', onCancel);
+                const confirmBtn = createButton(confirmText, 'btn btn-primary', onConfirm);
+                container.appendChild(cancelBtn);
+                container.appendChild(confirmBtn);
+                return { cancelBtn, confirmBtn, container };
+            },
+
+            /**
+             * 显示对话框
+             * @param {HTMLElement} overlay - 对话框遮罩元素
+             * @param {HTMLElement} focusElement - 初始焦点元素
+             */
+            show(overlay, focusElement = null) {
+                document.body.appendChild(overlay);
+                if (focusElement) {
+                    focusElement.focus();
+                }
+            },
+
+            /**
+             * 关闭对话框
+             * @param {HTMLElement} overlay - 对话框遮罩元素
+             */
+            close(overlay) {
+                if (overlay && overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
+            }
+        };
+
+        // ==================== 类型选择器模块 ====================
+        const TypeSelector = {
+            /**
+             * 创建类型选择组件
+             * @param {string} name - radio按钮的name属性
+             * @param {string} prefix - ID前缀
+             * @param {Array} options - 选项数组 [{value, label, checked, idSuffix}]
+             * @param {Function} onChange - 类型改变回调
+             * @returns {Object} {container, inputs, getSelectedType}
+             */
+            create(name, prefix, options, onChange = null) {
+                const container = createElement('div', 'dialog-field');
+                const typeLabel = createElement('label', 'dialog-label', '类型:');
+                const radioGroup = createElement('div', 'dialog-radio-group');
+
+                const inputs = {};
+                const inputElements = {};
+
+                options.forEach(option => {
+                    const radioDiv = createElement('div', 'dialog-radio');
+                    const radioInput = createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = name;
+                    radioInput.value = option.value;
+                    radioInput.id = `${prefix}-${option.idSuffix || option.value}`;
+                    radioInput.checked = option.checked || false;
+
+                    const radioLabel = createElement('label');
+                    radioLabel.setAttribute('for', radioInput.id);
+                    radioLabel.textContent = option.label;
+
+                    radioDiv.appendChild(radioInput);
+                    radioDiv.appendChild(radioLabel);
+                    radioGroup.appendChild(radioDiv);
+
+                    inputs[option.value] = radioInput;
+                    inputElements[option.value] = { input: radioInput, label: radioLabel };
+
+                    if (onChange) {
+                        radioInput.onchange = () => onChange(option.value);
+                    }
+                });
+
+                container.appendChild(typeLabel);
+                container.appendChild(radioGroup);
+
+                return {
+                    container,
+                    inputs,
+                    inputElements,
+                    getSelectedType: () => {
+                        for (const [value, input] of Object.entries(inputs)) {
+                            if (input.checked) return value;
+                        }
+                        return null;
+                    }
+                };
+            }
+        };
+
+        // ==================== 表单字段模块 ====================
+        const FormField = {
+            /**
+             * 创建输入字段
+             * @param {string} label - 标签文本
+             * @param {string} id - 输入框ID
+             * @param {string} placeholder - 占位符
+             * @param {string} type - 输入类型
+             * @returns {Object} {container, labelElement, input}
+             */
+            createInput(label, id, placeholder = '', type = 'text') {
+                const container = createElement('div', 'dialog-field');
+                const labelElement = createElement('label', 'dialog-label', label);
+                labelElement.setAttribute('for', id);
+                const input = createElement('input', 'dialog-input');
+                input.id = id;
+                input.type = type;
+                input.placeholder = placeholder;
+
+                container.appendChild(labelElement);
+                container.appendChild(input);
+
+                return { container, labelElement, input };
+            },
+
+            /**
+             * 创建值输入字段（带显示/隐藏控制）
+             * @param {string} id - 输入框ID
+             * @param {string} placeholder - 占位符
+             * @param {Function} onToggle - 切换显示/隐藏的回调
+             * @returns {Object} {container, input, show, hide, toggle}
+             */
+            createValueInput(id, placeholder = '请输入值', onToggle = null) {
+                const { container, input } = this.createInput('值:', id, placeholder);
+                let isVisible = true;
+
+                const show = () => {
+                    container.style.display = 'block';
+                    isVisible = true;
+                    if (onToggle) onToggle(true);
+                };
+                const hide = () => {
+                    container.style.display = 'none';
+                    isVisible = false;
+                    if (onToggle) onToggle(false);
+                };
+
+                return {
+                    container,
+                    input,
+                    show,
+                    hide,
+                    toggle: (showFlag) => {
+                        if (showFlag) show();
+                        else hide();
+                    },
+                    isVisible: () => isVisible
+                };
+            }
+        };
+
+        // ==================== 配置操作模块 ====================
+        const ConfigOperations = {
+            /**
+             * 根据类型创建值
+             * @param {string} type - 类型: 'dict', 'list', 'value'
+             * @param {string} valueInput - 值输入（仅当type为'value'时使用）
+             * @returns {*} 创建的值
+             */
+            createValueByType(type, valueInput = '') {
+                if (type === 'dict') return {};
+                if (type === 'list') return [];
+                return valueInput;
+            },
+
+            /**
+             * 添加项到数组
+             * @param {string} parentKey - 父键路径
+             * @param {*} value - 要添加的值
+             * @returns {Object} {success, error}
+             */
+            addToArray(parentKey, value) {
+                const target = getTargetObject(parentKey);
+                if (!target) {
+                    return { success: false, error: '无法找到目标数组' };
+                }
+                if (!Array.isArray(target)) {
+                    return { success: false, error: '目标不是数组，无法添加' };
+                }
+                target.unshift(value);
+                renderConfigForm(currentConfigData);
+                return { success: true };
+            },
+
+            /**
+             * 添加键到对象
+             * @param {string} parentKey - 父键路径
+             * @param {string} keyName - 键名
+             * @param {*} value - 值
+             * @returns {Object} {success, error}
+             */
+            addToObject(parentKey, keyName, value) {
+                const target = getTargetObject(parentKey);
+                if (!target) {
+                    return { success: false, error: '无法找到目标对象' };
+                }
+                if (typeof target !== 'object' || target === null) {
+                    return { success: false, error: '目标不是字典或数组，无法添加' };
+                }
+                if (Array.isArray(target)) {
+                    target.unshift(value);
+                } else {
+                    if (target.hasOwnProperty(keyName)) {
+                        return { success: false, error: `键名 "${keyName}" 已存在，请使用其他名称` };
+                    }
+                    // 将新键添加到对象开头（重新构建对象以保持顺序）
+                    const newObject = {};
+                    newObject[keyName] = value;
+                    Object.keys(target).forEach(key => {
+                        newObject[key] = target[key];
+                    });
+                    Object.keys(target).forEach(key => {
+                        delete target[key];
+                    });
+                    Object.keys(newObject).forEach(key => {
+                        target[key] = newObject[key];
+                    });
+                }
+                renderConfigForm(currentConfigData);
+                return { success: true };
+            }
+        };
+
+        // 显示删除确认对话框（要求输入delete确认）
+        function showDeleteConfirmDialog(message) {
+            return new Promise((resolve) => {
+                // 创建对话框遮罩
+                const overlay = createElement('div', 'dialog-overlay');
+                const dialog = createElement('div', 'dialog');
+
+                const title = createElement('div', 'dialog-title', '⚠️ 确认删除');
+                const content = createElement('div', 'dialog-content');
+
+                // 显示消息
+                const messageDiv = createElement('div', 'dialog-field');
+                messageDiv.style.marginBottom = '16px';
+                messageDiv.style.color = '#d32f2f';
+                messageDiv.style.fontWeight = '500';
+                messageDiv.textContent = message;
+                content.appendChild(messageDiv);
+
+                // 输入框
+                const inputField = createElement('div', 'dialog-field');
+                const inputLabel = createElement('label', 'dialog-label', '请输入 "delete" 确认删除:');
+                inputLabel.setAttribute('for', 'dialog-delete-input');
+                const deleteInput = createElement('input', 'dialog-input');
+                deleteInput.id = 'dialog-delete-input';
+                deleteInput.type = 'text';
+                deleteInput.placeholder = '输入 delete';
+                deleteInput.style.borderColor = '#d32f2f';
+                inputField.appendChild(inputLabel);
+                inputField.appendChild(deleteInput);
+                content.appendChild(inputField);
+
+                // 错误提示
+                const errorDiv = createElement('div', 'dialog-field');
+                errorDiv.style.color = '#d32f2f';
+                errorDiv.style.fontSize = '12px';
+                errorDiv.style.minHeight = '20px';
+                errorDiv.style.display = 'none';
+                content.appendChild(errorDiv);
+
+                // 按钮
+                const actions = createElement('div', 'dialog-actions');
+                const cancelBtn = createButton('取消', 'btn btn-secondary', () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                });
+                const confirmBtn = createButton('确认删除', 'btn btn-danger', () => {
+                    const inputValue = deleteInput.value.trim();
+                    if (inputValue.toLowerCase() !== 'delete') {
+                        errorDiv.textContent = '输入不正确，请输入 "delete" 确认删除';
+                        errorDiv.style.display = 'block';
+                        deleteInput.style.borderColor = '#d32f2f';
+                        deleteInput.focus();
+                        return;
+                    }
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                });
+
+                actions.appendChild(cancelBtn);
+                actions.appendChild(confirmBtn);
+
+                dialog.appendChild(title);
+                dialog.appendChild(content);
+                dialog.appendChild(actions);
+                overlay.appendChild(dialog);
+
+                // 点击遮罩关闭
+                overlay.onclick = (e) => {
+                    if (e.target === overlay) {
+                        document.body.removeChild(overlay);
+                        resolve(false);
+                    }
+                };
+
+                // 按Enter键确认
+                deleteInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        confirmBtn.click();
+                    }
+                };
+
+                document.body.appendChild(overlay);
+                deleteInput.focus();
+            });
+        }
+
+        // 删除对象键（删除整个对象）
+        async function removeObjectKey(objectKey) {
+            if (!currentConfigData || !objectKey) return;
+
+            // 获取要删除的键名用于显示
+            const pathParts = parsePath(objectKey);
+            if (pathParts.length === 0) return;
+            const keyName = pathParts[pathParts.length - 1];
+
+            // 显示确认对话框
+            const message = `确定要删除 "${keyName}" 吗？\n\n此操作不可恢复！`;
+            const confirmed = await showDeleteConfirmDialog(message);
+            if (!confirmed) {
+                return;
+            }
+
+            // 如果是根对象的键，直接删除
+            if (pathParts.length === 1) {
+                delete currentConfigData[pathParts[0]];
+                renderConfigForm(currentConfigData);
+                return;
+            }
+
+            // 导航到父对象
+            const target = navigateToPath(currentConfigData, pathParts.slice(0, -1), false);
+            if (target && typeof target === 'object') {
+                delete target[pathParts[pathParts.length - 1]];
+            }
+            renderConfigForm(currentConfigData);
+        }
+
+        // 删除键值对
+        async function removeKeyValuePair(parentKey, key) {
+            if (!currentConfigData) return;
+
+            // 显示确认对话框
+            const message = `确定要删除键 "${key}" 吗？\n\n此操作不可恢复！`;
+            const confirmed = await showDeleteConfirmDialog(message);
+            if (!confirmed) {
+                return;
+            }
+
+            // 获取parentKey对应的对象本身（用于删除其中的键）
+            const target = getTargetObject(parentKey);
+            if (target && typeof target === 'object' && !Array.isArray(target)) {
+                delete target[key];
+                // 重新渲染页面，确保删除后的内容正确显示
+                renderConfigForm(currentConfigData);
+            }
+        }
+
+        // 显示添加项对话框（统一的对话框，用于数组和字典）
+        function showAddItemDialog(parentKey, isArray = false) {
+            if (!currentConfigData) return;
+
+            return new Promise((resolve) => {
+                // 使用DialogManager创建基础对话框
+                const title = isArray ? '添加数组项' : '添加新键';
+                const { overlay, content, actions } = DialogManager.createBase(title, (result) => resolve(result));
+
+                // 使用TypeSelector创建类型选择（统一使用相同的选项）
+                const radioName = isArray ? 'addArrayItemType' : 'addKeyType';
+                const radioPrefix = isArray ? 'radio-array' : 'radio';
+                const typeSelector = TypeSelector.create(radioName, radioPrefix, [
+                    { value: 'dict', label: '字典对象', checked: false, idSuffix: 'dict' },
+                    { value: 'list', label: '列表', checked: false, idSuffix: 'list' },
+                    { value: 'value', label: '键值对', checked: true, idSuffix: 'value' }
+                ]);
+
+                // 使用FormField创建键名输入（数组时隐藏）
+                const keyField = FormField.createInput('键名:', 'dialog-key-input', '请输入键名');
+                if (isArray) {
+                    keyField.container.style.display = 'none';
+                }
+
+                // 使用FormField创建值输入
+                const valueInputId = isArray ? 'dialog-array-value-input' : 'dialog-value-input';
+                const valueInputField = FormField.createValueInput(valueInputId, '请输入值');
+
+                // 类型切换时显示/隐藏值输入框
+                const toggleValueField = (type) => {
+                    valueInputField.container.style.display = (type === 'value') ? 'block' : 'none';
+                };
+                Object.values(typeSelector.inputs).forEach(input => {
+                    input.onchange = () => toggleValueField(input.value);
+                });
+                toggleValueField('value'); // 初始化
+
+                content.appendChild(typeSelector.container);
+                content.appendChild(keyField.container);
+                content.appendChild(valueInputField.container);
+
+                // 创建按钮
+                const { cancelBtn, confirmBtn } = DialogManager.createButtons(
+                    () => {
+                        DialogManager.close(overlay);
+                        resolve(false);
+                    },
+                    () => {
+                        // 如果是字典，需要验证键名
+                        if (!isArray) {
+                            const keyName = keyField.input.value.trim();
+                            if (!keyName) {
+                                showConfigMessage('请输入键名', 'error');
+                                return;
+                            }
+
+                            const selectedType = typeSelector.getSelectedType();
+                            const value = ConfigOperations.createValueByType(selectedType, valueInputField.input.value);
+                            const result = ConfigOperations.addToObject(parentKey, keyName, value);
+
+                            if (!result.success) {
+                                showConfigMessage(result.error, 'error');
+                                return;
+                            }
+                        } else {
+                            // 数组添加
+                            const selectedType = typeSelector.getSelectedType();
+                            const value = ConfigOperations.createValueByType(selectedType, valueInputField.input.value);
+                            const result = ConfigOperations.addToArray(parentKey, value);
+
+                            if (!result.success) {
+                                showConfigMessage(result.error, 'error');
+                                return;
+                            }
+                        }
+
+                        DialogManager.close(overlay);
+                        resolve(true);
+                    }
+                );
+                actions.appendChild(cancelBtn);
+                actions.appendChild(confirmBtn);
+
+                // 按Enter键确认
+                if (!isArray) {
+                    keyField.input.onkeydown = (e) => {
+                        if (e.key === 'Enter') {
+                            confirmBtn.click();
+                        }
+                    };
+                }
+                valueInputField.input.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        confirmBtn.click();
+                    }
+                };
+
+                // 设置初始焦点
+                const focusElement = isArray ? valueInputField.input : keyField.input;
+                DialogManager.show(overlay, focusElement);
+            });
+        }
+
+        // 显示添加数组项对话框（调用统一对话框）
+        function showAddArrayItemDialog(parentKey) {
+            return showAddItemDialog(parentKey, true);
+        }
+
+        // 显示添加键对话框（调用统一对话框）
+        function showAddKeyDialog(parentKey) {
+            return showAddItemDialog(parentKey, false);
+        }
+
+        // 保存配置
+        async function saveConfig() {
+            if (!currentConfigPath || !currentConfigData) {
+                showConfigMessage('没有可保存的配置', 'error');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveBtn');
+            try {
+                saveBtn.disabled = true;
+                saveBtn.textContent = '保存中...';
+
+                const result = await apiCall('/api/config/file', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        path: currentConfigPath,
+                        data: currentConfigData,
+                    }),
+                });
+
+                if (result.success) {
+                    showConfigMessage('配置文件保存成功！', 'success');
+                } else {
+                    showConfigMessage('保存失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showConfigMessage('保存失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 保存';
+            }
+        }
+
+        // 备份配置文件
+        async function backupConfig() {
+            if (!currentConfigPath) {
+                showConfigMessage('没有可备份的配置文件', 'error');
+                return;
+            }
+
+            if (!confirm(`确定要备份配置文件 "${currentConfigPath}" 吗？`)) {
+                return;
+            }
+
+            const backupBtn = document.getElementById('backupBtn');
+            try {
+                backupBtn.disabled = true;
+                backupBtn.textContent = '备份中...';
+
+                const result = await apiCall('/api/config/file/backup', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        path: currentConfigPath
+                    })
+                });
+
+                if (result.success) {
+                    showConfigMessage(`备份成功！备份文件: ${result.backup_path}`, 'success');
+                    // 刷新目录树以显示备份文件
+                    refreshTree();
+                } else {
+                    showConfigMessage('备份失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showConfigMessage('备份失败: ' + error.message, 'error');
+            } finally {
+                backupBtn.disabled = false;
+                backupBtn.textContent = '📦 备份';
+            }
+        }
+
+        // 删除配置文件
+        async function deleteConfig() {
+            if (!currentConfigPath) {
+                showConfigMessage('没有可删除的配置文件', 'error');
+                return;
+            }
+
+            // 显示确认对话框（要求输入delete）
+            const confirmMessage = `确定要删除配置文件 "${currentConfigPath}" 吗？\n\n此操作不可恢复！`;
+            const confirmed = await showDeleteConfirmDialog(confirmMessage);
+            if (!confirmed) {
+                return;
+            }
+
+            const deleteBtn = document.getElementById('deleteBtn');
+            try {
+                deleteBtn.disabled = true;
+                deleteBtn.textContent = '删除中...';
+
+                const result = await apiCall(`/api/config/file?path=${encodeURIComponent(currentConfigPath)}`, {
+                    method: 'DELETE'
+                });
+
+                if (result.success) {
+                    showConfigMessage('文件删除成功！', 'success');
+                    // 清空当前内容
+                    currentConfigPath = null;
+                    currentConfigData = null;
+                    document.getElementById('currentPath').textContent = '未选择文件';
+                    document.getElementById('contentBody').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📄</div>
+                            <div>请从左侧选择配置文件</div>
+                        </div>
+                    `;
+                    // 禁用按钮
+                    document.getElementById('saveBtn').disabled = true;
+                    document.getElementById('backupBtn').disabled = true;
+                    document.getElementById('deleteBtn').disabled = true;
+                    // 刷新目录树
+                    refreshTree();
+                } else {
+                    showConfigMessage('删除失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showConfigMessage('删除失败: ' + error.message, 'error');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑️ 删除';
+            }
+        }
+
+        // 刷新目录树
+        function refreshTree() {
+            loadTree();
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTree();
+        });
+    </script>
+</body>
+
+</html>

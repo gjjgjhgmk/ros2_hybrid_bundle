@@ -1,0 +1,260 @@
+{
+  "left_home": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "left_home",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.2,
+    "max_acceleration_scaling_factor": 0.2,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "right_home": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "right_home",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.2,
+    "max_acceleration_scaling_factor": 0.2,
+    "joint_names": [
+      "right_joint1",
+      "right_joint2",
+      "right_joint3",
+      "right_joint4",
+      "right_joint5",
+      "right_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "left_weld_seed": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_seed",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.5,
+      -0.5,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "left_weld_02": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_02",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.7,
+      -0.3,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "left_weld_03": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_03",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.5,
+      -0.1,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "left_weld_04": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_04",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.7,
+      0.1,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "left_weld_05": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_05",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.6,
+      0.3,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_seed": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_seed",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.6,
+      0.3,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_02": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_02",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.59,
+      0.22,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_03": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_03",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.61,
+      0.14,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_04": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_04",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.6,
+      0.06,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_05": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_05",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.62,
+      -0.02,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  }
+}

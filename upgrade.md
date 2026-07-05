@@ -1,685 +1,358 @@
-你是我的 ROS2 Humble + MoveIt2 + UR ROS2 Driver 工程助手。请在我当前工作区 `/home/woody/simple_fmp_v1` 内改造现有项目，不要重写整个项目，不要删除现有功能。当前结构如下：
+你是我的 ROS2 Humble + MoveIt2 + UR ROS2 Driver 工程助手。请在当前公开仓库中执行“阶段 A 收尾补丁”，只修安全正确性，不做性能优化、不重写算法、不做评估体系。
 
-* Python 编排包：`intent_hybrid_planner`
+仓库：
+https://github.com/gjjgjhgmk/ros2_hybrid_bundle
 
-  * 主节点：`intent_hybrid_planner/intent_hybrid_planner_node.py`
-  * FMP：`intent_hybrid_planner/fmp_core.py`
-  * Python RRT baseline：`intent_hybrid_planner/intent_biased_rrt.py`
-* C++ runtime bridge 包：`intent_hybrid_runtime_cpp`
+背景：
+当前仓库已经有：
+- `CheckMotionBatch.srv`
+- `PlanLocalSegment.srv`
+- C++ `collision_checker.cpp`
+- C++ `intent_rrt_connect.cpp`
+- Python 主节点 `intent_hybrid_planner_node.py`
+- C++ runtime bridge `intent_runtime_bridge.cpp`
 
-  * 当前节点：`intent_runtime_bridge.cpp`
-  * 当前职责：批量碰撞服务、FK + Marker 发布服务、轨迹下发服务
-* 接口包：`intent_hybrid_interfaces`
-
-  * 当前 srv：`CheckStatesBatch.srv`、`DispatchJointTrajectory.srv`、`PublishPlanningMarkers.srv`
-
-我的目标是把当前系统升级为：
-
-Python 负责：
-
-1. nominal trajectory / demo 生成或读取
-2. FMP train / modulation
-3. danger segment detection
-4. 调用 C++ local planner 生成局部 via path
-5. 调用 C++ post validation
-6. 调用 C++ trajectory dispatch
-7. benchmark logging
-
-C++ 负责：
-
-1. 通过 MoveIt2 PlanningSceneMonitor 直接做碰撞检测，不要在 RRT 内部通过 `/check_state_validity` 服务逐点查询
-2. 提供 `isStateValid(q)` 和 `isEdgeValid(q1,q2)`
-3. 提供 batch motion validation service
-4. 提供 C++ Intent-Biased RRT-Connect 局部规划 service/action
-5. 保留原有轨迹下发和 marker 发布能力
-
-请按照以下步骤执行。
+但是阶段 A 还没有完全收尾。请只补以下 6 个点：
 
 ============================================================
-一、总体原则
-======
-
-1. 不要删除现有 Python RRT：`intent_biased_rrt.py` 保留为 baseline / fallback，但实机主流程要能选择使用 C++ local planner。
-2. 不要删除现有 C++ bridge：在 `intent_hybrid_runtime_cpp` 内扩展它，而不是另建完全无关的包。
-3. 所有新功能必须通过 ROS2 参数开关控制，默认尽量保持原有行为不崩。
-4. C++ planner 的目标不是 RRT*，而是先实现实时友好的 Intent-Biased RRT-Connect。
-5. 实机执行前必须做整条轨迹 post validation：既检查 states，也检查相邻 edges。
-6. 如果 FMP 调制后 post validation 失败，默认不要执行轨迹，返回明确错误日志。
-7. 保持 ROS2 Humble 兼容。
-8. 代码要可编译、可运行、日志清晰。
-9. 添加必要的 CMakeLists.txt、package.xml、srv 依赖更新。
-10. 每完成一个阶段，运行 `colcon build --symlink-install`，修复编译错误。
-
+目标 1：补 C++ RRT-Connect direct shortcut
 ============================================================
-二、接口层改造：新增 srv
-==============
 
-在 `intent_hybrid_interfaces/srv/` 下新增两个服务。
-
----
-
-1. 新增 `CheckMotionBatch.srv`
-
----
-
-内容如下：
-
-```
-string group_name
-string[] joint_names
-uint32 dof
-float64[] states_flat
-bool check_edges
-float64 edge_resolution
----
-bool ok
-bool[] state_valid
-bool[] edge_valid
-int32 first_invalid_state
-int32 first_invalid_edge
-string error_message
-float64 elapsed_ms
-uint32 collision_queries
-```
-
-语义：
-
-* `states_flat` 表示 N × dof 的轨迹点，row-major。
-* `state_valid[i]` 表示第 i 个状态是否 collision-free。
-* 如果 `check_edges=true`，则 `edge_valid[i]` 表示第 i 条边 `state_i -> state_{i+1}` 是否有效，长度应为 `N-1`。
-* `first_invalid_state` 和 `first_invalid_edge` 没有无效项时为 `-1`。
-* `collision_queries` 统计内部调用状态碰撞检测的次数。
-
----
-
-2. 新增 `PlanLocalSegment.srv`
-
----
-
-内容如下：
-
-```
-string group_name
-string[] joint_names
-uint32 dof
-
-float64[] start
-float64[] goal
-
-float64[] intent_flat
-uint32 intent_points
-float64 t_start
-float64 t_end
-
-float64[] state_min
-float64[] state_max
-
-float64 timeout_sec
-uint32 max_iter
-float64 step_size
-float64 goal_tolerance
-float64 edge_resolution
-
-float64 p_intent
-float64 p_goal
-float64 p_uniform
-float64 sigma_intent
-
-uint32 rng_seed
----
-bool ok
-float64[] path_flat
-uint32 path_points
-float64[] via_times
-string stop_reason
-string error_message
-float64 elapsed_ms
-uint32 iter_used
-uint32 collision_queries
-```
-
-语义：
-
-* `intent_flat` 表示 M × dof 的 intent path，row-major。
-* 返回 `path_flat` 表示 K × dof 的局部路径，row-major。
-* `via_times` 长度为 K，根据路径弧长比例在 `[t_start,t_end]` 上分配。
-* `state_min/state_max` 可为空；为空时使用 MoveIt joint bounds 或宽松 bounds。
-* `p_intent/p_goal/p_uniform` 自动归一化。
-* `sigma_intent` 是 intent 高斯扰动标准差，先支持标量。
-* `goal_tolerance` 是 q-space 中认为双树连接成功的距离阈值。
-
-更新：
-
-* `intent_hybrid_interfaces/CMakeLists.txt`
-* `intent_hybrid_interfaces/package.xml`
-  确保新 srv 能生成。
-
-============================================================
-三、C++ Runtime Core：新增 CollisionChecker
-======================================
-
-在 `intent_hybrid_runtime_cpp/include/intent_hybrid_runtime_cpp/` 新增：
-
-* `collision_checker.hpp`
-* `planner_types.hpp`
-* `intent_rrt_connect.hpp`
-
-在 `intent_hybrid_runtime_cpp/src/` 新增：
-
-* `collision_checker.cpp`
-* `intent_rrt_connect.cpp`
-
----
-
-1. `CollisionChecker` 目标
-
----
-
-实现一个类：
-
-```
-class CollisionChecker {
-public:
-  struct Options {
-    std::string group_name;
-    std::vector<std::string> joint_names;
-    double edge_resolution{0.02};
-  };
-
-  CollisionChecker(
-    const rclcpp::Node::SharedPtr& node,
-    const std::string& robot_description_param = "robot_description");
-
-  bool initialize();
-
-  bool isReady() const;
-
-  bool isStateValid(
-    const std::vector<double>& q,
-    const std::string& group_name,
-    const std::vector<std::string>& joint_names,
-    std::string* error = nullptr);
-
-  bool isEdgeValid(
-    const std::vector<double>& q1,
-    const std::vector<double>& q2,
-    const std::string& group_name,
-    const std::vector<std::string>& joint_names,
-    double edge_resolution,
-    std::string* error = nullptr);
-
-  std::vector<bool> checkStatesBatch(...);
-
-  // check both states and edges, return first invalid indices and query count.
-};
-```
+文件主要在：
+- `intent_hybrid_runtime_cpp/src/intent_rrt_connect.cpp`
+- 可能涉及 `intent_hybrid_runtime_cpp/include/.../intent_rrt_connect.hpp`
+- 可能涉及 `intent_runtime_bridge.cpp` 的 PlanLocalSegment handler
 
 要求：
 
-1. 内部使用 `planning_scene_monitor::PlanningSceneMonitor`。
-2. 启动：
+1. 在 start / goal 都通过 state validity 检查之后，进入随机 RRT 前，先检查：
 
-   * `startSceneMonitor()`
-   * `startWorldGeometryMonitor()`
-   * `startStateMonitor()`
-3. 碰撞检测不要通过 `/check_state_validity` 服务。
-4. 每次 batch / local planning 开始时，获取 `LockedPlanningSceneRO`，在一次函数调用内部复用 scene snapshot。
-5. 复用 `moveit::core::RobotState`，不要每个 state 都重新构造昂贵对象。
-6. 用 `setJointGroupPositions(jmg, q)` 设置规划组关节。
-7. 调用 `state.update()` 后做 collision check。
-8. 如果能用 `planning_scene->isStateColliding(state, group_name)`，优先使用这个接口。
-9. 如果 group/joint_names 错误，要返回清楚错误。
-10. state 维度必须等于 joint_names 数量。
-11. edge check 用最大关节差决定插值点数：
+```text
+isEdgeValid(start, goal)
+如果 start→goal 这条 direct edge 有效，直接返回：
+ok = true
+stop_reason = "direct"
+path = [start, goal]
+path_points = 2
+path_flat = row-major 的 2 × dof
+via_times = [t_start, t_end]
+不进入随机 RRT，不生成额外 via，不扰动安全的局部段。
+日志打印：
+PlanLocalSegment direct path valid; return 2-point path.
 
-```
-N = ceil(max_i(abs(q2[i]-q1[i])) / edge_resolution)
-```
+验收：
 
-并检查 `k=0...N` 所有插值点。
-
-注意：
-
-* 需要包含 MoveIt2 头文件和 CMake 依赖：
-
-  * `moveit_ros_planning`
-  * `moveit_core`
-  * `planning_scene_monitor`
-  * `robot_state`
-  * `robot_model`
-  * `collision_detection`
-* 如果 Humble 下 include 名称有差异，请根据实际编译错误修正。
-
+无障碍或局部段本来安全时，PlanLocalSegment 应返回 stop_reason=direct、path_points=2。
 ============================================================
-四、C++ Local Planner：Intent-Biased RRT-Connect
-=============================================
+目标 2：给 connect_tree() 加最大步数保护
 
-新增 `IntentRRTConnect` 类。
+当前 connect_tree() 里如果存在无保护 while(true)，请改成有界循环。
 
----
+要求：
 
-1. 输入参数结构
+每次 connect 开始时根据当前 tree 端点和 target 的距离计算：
+max_connect_steps = ceil(distance(q_from, q_target) / step_size) + 2
+connect 循环最多执行 max_connect_steps 次。
+如果超过最大步数还没有连接成功，返回失败或 progress 状态，但不能死循环。
+防止 step_size <= 0、distance 非法、NaN 等异常输入导致死循环。
+日志或 debug 信息中可以记录 max_connect_steps，但不要过度刷屏。
 
----
+验收：
 
-在 `planner_types.hpp` 中定义：
-
-```
-struct LocalPlanRequestData {
-  std::string group_name;
-  std::vector<std::string> joint_names;
-  size_t dof;
-
-  std::vector<double> start;
-  std::vector<double> goal;
-
-  std::vector<std::vector<double>> intent_path;  // M x dof
-
-  std::vector<double> state_min;
-  std::vector<double> state_max;
-
-  double t_start;
-  double t_end;
-
-  double timeout_sec;
-  uint32_t max_iter;
-  double step_size;
-  double goal_tolerance;
-  double edge_resolution;
-
-  double p_intent;
-  double p_goal;
-  double p_uniform;
-  double sigma_intent;
-
-  uint32_t rng_seed;
-};
-
-struct LocalPlanResultData {
-  bool ok;
-  std::vector<std::vector<double>> path;  // K x dof
-  std::vector<double> via_times;
-  std::string stop_reason;
-  std::string error_message;
-  double elapsed_ms;
-  uint32_t iter_used;
-  uint32_t collision_queries;
-};
-```
-
----
-
-2. RRT-Connect 算法要求
-
----
-
-实现双树：
-
-```
-Tree A starts from start
-Tree B starts from goal
-
-for iter:
-    q_rand = sample_mixture()
-    q_new = extend(TreeA, q_rand)
-    if q_new added:
-        q_connect = connect(TreeB, q_new)
-        if connected:
-            return combined path
-    swap(TreeA, TreeB)
-```
-
-采样混合：
-
-* `p_intent`: 从 intent_path 随机选一个点，加 `sigma_intent * normal(0,1)` 扰动，然后 clamp 到 bounds。
-* `p_goal`: 采样 goal。
-* `p_uniform`: 在 bounds 内均匀采样。
-* 三个概率自动归一化。
-
-nearest：
-
-* 线性扫描即可，先保证正确。
-
-steer：
-
-```
-delta = q_target - q_near
-if norm(delta) <= step_size: q_new = q_target
-else q_new = q_near + step_size * delta / norm(delta)
-```
-
-有效性：
-
-* `q_new` 必须 `isStateValid`
-* `q_near -> q_new` 必须 `isEdgeValid`
-
-连接成功条件：
-
-* 若两树新端点距离 <= `goal_tolerance`
-* 或者一次 steer 到对方节点并 edge valid
-
-路径合并：
-
-* 返回从 start 到 goal 的连续 path。
-* 注意 tree swap 后方向不要错。
-* 去掉重复连接点。
-
-时间分配：
-
-* 根据 q-space 弧长分配 via_times 到 `[t_start,t_end]`。
-* 如果路径总长度接近 0，则线性分配。
-
-失败策略：
-
-* 如果超时，返回 `ok=false`，`stop_reason="timeout"`。
-* 如果 max_iter 用尽，返回 `ok=false`，`stop_reason="max_iter"`。
-* 不要返回碰撞路径作为 ok=true。
-* error message 要清楚。
-
+intent_rrt_connect.cpp 中不应再有无保护的 while(true)。
+connect 阶段不会无限循环。
 ============================================================
-五、改造 `intent_runtime_bridge.cpp`
-================================
+目标 3：成功 path 返回前必须做最终验证 validatePath()
 
-保留原有功能，同时新增两个服务：
+请新增或补齐一个路径最终验证函数，名称可为：
 
-* `/intent_runtime/check_motion_batch`
-* `/intent_runtime/plan_local_segment`
+validatePath(...)
 
----
+或者等价逻辑。
 
-1. 参数新增
+成功返回前必须验证：
 
----
+path 非空，至少 2 个点。
+path[0] 数值上接近 start。
+path[-1] 数值上接近 goal。
+path 中每个点维度等于 dof。
+每个点都是 state valid。
+每对相邻点的 edge 都是 valid。
+如果最后一个点只是接近 goal 但不等于 goal：
+尝试追加真正 goal；
+验证倒数第二点到 goal 的 edge；
+如果 valid，则追加 goal；
+如果 invalid，则不能认为成功。
 
-在 bridge 节点声明参数：
+建议容差：
 
-```
-use_planning_scene_monitor: bool = true
-robot_description_param: string = "robot_description"
-default_edge_resolution: double = 0.02
-default_planner_timeout_sec: double = 0.1
-default_planner_max_iter: int = 500
-default_planner_step_size: double = 0.15
-default_goal_tolerance: double = 0.08
-```
+endpoint_tolerance = min(goal_tolerance, 1e-3 或合理小值)
 
----
+如果需要更宽松，至少必须保证最后 path 真实包含 goal，而不是只接近 goal。
 
-2. 初始化 CollisionChecker
+如果 validatePath 失败：
 
----
+ok = false
+stop_reason = "failed_connect" 或 "invalid_solution"
+path_points = 0
+path_flat = empty
+error_message 写清楚失败原因
 
-构造节点时：
+验收：
 
-* 创建 `CollisionChecker`
-* 调用 initialize
-* 如果失败，保留旧 `/check_state_validity` service fallback，但打印 warning。
-* 如果成功，新服务都优先使用 PlanningSceneMonitor。
-
----
-
-3. 实现 `handle_check_motion_batch`
-
----
-
-流程：
-
-1. parse `states_flat` 为 rows。
-2. 检查 dof / joint_names。
-3. 调 CollisionChecker 做 state valid。
-4. 如果 `check_edges=true`，做 edge valid。
-5. 填充 response。
-6. 统计 elapsed_ms 和 collision_queries。
-7. 遇到错误时 `ok=false`，error_message 明确。
-
----
-
-4. 实现 `handle_plan_local_segment`
-
----
-
-流程：
-
-1. parse start / goal / intent_flat。
-2. 检查 dof / joint_names / 参数合法性。
-3. 构造 `LocalPlanRequestData`。
-4. 调 `IntentRRTConnect::plan(...)`。
-5. 填充 response。
-6. 如果 planner 失败，`ok=false`，不要生成假路径。
-7. 日志输出：
-
-   * iter_used
-   * elapsed_ms
-   * collision_queries
-   * stop_reason
-   * path_points
-
----
-
-5. 保留旧 `CheckStatesBatch`
-
----
-
-保留 `/intent_runtime/check_states_batch`，但内部优先改成使用 CollisionChecker，而不是继续逐个调用 `/check_state_validity`。
-如果 CollisionChecker 不 ready，再 fallback 到旧 service 链路。
-
+RRT 成功返回的 path 首点必须是 start，末点必须是 goal。
+所有相邻 edge 必须通过 collision check。
+不允许只因两树端点距离小于 goal_tolerance 就返回未连接到 goal 的路径。
 ============================================================
-六、Python 编排层改造
-==============
+目标 4：失败时绝不返回假路径
 
-修改 `intent_hybrid_planner_node.py`。
+请检查所有 PlanLocalSegment / IntentRRTConnect 失败路径。
 
----
+失败情况包括但不限于：
 
-1. 新增参数
+invalid_request
+collision_start
+collision_goal
+timeout
+max_iter
+failed_connect
+invalid_solution
 
----
+要求：
 
-新增 ROS2 参数：
+所有失败情况下必须：
+ok = false
+path_points = 0
+path_flat.clear()
+via_times.clear()
+不允许返回 [start, goal] 假路径。
+不允许返回 partial tree path 当作成功 path。
+Python 收到 ok=false 时，不得把空 path 或 start-goal 当作 via。
+stop_reason 必须明确，不要只写 "failed"。
 
-```
-use_cpp_local_planner: bool = true
-cpp_local_planner_service: string = "/intent_runtime/plan_local_segment"
-cpp_motion_check_service: string = "/intent_runtime/check_motion_batch"
+验收：
 
-planner_type: string = "rrt_connect"
-cpp_planner_timeout_sec: double = 0.10
-cpp_planner_max_iter: int = 500
-cpp_planner_step_size: double = 0.15
-cpp_planner_goal_tolerance: double = 0.08
-cpp_edge_resolution: double = 0.02
+timeout/max_iter 情况下 path_points=0。
+path_flat 为空。
+Python 不会继续把失败结果进入 FMP。
+============================================================
+目标 5：Python 侧确认 FMP 后 post-check 是唯一安全门
 
-execute_only_if_postcheck_passed: bool = true
-postcheck_check_edges: bool = true
-```
+文件：
 
----
+intent_hybrid_planner/intent_hybrid_planner/intent_hybrid_planner_node.py
 
-2. 新增 service clients
+要求：
 
----
+FMP modulate() 完成后，任何 dispatch 前，必须调用：
+/intent_runtime/check_motion_batch
+check_edges = true
+edge_resolution = postcheck_edge_resolution
+新增或确认参数：
+execute_only_if_postcheck_passed: true
+postcheck_check_edges: true
+postcheck_edge_resolution: 0.02
+post-check 通过条件必须严格为：
+response.ok == true
+state_valid 长度 == trajectory point count
+state_valid 全 true
+edge_valid 长度 == trajectory point count - 1
+edge_valid 全 true
+first_invalid_state == -1
+first_invalid_edge == -1
+如果 N < 2，视为轨迹无效，不允许 dispatch。
+如果 post-check 失败：
+打印 error：
+first_invalid_state
+first_invalid_edge
+invalid state count
+invalid edge count
+state_valid length
+edge_valid length
+trajectory point count
+elapsed_ms
+collision_queries
+offline planning 返回失败
+不调用 execute_trajectory_offline()
+不调用 C++ dispatch
+不发送 FollowJointTrajectory action
+如果用户显式设置：
+execute_only_if_postcheck_passed: false
 
-导入新增 srv：
+可以允许实验模式继续，但必须打印明显 warning：
 
-* `CheckMotionBatch`
-* `PlanLocalSegment`
+Unsafe experimental mode: dispatching trajectory even though post-check failed.
 
-创建 clients：
+默认必须是 true。
 
-* `/intent_runtime/check_motion_batch`
-* `/intent_runtime/plan_local_segment`
-
-等待 service ready 的逻辑要有 timeout 和清楚日志。
-
----
-
-3. 把危险段局部规划改为可选 C++ planner
-
----
-
-当前 Step 2/4 “危险段 RRT 生成 via” 里，如果 `use_cpp_local_planner=true`：
-
-* 对每个 danger segment：
-
-  * 取 `local_start`
-  * 取 `local_goal`
-  * 取 `intent_local`
-  * 调 `/intent_runtime/plan_local_segment`
-  * 如果 success，把返回 path 作为 via_points
-  * 如果失败：
-
-    * 记录 stop_reason
-    * 如果允许 fallback，则调用现有 Python `IntentBiasedRRT`
-    * 否则本次规划失败，不执行
-
-如果 `use_cpp_local_planner=false`，保持原 Python RRT 逻辑。
-
----
-
-4. post validation 改成 motion batch
-
----
-
-FMP 调制生成 `modulated_traj` 后，调用 `/intent_runtime/check_motion_batch`：
-
-* states_flat = `modulated_traj.T.reshape(-1)`
-* check_edges = `postcheck_check_edges`
-* edge_resolution = `cpp_edge_resolution`
-
-如果返回：
-
-* `ok=false`：报错，不执行。
-* `first_invalid_state>=0` 或 `first_invalid_edge>=0`：报错，不执行，除非参数明确允许实验模式继续。
-* 全部有效：进入 dispatch。
-
----
-
-5. danger scan 也升级为 edge-aware
-
----
-
-原来如果只检查 nominal states，请补充 edge scan：
-
-* 用 `/intent_runtime/check_motion_batch` 对 nominal 全轨迹检查 states + edges。
-* danger_indices 同时来自：
-
-  * invalid state i
-  * invalid edge i：将 i 和 i+1 都加入 danger set
-* 再合并成 danger segments。
-
----
-
-6. 日志与 benchmark
-
----
-
-在现有 benchmark JSON/CSV 中追加字段：
-
-```
-cpp_local_planner_used
-cpp_plan_success_count
-cpp_plan_failure_count
-cpp_plan_time_ms_mean/p95/max
-cpp_plan_collision_queries_mean/p95/max
+benchmark/log 至少记录：
+postcheck_passed
+postcheck_state_invalid_count
+postcheck_edge_invalid_count
 postcheck_first_invalid_state
 postcheck_first_invalid_edge
 postcheck_elapsed_ms
 postcheck_collision_queries
-```
 
-保留原有 RRT baseline 指标。
+验收：
+
+FMP 后轨迹只要 state 或 edge 有一个 invalid，就不会 dispatch。
+CheckMotionBatch 响应尺寸异常也不会 dispatch。
+============================================================
+目标 6：Python 侧复核局部 path，包括 C++ path 和 fallback path
+
+要求：
+
+C++ PlanLocalSegment 返回 ok=true 后，Python 不要直接把 path 送入 densify / via merge。
+
+必须先调用：
+
+CheckMotionBatch(check_edges=true)
+
+对这个局部 path 进行复核。
+
+局部 path 复核通过后，才允许进入：
+densify / via merge / FMP modulation
+如果 C++ local path 复核失败：
+打印 error，包含 first_invalid_state / first_invalid_edge
+如果 allow_cpp_local_planner_fallback=true，尝试 Python RRT fallback
+如果 fallback=false，本轮 planning 失败，不进入 FMP，不 dispatch
+Python RRT fallback 生成的 path 也必须经过同样的 CheckMotionBatch(check_edges=true) 复核。
+fallback path 复核失败时：
+本轮 planning 失败
+不进入 FMP
+不 dispatch
+新增或确认参数：
+allow_cpp_local_planner_fallback: true
+
+开发阶段默认 true，实机严格测试时用户会设为 false。
+
+验收：
+
+所有进入 FMP 的 via path 都经过 motion-level 复核。
+C++ planner 和 Python fallback 都不能绕过局部 path 复核。
+============================================================
+不要做的事情
+
+本轮不要做：
+
+不要搭建最小评估体系
+不要做参数 sweep
+不要做 pRRTC/GPU
+不要重写 FMP
+不要删除 Python RRT fallback
+不要删除旧服务
+不要做 CollisionChecker 性能优化
+不要大规模重构 dispatch
+不要实现完整 Ruckig
+不要改控制器配置
+
+只做阶段 A 收尾的 correctness patch。
 
 ============================================================
-七、构建系统更新
-========
+构建要求
 
-更新 `intent_hybrid_runtime_cpp/CMakeLists.txt`：
+修改完成后执行：
 
-添加源文件：
-
-* `src/collision_checker.cpp`
-* `src/intent_rrt_connect.cpp`
-
-添加 include dirs。
-
-添加依赖：
-
-* `rclcpp`
-* `rclcpp_action`
-* `moveit_core`
-* `moveit_ros_planning`
-* `moveit_ros_planning_interface`
-* `planning_scene_monitor`
-* `robot_state`
-* `robot_model`
-* `collision_detection`
-* `intent_hybrid_interfaces`
-* `trajectory_msgs`
-* `control_msgs`
-* `sensor_msgs`
-* `geometry_msgs`
-* `visualization_msgs`
-
-如果某些依赖名在 Humble 中不对，请按实际包名修正。
-
-更新 `package.xml` 对应依赖。
-
-更新 Python 包依赖导入，确保新 srv 可 import。
-
-============================================================
-八、测试要求
-======
-
-完成代码后，请执行：
-
-```
 cd /home/woody/simple_fmp_v1
 colcon build --symlink-install
 source install/setup.bash
-```
 
-如果编译失败，请继续修复。
+如果接口包或 C++ 包需要单独构建，按顺序：
 
-然后提供以下测试命令或说明：
+colcon build --packages-select intent_hybrid_interfaces --symlink-install
+source install/setup.bash
 
-1. 启动 UR MoveIt / fake hardware 后，启动 runtime bridge。
-2. 调用 `/intent_runtime/check_motion_batch` 测试一条简单轨迹。
-3. 调用 `/intent_runtime/plan_local_segment` 测试 start 到 goal 的局部规划。
-4. 启动 Python planner，设置：
-
-   * `use_cpp_local_planner:=true`
-   * `postcheck_check_edges:=true`
-   * `execute_only_if_postcheck_passed:=true`
-
-如果没有真实 UR7e，就以 fake hardware / URSim 为目标。
-
+colcon build --packages-select intent_hybrid_runtime_cpp intent_hybrid_planner --symlink-install
+source install/setup.bash
 ============================================================
-九、代码质量要求
-========
+测试要求
 
-1. C++ 不要在 RRT 内部用 ROS service 调 `/check_state_validity`。
-2. C++ 碰撞检测必须支持 self collision + environment collision，即使用 MoveIt PlanningScene。
-3. C++ batch check 不要每个 state 都重新初始化 PlanningSceneMonitor。
-4. RRT 中必须检查 edge，不允许只检查 node。
-5. 所有路径执行前必须 post-check states + edges。
-6. Python fallback 逻辑要清晰。
-7. 所有错误都要有明确日志，不要 silent failure。
-8. 参数必须有合理默认值。
-9. 不要破坏现有 `DispatchJointTrajectory` 和 `PublishPlanningMarkers`。
-10. 不要删除旧 `CheckStatesBatch`，但可以内部优化实现。
+请提供并尽量执行以下测试：
 
+测试 1：direct path
+
+构造一个 start→goal 无碰撞的 local segment，调用：
+
+/intent_runtime/plan_local_segment
+
+期望：
+
+ok=true
+stop_reason=direct
+path_points=2
+path_flat 非空
+via_times 长度=2
+测试 2：start collision
+
+构造碰撞 start。
+
+期望：
+
+ok=false
+stop_reason=collision_start
+path_points=0
+path_flat=[]
+测试 3：goal collision
+
+构造碰撞 goal。
+
+期望：
+
+ok=false
+stop_reason=collision_goal
+path_points=0
+path_flat=[]
+测试 4：timeout/max_iter failure
+
+人为设置很小 timeout 或 max_iter，让 planner 失败。
+
+期望：
+
+ok=false
+path_points=0
+path_flat=[]
+stop_reason=timeout 或 max_iter 或 failed_connect
+测试 5：FMP 后 post-check failure
+
+让调制后轨迹故意穿过障碍，或用 mock/构造轨迹触发 CheckMotionBatch invalid。
+
+期望：
+
+postcheck_passed=false
+不调用 dispatch
+offline planning 返回失败
+日志包含 first_invalid_state 或 first_invalid_edge
+测试 6：local path 复核
+
+让 C++ planner 返回 path 后，确认 Python 日志中出现 local path check_motion_batch 复核结果。
+
+如果 local path invalid：
+
+不进入 FMP
+或进入 fallback
+fallback path 也必须复核
 ============================================================
-十、最终交付内容
-========
+Acceptance Criteria
 
-请完成代码修改后，给我总结：
+本轮完成的验收标准：
 
-1. 新增/修改了哪些文件。
-2. 新增了哪些 ROS2 参数。
-3. 新增了哪些 service。
-4. C++ RRT-Connect 的碰撞检测链路如何工作。
-5. Python 主节点如何调用 C++ planner。
-6. 如何运行 colcon build。
-7. 如何测试 check_motion_batch。
-8. 如何测试 plan_local_segment。
-9. 当前还没实现或需要后续优化的内容。
+direct start-goal edge valid 时返回 stop_reason=direct。
+connect_tree() 不存在无保护 while(true)。
+成功 path 首点为 start，末点为 goal。
+成功 path 所有相邻 edges valid。
+失败时 path_points=0，path_flat 为空。
+失败时不返回 [start, goal] 假路径。
+FMP 后 post-check 使用 CheckMotionBatch states+edges。
+FMP 后 post-check 失败时绝不 dispatch。
+CheckMotionBatch 响应尺寸异常时绝不 dispatch。
+C++ local path 和 Python fallback path 进入 FMP 前都经过 CheckMotionBatch 复核。
+本轮不破坏现有 FMP、Marker、Dispatch、旧接口和 Python fallback。
+
+完成后请总结：
+
+修改了哪些文件
+每个目标如何实现
+哪些测试已执行
+哪些测试需要用户在 URSim / fake hardware 下执行
+是否已经可以进入“最小评估体系搭建”

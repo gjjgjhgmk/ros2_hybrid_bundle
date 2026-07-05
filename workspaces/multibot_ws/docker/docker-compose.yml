@@ -1,0 +1,260 @@
+services:
+  ur-left-driver:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: ur-move-server
+    container_name: ur-left-driver
+    
+    # 环境变量
+    environment:
+      - ROS_DOMAIN_ID=18
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp  # 指定 ROS 2 中间件
+      - DISPLAY=${DISPLAY:-:0}  # X11转发，带默认值
+      - QT_X11_NO_MITSHM=1  # 修复 Qt GUI 应用问题
+      - XAUTHORITY=/home/developer/.Xauthority  # X11 认证文件路径
+      - QT_QPA_PLATFORM=xcb  # Qt 平台设置
+      - LIBGL_ALWAYS_INDIRECT=0  # OpenGL 渲染设置
+      - USER_NAME=${USER_NAME:-yw}
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+    user: "${USER_NAME:-yw}" # 确保以指定用户运行
+    
+    # 卷挂载 - 开发时挂载源代码
+    volumes:
+      - ../:/workspace/src:rw
+      # X11转发（Linux）
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
+      # 持久化日志
+      - ./logs:/workspace/logs:rw
+      # 共享内存（提升RViz性能）
+      - /dev/shm:/dev/shm
+    
+    # 工作目录
+    working_dir: /workspace
+
+    # 启动命令
+    command: >
+      bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      colcon build &&
+      source /workspace/install/setup.bash &&
+      ros2 launch single_arm_config left_arm.launch.py
+      "
+    
+    # 交互式终端
+    stdin_open: true
+    tty: true
+    
+    # 网络模式（使用host网络便于开发）
+    network_mode: "host"
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=ur-move,environment=development"
+        tag: "{{.Name}}"
+    
+    # 权限设置（根据需要）
+    privileged: false
+  
+  ur-right-driver:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: ur-move-server
+    container_name: ur-right-driver
+    
+    # 环境变量
+    environment:
+      - ROS_DOMAIN_ID=19
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp  # 指定 ROS 2 中间件
+      - DISPLAY=${DISPLAY:-:0}  # X11转发，带默认值
+      - QT_X11_NO_MITSHM=1  # 修复 Qt GUI 应用问题
+      - XAUTHORITY=/home/developer/.Xauthority  # X11 认证文件路径
+      - QT_QPA_PLATFORM=xcb  # Qt 平台设置
+      - LIBGL_ALWAYS_INDIRECT=0  # OpenGL 渲染设置
+      - USER_NAME=${USER_NAME:-yw}
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+    user: "${USER_NAME:-yw}" # 确保以指定用户运行
+    
+    # 卷挂载 - 开发时挂载源代码
+    volumes:
+      - ../:/workspace/src:rw
+      # X11转发（Linux）
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
+      # 持久化日志
+      - ./logs:/workspace/logs:rw
+      # 共享内存（提升RViz性能）
+      - /dev/shm:/dev/shm
+    
+    # 工作目录
+    working_dir: /workspace
+
+    # 启动命令
+    command: >
+      bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      colcon build &&
+      source /workspace/install/setup.bash &&
+      ros2 launch single_arm_config right_arm.launch.py
+      "
+    
+    # 交互式终端
+    stdin_open: true
+    tty: true
+    
+    # 网络模式（使用host网络便于开发）
+    network_mode: "host"
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=ur-move,environment=development"
+        tag: "{{.Name}}"
+    
+    # 权限设置（根据需要）
+    privileged: false
+  
+  ur-plan-server:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: ur-move-server
+    container_name: ur-plan-server
+    
+    # restart: "unless-stopped"
+    
+    # 环境变量
+    environment:
+      - ROS_DOMAIN_ID=27
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp  # 指定 ROS 2 中间件
+      - DISPLAY=${DISPLAY:-:0}  # X11转发，带默认值
+      - QT_X11_NO_MITSHM=1  # 修复 Qt GUI 应用问题
+      - XAUTHORITY=/home/developer/.Xauthority  # X11 认证文件路径
+      - QT_QPA_PLATFORM=xcb  # Qt 平台设置
+      - LIBGL_ALWAYS_INDIRECT=0  # OpenGL 渲染设置
+      - USER_NAME=${USER_NAME:-yw}
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+    user: "${USER_NAME:-yw}" # 确保以指定用户运行
+    
+    # 卷挂载 - 开发时挂载源代码
+    volumes:
+      - ../:/workspace/src:rw
+      # X11转发（Linux）
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
+      # 持久化日志
+      - ./logs:/workspace/logs:rw
+      # 共享内存（提升RViz性能）
+      - /dev/shm:/dev/shm
+    
+    # 工作目录
+    working_dir: /workspace
+    
+    # 启动命令 - 构建一次后保持容器运行
+    command: >
+      bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      colcon build &&
+      source /workspace/install/setup.bash &&
+      bash
+      "
+    
+    # 交互式终端
+    stdin_open: true
+    tty: true
+    
+    # 网络模式（使用host网络便于开发）
+    network_mode: "host"
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=ur-move,environment=development"
+        tag: "{{.Name}}"
+    
+    # 权限设置（根据需要）
+    privileged: false
+
+  ur-move-server:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: ur-move-server
+    container_name: ur-move-server
+    
+    # restart: "unless-stopped"
+    
+    # 环境变量
+    environment:
+      - ROS_DOMAIN_ID=66
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp  # 指定 ROS 2 中间件
+      - DISPLAY=${DISPLAY:-:0}  # X11转发，带默认值
+      - QT_X11_NO_MITSHM=1  # 修复 Qt GUI 应用问题
+      - XAUTHORITY=/home/developer/.Xauthority  # X11 认证文件路径
+      - QT_QPA_PLATFORM=xcb  # Qt 平台设置
+      - LIBGL_ALWAYS_INDIRECT=0  # OpenGL 渲染设置
+      - USER_NAME=${USER_NAME:-yw}
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+    user: "${USER_NAME:-yw}" # 确保以指定用户运行
+    
+    # 卷挂载 - 开发时挂载源代码
+    volumes:
+      - ../:/workspace/src:rw
+      # X11转发（Linux）
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
+      # 持久化日志
+      - ./logs:/workspace/logs:rw
+      # 共享内存（提升RViz性能）
+      - /dev/shm:/dev/shm
+    
+    # 工作目录
+    working_dir: /workspace
+
+    # 启动命令 - 构建一次后保持容器运行
+    command: >
+      bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      colcon build &&
+      echo '' &&
+      echo '✅ 构建完成，容器保持运行' &&
+      echo '使用以下命令进入容器:' &&
+      echo '  docker compose exec -it ur-move-server bash' &&
+      echo '' &&
+      tail -f /dev/null
+      "
+    
+    # 交互式终端
+    stdin_open: true
+    tty: true
+    
+    # 网络模式（使用host网络便于开发）
+    network_mode: "host"
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=ur-move,environment=development"
+        tag: "{{.Name}}"
+    
+    # 权限设置（根据需要）
+    privileged: false

@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多图像查看器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --text-color: #333;
+            --border-color: #e9ecef;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: var(--light-bg);
+        }
+
+        .multi-viewer-container {
+            width: 100%;
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+            background: var(--light-bg);
+            padding: 0;
+            gap: 10px;
+            box-sizing: border-box;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .section-content {
+            padding: 6px 10px;
+        }
+
+        .viewer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            margin-right: 15px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+
+
+        .add-viewer-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .add-viewer-btn:hover {
+            background: #229954;
+        }
+
+        .viewers-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            flex: 1;
+            overflow: visible;
+            align-items: start;
+        }
+
+        .image-viewer-module {
+            position: relative;
+            width: 100%;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e1e5e9;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .image-viewer-module:hover {
+            border-color: #667eea;
+        }
+
+
+        .module-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .module-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            min-width: 60px;
+        }
+
+        .control-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-module {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-module:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-module:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .connection-control-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+        }
+
+        .topic-control-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .topic-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .topic-select {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            min-width: 200px;
+        }
+
+        .topic-select:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        /* 列数选择器选项样式 */
+        #columnSelector {
+            min-width: 80px;
+            background: white !important;
+            border: 2px solid #3498db !important;
+            color: #2c3e50 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+        }
+
+        #columnSelector option {
+            background: white;
+            color: #2c3e50;
+            padding: 6px 10px;
+            font-weight: 600;
+        }
+
+        #columnSelector option:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        #columnSelector option:checked {
+            background: #3498db;
+            color: white;
+        }
+
+        .control-section,
+        .status-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-section label,
+        .status-section label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .module-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+        }
+
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .image-container {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        /* 强制隐藏滚动条 */
+        .image-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .image-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 20;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 0, 0, 1);
+            transform: scale(1.1);
+        }
+
+        .info-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            transition: all 0.3s ease;
+        }
+
+        .info-panel.collapsed {
+            max-width: 80px;
+            padding: 6px;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .info-title {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .collapse-btn {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .collapse-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .info-content {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .info-panel.collapsed .info-content {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .info-panel:not(.collapsed) .info-content {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        .info-panel .form-group {
+            margin-bottom: 10px;
+        }
+
+        .info-panel .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 5px;
+            align-items: flex-end;
+        }
+
+        .form-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .form-field label {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0;
+        }
+
+        .form-field button {
+            padding: 2px 4px;
+            font-size: 0.7em;
+            margin-bottom: 3px;
+            width: 50px;
+        }
+
+        .info-panel label {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .info-panel input {
+            width: 90%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .info-panel .connection-control-row {
+            gap: 15px;
+        }
+
+        .info-panel .control-section label,
+        .info-panel .status-section label {
+            font-size: 0.75em;
+            margin-bottom: 2px;
+        }
+
+        .info-panel .btn-module {
+            padding: 4px 8px;
+            font-size: 0.8em;
+        }
+
+        .info-panel .status-indicator {
+            padding: 4px 8px;
+            font-size: 0.8em;
+        }
+
+
+        .image-display {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+            object-fit: contain;
+            display: block;
+        }
+
+        .image-display:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .image-info {
+            margin-top: 5px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 3px;
+            font-size: 0.8em;
+            text-align: center;
+            min-width: 180px;
+            line-height: 1.2;
+            flex-shrink: 0;
+        }
+
+        .stats-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+            text-align: center;
+        }
+
+        .log-item.warning {
+            color: #ff8800;
+        }
+
+        @media (max-width: 768px) {
+            .connection-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .module-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .module-controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="multi-viewer-container" id="multiViewerContainer">
+        <div class="section">
+            <div class="section-header">🖼️ 多图像查看器</div>
+            <div class="section-content">
+                <div class="viewer-controls">
+                    <div class="control-group">
+                        <label for="columnSelector">列数:</label>
+                        <select id="columnSelector" class="topic-select">
+                            <option value="1">1列</option>
+                            <option value="2" selected>2列</option>
+                            <option value="3">3列</option>
+                            <option value="4">4列</option>
+                        </select>
+                    </div>
+                    <button class="add-viewer-btn" id="addViewerBtn">+ 增加查看器</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="viewers-grid" id="viewersGrid">
+            <!-- 查看器实例将动态添加到这里 -->
+        </div>
+    </div>
+
+    <script>
+        // URL参数解析函数
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 获取默认服务器地址
+        function getDefaultServerUrl() {
+            const ip = getUrlParameter('ip') || '127.0.0.1';
+            return `ws://${ip}:7010`;
+        }
+
+        class ImageViewerModule {
+            constructor(viewerId) {
+                this.viewerId = viewerId;
+                this.websocket = null;
+                this.connected = false;
+                this.clientId = null;
+                this.currentTopic = null;  // 当前选择的topic
+                this.stats = {
+                    connectionTime: null,
+                    imagesReceived: 0,
+                    lastImageTime: null,
+                    currentFramerate: 1
+                };
+
+                this.createViewerElement();
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            createViewerElement() {
+                // 创建查看器容器
+                this.viewerElement = document.createElement('div');
+                this.viewerElement.className = 'image-viewer-module';
+                this.viewerElement.id = `viewer-${this.viewerId}`;
+
+                // 创建查看器HTML结构
+                this.viewerElement.innerHTML = `
+                    <div class="image-container" id="imageContainer-${this.viewerId}">
+                        <div class="delete-btn" id="deleteBtn-${this.viewerId}">×</div>
+                        <div class="info-overlay">
+                            <div class="info-panel" id="infoPanel-${this.viewerId}">
+                                <div class="info-header">
+                                    <span class="info-title">控制面板</span>
+                                    <button class="collapse-btn" id="collapseBtn-${this.viewerId}">−</button>
+                                </div>
+                                <div class="info-content" id="infoContent-${this.viewerId}">
+                                    <div class="form-group">
+                                        <label for="serverUrl-${this.viewerId}">服务器地址:</label>
+                                        <input type="text" id="serverUrl-${this.viewerId}" value="${getDefaultServerUrl()}" placeholder="ws://127.0.0.1:7010">
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-row">
+                                            <div class="form-field">
+                                                <label for="clientName-${this.viewerId}">客户端名:</label>
+                                                <input type="text" id="clientName-${this.viewerId}" value="web_viewer_${this.viewerId}" placeholder="web_viewer">
+                                            </div>
+                                            <div class="form-field">
+                                                <label for="roomName-${this.viewerId}">房间名称:</label>
+                                                <input type="text" id="roomName-${this.viewerId}" value="default" placeholder="default">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-row">
+                                            <div class="form-field">
+                                                <button class="btn-module" id="saveBtn-${this.viewerId}">保存</button>
+                                                <input type="text" id="additionalInput-${this.viewerId}" placeholder="save">
+                                            </div>
+                                            <div class="form-field">
+                                                <label for="framerateInput-${this.viewerId}">帧率:</label>
+                                                <input type="number" id="framerateInput-${this.viewerId}" value="1" min="1" max="30" step="1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="connection-control-row">
+                                            <div class="control-section">
+                                                <label>连接控制:</label>
+                                                <div class="button-group">
+                                                    <button class="btn-module" id="connectBtn-${this.viewerId}">连接</button>
+                                                    <button class="btn-module" id="disconnectBtn-${this.viewerId}" disabled>断开</button>
+                                                </div>
+                                            </div>
+                                            <div class="status-section">
+                                                <label>状态:</label>
+                                                <div id="status-${this.viewerId}" class="status-indicator status-disconnected">未连接</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>话题管理:</label>
+                                        <div class="topic-control-row">
+                                            <div class="topic-section">
+                                                <div class="button-group">
+                                                    <button class="btn-module" id="queryTopicsBtn-${this.viewerId}" disabled>查询话题</button>
+                                                </div>
+                                            </div>
+                                            <div class="topic-section">
+                                                <select id="topicSelect-${this.viewerId}" class="topic-select" disabled>
+                                                    <option value="">请先查询话题</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            等待连接...
+                        </div>
+                    </div>
+                `;
+
+                // 添加到网格中
+                document.getElementById('viewersGrid').appendChild(this.viewerElement);
+            }
+
+            removeViewer() {
+                if (this.connected) {
+                    this.disconnect();
+                }
+                this.viewerElement.remove();
+                MultiViewerManager.removeViewer(this.viewerId);
+            }
+
+            initializeElements() {
+                // 连接相关元素
+                this.serverUrlInput = document.getElementById(`serverUrl-${this.viewerId}`);
+                this.clientNameInput = document.getElementById(`clientName-${this.viewerId}`);
+                this.roomNameInput = document.getElementById(`roomName-${this.viewerId}`);
+                this.connectBtn = document.getElementById(`connectBtn-${this.viewerId}`);
+                this.disconnectBtn = document.getElementById(`disconnectBtn-${this.viewerId}`);
+                this.statusDiv = document.getElementById(`status-${this.viewerId}`);
+
+                // 帧率控制元素
+                this.framerateInput = document.getElementById(`framerateInput-${this.viewerId}`);
+
+                // 保存控制元素
+                this.saveBtn = document.getElementById(`saveBtn-${this.viewerId}`);
+                this.additionalInput = document.getElementById(`additionalInput-${this.viewerId}`);
+
+                // 话题控制元素
+                this.queryTopicsBtn = document.getElementById(`queryTopicsBtn-${this.viewerId}`);
+                this.topicSelect = document.getElementById(`topicSelect-${this.viewerId}`);
+
+                // 折叠控制元素
+                this.infoPanel = document.getElementById(`infoPanel-${this.viewerId}`);
+                this.collapseBtn = document.getElementById(`collapseBtn-${this.viewerId}`);
+
+                // 删除按钮
+                this.deleteBtn = document.getElementById(`deleteBtn-${this.viewerId}`);
+
+                // 显示相关元素
+                this.imageContainer = document.getElementById(`imageContainer-${this.viewerId}`);
+            }
+
+            bindEvents() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.collapseBtn.addEventListener('click', () => this.toggleCollapse());
+                this.deleteBtn.addEventListener('click', () => this.removeViewer());
+
+                // 话题控制事件
+                this.queryTopicsBtn.addEventListener('click', () => this.queryAvailableTopics());
+                this.topicSelect.addEventListener('change', () => this.onTopicSelectChange());
+
+                // 帧率控制事件
+                this.framerateInput.addEventListener('change', () => this.setFramerate());
+
+                // 保存控制事件
+                this.saveBtn.addEventListener('click', () => this.saveCommand());
+            }
+
+            toggleCollapse() {
+                this.infoPanel.classList.toggle('collapsed');
+                const isCollapsed = this.infoPanel.classList.contains('collapsed');
+                this.collapseBtn.textContent = isCollapsed ? '+' : '−';
+            }
+
+            async connect() {
+                const serverUrl = this.serverUrlInput.value.trim();
+                const clientName = this.clientNameInput.value.trim() || 'web_viewer';
+
+                if (!serverUrl) {
+                    this.addLogEntry('error', '请输入服务器地址');
+                    return;
+                }
+
+                try {
+                    this.updateStatus('connecting', '连接中...');
+                    this.updateButtons(true); // 禁用连接按钮
+
+                    this.websocket = new WebSocket(serverUrl);
+
+                    this.websocket.onopen = () => {
+                        this.connected = true;
+                        this.stats.connectionTime = new Date();
+                        this.updateStatus('connected', '已连接');
+                        this.updateButtons(true);
+
+                        // 隐藏加载提示
+                        this.hideLoading();
+                    };
+
+                    this.websocket.onmessage = (event) => {
+                        this.handleMessage(event.data);
+                    };
+
+                    this.websocket.onclose = () => {
+                        this.connected = false;
+                        this.updateStatus('disconnected', '连接已断开');
+                        this.updateButtons(false);
+
+                        // 显示加载提示
+                        this.showLoading();
+                    };
+
+                    this.websocket.onerror = (error) => {
+                        this.updateStatus('disconnected', '连接失败');
+                        this.addLogEntry('error', 'WebSocket连接错误');
+                        this.updateButtons(false);
+                    };
+
+                } catch (error) {
+                    this.updateStatus('disconnected', '连接失败');
+                    this.addLogEntry('error', `连接失败: ${error.message}`);
+                    this.updateButtons(false);
+                }
+            }
+
+            disconnect() {
+                if (this.websocket) {
+                    this.websocket.close();
+                    this.websocket = null;
+                }
+            }
+
+            handleMessage(message) {
+                try {
+                    const data = JSON.parse(message);
+                    const type = data.type;
+
+                    switch (type) {
+                        case 'welcome':
+                            this.handleWelcome(data);
+                            break;
+                        case 'image':
+                            this.handleImage(data);
+                            break;
+                        case 'framerate_set':
+                            this.handleFramerateSet(data);
+                            break;
+                        case 'topic_selected':
+                            this.handleTopicSelected(data);
+                            break;
+                        case 'available_topics':
+                            this.handleAvailableTopics(data);
+                            break;
+                        case 'error':
+                            this.handleError(data);
+                            break;
+                        case 'pong':
+                            break;
+                        default:
+                    }
+                } catch (error) {
+                }
+            }
+
+            handleWelcome(data) {
+                this.clientId = data.client_id;
+                const serverInfo = data.server_info || {};
+                const message = data.message || '';
+
+                console.log(`Viewer ${this.viewerId}: 服务器欢迎消息: ${message}`);
+
+                // 检查是否为动态订阅器模式
+                if (serverInfo.dynamic_subscriber) {
+                    console.log(`Viewer ${this.viewerId}: 检测到动态订阅器模式`);
+                    this.addLogEntry('info', '动态订阅器模式：请手动选择要订阅的话题');
+                } else {
+                    // 传统模式：加入房间
+                    this.joinRoom(this.roomNameInput.value || 'default');
+                }
+            }
+
+            handleImage(data) {
+                const imageData = data.data;
+                const shape = data.shape;
+                const timestamp = data.timestamp;
+                const format = data.format || 'jpeg';
+
+                console.log(`Viewer ${this.viewerId}: 收到图像消息, 格式: ${format}, 尺寸: ${shape}`);
+
+                if (imageData && shape) {
+                    // 更新统计信息
+                    this.stats.imagesReceived++;
+                    this.stats.lastImageTime = new Date(timestamp * 1000);
+
+                    // 显示图像
+                    this.displayImage(imageData, shape, timestamp, format);
+
+                    if (this.stats.imagesReceived % 10 === 0) {
+                        console.log(`Viewer ${this.viewerId}: 已接收 ${this.stats.imagesReceived} 张图像`);
+                    }
+                } else {
+                    console.log(`Viewer ${this.viewerId}: 图像数据无效`);
+                }
+            }
+
+            handleFramerateSet(data) {
+                this.stats.currentFramerate = data.framerate;
+                this.framerateInput.value = data.framerate;
+            }
+
+            handleAvailableTopics(data) {
+                const topics = data.topics || [];
+                const currentTopic = data.current_topic || '';
+
+                // 清空下拉框
+                this.topicSelect.innerHTML = '';
+
+                if (topics.length === 0) {
+                    this.topicSelect.innerHTML = '<option value="">未发现可用话题</option>';
+                } else {
+                    // 添加默认选项
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '请选择话题';
+                    this.topicSelect.appendChild(defaultOption);
+
+                    // 添加可用话题选项
+                    topics.forEach(topic => {
+                        const option = document.createElement('option');
+                        option.value = topic;
+                        option.textContent = topic;
+                        this.topicSelect.appendChild(option);
+                    });
+                }
+
+                console.log(`Viewer ${this.viewerId}: 收到 ${topics.length} 个可用话题`);
+            }
+
+            handleTopicSelected(data) {
+                const topic = data.topic || '';
+                const status = data.status || '';
+                console.log(`Viewer ${this.viewerId}: Topic选择成功: ${topic} (状态: ${status})`);
+
+                // 更新UI状态
+                if (status === 'ready') {
+                    this.currentTopic = topic;
+                    this.addLogEntry('info', `已选择话题: ${topic}`);
+                    // 可以在这里更新UI显示当前选择的topic
+                }
+            }
+
+            queryAvailableTopics() {
+                if (this.connected) {
+                    // 显示查询状态
+                    this.addLogEntry('info', '正在查询可用话题...');
+
+                    const message = {
+                        type: 'get_available_topics'
+                    };
+                    this.websocket.send(JSON.stringify(message));
+                    console.log(`Viewer ${this.viewerId}: 查询可用话题`);
+
+                    // 设置超时重试
+                    setTimeout(() => {
+                        if (this.topicSelect.options.length <= 1) {
+                            this.addLogEntry('warning', '查询话题超时，请重试');
+                        }
+                    }, 5000);
+                } else {
+                    this.addLogEntry('error', '请先连接到服务器');
+                }
+            }
+
+            selectTopic() {
+                const selectedTopic = this.topicSelect.value;
+                if (this.connected && selectedTopic) {
+                    const message = {
+                        type: 'select_topic',
+                        topic: selectedTopic
+                    };
+                    this.websocket.send(JSON.stringify(message));
+                    console.log(`Viewer ${this.viewerId}: 选择话题: ${selectedTopic}`);
+                    this.addLogEntry('info', `正在选择话题: ${selectedTopic}`);
+                }
+            }
+
+            onTopicSelectChange() {
+                const selectedTopic = this.topicSelect.value;
+
+                // 选择话题时自动切换
+                if (selectedTopic && this.connected) {
+                    this.selectTopic();
+                }
+            }
+
+            setFramerate() {
+                const framerate = parseInt(this.framerateInput.value);
+
+                // 验证帧率范围
+                if (framerate < 1 || framerate > 30) {
+                    alert(`帧率设置失败：请输入1-30之间的数值，当前输入：${framerate}`);
+                    this.framerateInput.value = this.stats.currentFramerate || 10;
+                    return;
+                }
+
+                // 检查连接状态
+                if (!this.connected) {
+                    alert('帧率设置失败：请先连接到服务器');
+                    this.framerateInput.value = this.stats.currentFramerate || 10;
+                    return;
+                }
+
+                // 发送帧率设置
+                this.sendFramerate(framerate);
+            }
+
+            sendFramerate(framerate) {
+                try {
+                    const message = {
+                        type: 'set_framerate',
+                        framerate: framerate
+                    };
+
+                    this.websocket.send(JSON.stringify(message));
+                    console.log(`Viewer ${this.viewerId}: 设置帧率为 ${framerate}`);
+                    this.addLogEntry('info', `正在设置帧率为 ${framerate}`);
+
+                    // 显示设置成功弹框
+                    alert(`帧率设置成功：${framerate} FPS`);
+
+                } catch (error) {
+                    console.error(`Viewer ${this.viewerId}: 发送帧率设置失败`, error);
+                    alert(`帧率设置失败：${error.message}`);
+                    this.framerateInput.value = this.stats.currentFramerate || 10;
+                }
+            }
+
+            saveCommand() {
+                let command = this.additionalInput.value.trim();
+
+                // 如果命令为空，使用默认值"save"
+                if (!command) {
+                    command = "save";
+                }
+
+                // 检查连接状态
+                if (!this.connected) {
+                    alert('保存命令失败：请先连接到服务器');
+                    return;
+                }
+
+                // 发送保存命令
+                this.sendSaveCommand(command);
+            }
+
+            sendSaveCommand(command) {
+                try {
+                    const message = {
+                        type: 'save_command',
+                        command: command
+                    };
+
+                    this.websocket.send(JSON.stringify(message));
+                    console.log(`Viewer ${this.viewerId}: 发送保存命令: ${command}`);
+                    this.addLogEntry('info', `正在发送保存命令: ${command}`);
+                    alert(`保存命令发送成功：${command}`);
+                } catch (error) {
+                    console.error(`Viewer ${this.viewerId}: 发送保存命令失败`, error);
+                    alert(`保存命令发送失败：${error.message}`);
+                }
+            }
+
+            handleError(data) {
+                const message = data.message || '未知错误';
+                console.error(`Viewer ${this.viewerId}: ${message}`);
+            }
+
+            displayImage(imageData, shape, timestamp, format = 'jpeg') {
+                try {
+                    // 验证输入数据
+                    if (!imageData || !shape) {
+                        console.error(`Viewer ${this.viewerId}: 图像数据无效 - imageData: ${!!imageData}, shape: ${shape}`);
+                        return;
+                    }
+
+                    console.log(`Viewer ${this.viewerId}: 显示图像 - 格式: ${format}, 尺寸: ${shape}`);
+
+                    // 检查是否已存在图像元素
+                    let img = this.imageContainer.querySelector('.image-display');
+                    let info = this.imageContainer.querySelector('.image-info');
+
+                    if (!img) {
+                        // 首次创建图像元素
+                        img = document.createElement('img');
+                        img.className = 'image-display';
+                        this.imageContainer.appendChild(img);
+
+                        // 添加图像加载错误处理
+                        img.onerror = (error) => {
+                            console.error(`Viewer ${this.viewerId}: 图像加载失败:`, error);
+                            console.error(`Viewer ${this.viewerId}: 图像源: ${img.src.substring(0, 100)}...`);
+                        };
+
+                        img.onload = () => {
+                            console.log(`Viewer ${this.viewerId}: 图像加载成功 - 尺寸: ${img.naturalWidth}x${img.naturalHeight}`);
+                        };
+                    }
+
+                    if (!info) {
+                        // 首次创建信息元素
+                        info = document.createElement('div');
+                        info.className = 'image-info';
+                        this.imageContainer.appendChild(info);
+                    }
+
+                    // 根据格式设置正确的MIME类型
+                    let mimeType = 'image/jpeg'; // 默认
+                    const formatLower = format ? format.toLowerCase() : 'jpeg';
+
+                    if (formatLower === 'png') {
+                        mimeType = 'image/png';
+                    } else if (formatLower === 'jpeg' || formatLower === 'jpg') {
+                        mimeType = 'image/jpeg';
+                    } else {
+                        console.warn(`Viewer ${this.viewerId}: 未知格式 ${format}, 使用默认JPEG`);
+                        mimeType = 'image/jpeg';
+                    }
+
+                    // 更新图像源
+                    const dataUrl = `data:${mimeType};base64,${imageData}`;
+                    img.src = dataUrl;
+
+                    // 更新图像信息
+                    const currentTime = new Date();
+                    const connectionTime = this.stats.connectionTime ?
+                        Math.floor((currentTime - this.stats.connectionTime.getTime()) / 1000) : 0;
+
+                    // 检测是否为深度图（通过话题名称或格式）
+                    const isDepthImage = this.currentTopic && this.currentTopic.toLowerCase().includes('depth');
+                    const imageType = isDepthImage ? '深度图' : '彩色图';
+
+                    info.innerHTML = `
+                        ${shape[1]} × ${shape[0]} | ${new Date(timestamp * 1000).toLocaleTimeString()} | ${format.toUpperCase()} | ${imageType} | ${this.stats.currentFramerate} FPS | ${connectionTime}s
+                    `;
+
+                } catch (error) {
+                    console.error(`Viewer ${this.viewerId}: 显示图像失败:`, error);
+                }
+            }
+
+            joinRoom(roomName) {
+                if (this.connected) {
+                    const message = {
+                        type: 'join_room',
+                        room: roomName
+                    };
+                    this.websocket.send(JSON.stringify(message));
+                }
+            }
+
+            updateStatus(status, text) {
+                this.statusDiv.className = `status-indicator status-${status}`;
+                this.statusDiv.textContent = text;
+            }
+
+            updateButtons(connected) {
+                this.connectBtn.disabled = connected;
+                this.disconnectBtn.disabled = !connected;
+
+                // 话题控制按钮状态
+                this.queryTopicsBtn.disabled = !connected;
+                this.topicSelect.disabled = !connected;
+            }
+
+
+            hideLoading() {
+                const loadingElement = this.imageContainer.querySelector('.loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
+            }
+
+            showLoading() {
+                const loadingElement = this.imageContainer.querySelector('.loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'flex';
+                } else {
+                    // 如果不存在加载元素，创建一个
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.className = 'loading';
+                    loadingDiv.innerHTML = `
+                        <div class="spinner"></div>
+                        等待连接...
+                    `;
+                    this.imageContainer.appendChild(loadingDiv);
+                }
+            }
+
+            addLogEntry(type, message) {
+                // 简单的日志记录方法
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+
+                switch (type) {
+                    case 'info':
+                        console.log(`Viewer ${this.viewerId}: ${logMessage}`);
+                        break;
+                    case 'warning':
+                        console.warn(`Viewer ${this.viewerId}: ${logMessage}`);
+                        break;
+                    case 'error':
+                        console.error(`Viewer ${this.viewerId}: ${logMessage}`);
+                        break;
+                    default:
+                        console.log(`Viewer ${this.viewerId}: ${logMessage}`);
+                }
+            }
+        }
+
+        // 多查看器管理器
+        class MultiViewerManager {
+            constructor() {
+                this.viewers = new Map();
+                this.nextViewerId = 1;
+                this.initializeManager();
+            }
+
+            initializeManager() {
+                // 绑定增加查看器按钮
+                document.getElementById('addViewerBtn').addEventListener('click', () => {
+                    this.addViewer();
+                });
+
+                // 绑定列数选择器变化事件
+                document.getElementById('columnSelector').addEventListener('change', () => {
+                    this.updateGridLayout();
+                });
+
+                // 初始化网格布局
+                this.updateGridLayout();
+
+                // 默认创建一个查看器
+                this.addViewer();
+            }
+
+            addViewer() {
+                const viewerId = this.nextViewerId++;
+                const viewer = new ImageViewerModule(viewerId);
+                this.viewers.set(viewerId, viewer);
+
+                const viewersGrid = document.getElementById('viewersGrid');
+                viewersGrid.appendChild(viewer.viewerElement);
+
+                return viewer;
+            }
+
+            updateGridLayout() {
+                const viewersGrid = document.getElementById('viewersGrid');
+                const columnSelector = document.getElementById('columnSelector');
+
+                if (viewersGrid && columnSelector) {
+                    const columns = parseInt(columnSelector.value);
+                    viewersGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+                    console.log(`Grid layout updated to ${columns} columns`);
+                }
+            }
+
+            removeViewer(viewerId) {
+                if (this.viewers.has(viewerId)) {
+                    this.viewers.delete(viewerId);
+                }
+            }
+
+            getViewer(viewerId) {
+                return this.viewers.get(viewerId);
+            }
+
+            getAllViewers() {
+                return Array.from(this.viewers.values());
+            }
+
+            disconnectAll() {
+                this.viewers.forEach(viewer => {
+                    if (viewer.connected) {
+                        viewer.disconnect();
+                    }
+                });
+            }
+        }
+
+        // 初始化多查看器管理器
+        const multiViewerManager = new MultiViewerManager();
+    </script>
+</body>
+
+</html>

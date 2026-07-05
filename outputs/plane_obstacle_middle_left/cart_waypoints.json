@@ -1,0 +1,6 @@
+{
+  "scenario_name": "obstacle_middle",
+  "group_name": "left_arm",
+  "frame_id": "base_link",
+  "waypoints": []
+}

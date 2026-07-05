@@ -1,0 +1,11 @@
+*.pyc
+*.pt
+*.pcd
+*.STL
+*.stl
+*_classes.txt
+*.png
+*images/camera_info/*
+data/*
+logs/*
+config/*

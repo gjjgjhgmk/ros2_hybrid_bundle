@@ -21,6 +21,7 @@
   <depend>std_msgs</depend>
   <depend>builtin_interfaces</depend>
   <depend>intent_hybrid_interfaces</depend>
+  <depend>ompl</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

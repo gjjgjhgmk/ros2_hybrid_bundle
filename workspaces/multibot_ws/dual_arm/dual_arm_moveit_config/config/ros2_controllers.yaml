@@ -1,0 +1,90 @@
+# This config file is used by ros2_control
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    left_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+    right_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # 左夹爪控制器
+    left_gripper_controller:
+      type: parallel_gripper_action_controller/GripperActionController
+    left_gripper_activation_controller:
+      type: robotiq_controllers/RobotiqActivationController
+
+    # 右夹爪控制器
+    right_gripper_controller:
+      type: parallel_gripper_action_controller/GripperActionController
+    right_gripper_activation_controller:
+      type: robotiq_controllers/RobotiqActivationController
+
+left_arm_controller:
+  ros__parameters:
+    joints:
+      - left_shoulder_pan_joint
+      - left_shoulder_lift_joint
+      - left_elbow_joint
+      - left_wrist_1_joint
+      - left_wrist_2_joint
+      - left_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+right_arm_controller:
+  ros__parameters:
+    joints:
+      - right_shoulder_pan_joint
+      - right_shoulder_lift_joint
+      - right_elbow_joint
+      - right_wrist_1_joint
+      - right_wrist_2_joint
+      - right_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+left_gripper_controller:
+  ros__parameters:
+    joint: left_gripper_robotiq_85_left_knuckle_joint
+    max_effort_interface: "left_gripper_robotiq_85_left_knuckle_joint/set_gripper_max_effort"
+    max_effort: 50.0
+    max_velocity_interface: "left_gripper_robotiq_85_left_knuckle_joint/set_gripper_max_velocity"
+    max_velocity: 0.5
+    state_interfaces: ["position", "velocity"]
+    allow_stalling: true
+    stall_timeout: 0.05
+    goal_tolerance: 0.02
+
+left_gripper_activation_controller:
+  ros__parameters:
+    default: true
+    gpio_name: "left_gripper_reactivate_gripper"  # 匹配 URDF 中的 GPIO 名称
+
+right_gripper_controller:
+  ros__parameters:
+    joint: right_gripper_robotiq_85_left_knuckle_joint
+    max_effort_interface: "right_gripper_robotiq_85_left_knuckle_joint/set_gripper_max_effort"
+    max_effort: 50.0
+    max_velocity_interface: "right_gripper_robotiq_85_left_knuckle_joint/set_gripper_max_velocity"
+    max_velocity: 0.5
+    state_interfaces: ["position", "velocity"]
+    allow_stalling: true
+    stall_timeout: 0.05
+    goal_tolerance: 0.02
+
+right_gripper_activation_controller:
+  ros__parameters:
+    default: true
+    gpio_name: "right_gripper_reactivate_gripper"  # 匹配 URDF 中的 GPIO 名称

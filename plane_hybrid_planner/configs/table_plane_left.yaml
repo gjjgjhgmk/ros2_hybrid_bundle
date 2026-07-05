@@ -1,0 +1,43 @@
+workspace_root: "../../workspaces/multibot_ws"
+
+ur_move:
+  host: "127.0.0.1"
+  port: 5605
+  timeout_sec: 60.0
+  planner: "lin"
+  velocity_scale: 0.1
+  acceleration_scale: 0.1
+
+group_name: "left_arm"
+ik_frame: "left_ee_link"
+
+plane:
+  frame_id: "left_base_link"
+  x_min: 0.50
+  x_max: 0.68
+  y_min: 0.06
+  y_max: 0.24
+  z: 0.35
+
+orientation_xyzw: [0.382683, 0.0, 0.0, 0.923880]
+
+scene_obstacles:
+  sync_to_moveit: true
+  frame_id: "left_base_link"
+  cylinder_height: 0.18
+  center_z: 0.35
+  radius_scale_mode: "min"
+  publish_repeats: 3
+  clear_slots: 8
+  id_prefix: "plane_demo_left"
+
+waypoints:
+  resample_count: 30
+  simplify_min_dist: 0.0
+  clamp_uv: true
+
+execution:
+  plan_only: true
+  execute: false
+  move_to_start_first: true
+  preposition_planner: "ompl"

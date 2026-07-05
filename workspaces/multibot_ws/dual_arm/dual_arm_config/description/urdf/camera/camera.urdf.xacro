@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="相机" params="prefix parent *origin camera_link_xyz camera_link_rpy">
+        <link name="${prefix}base">
+            <inertial>
+                <origin xyz="1.6431E-14 -0.076991 0.017292" rpy="0 0 0"/>
+                <mass value="0.12713"/>
+                <inertia ixx="0.00015196" ixy="1.4279E-18" ixz="-1.7073E-19" iyy="3.5938E-05" iyz="1.3191E-05" izz="0.00017332"/>
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dual_arm_config/description/meshes/camera/base.STL"/>
+                </geometry>
+                <material name="">
+                    <color rgba="0.79216 0.81961 0.93333 1"/>
+                </material>
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://dual_arm_config/description/meshes/camera/base.STL"/>
+                </geometry>
+            </collision>
+        </link>
+        <joint name="${prefix}joint_base" type="fixed">
+            <xacro:insert_block name="origin" />
+            <parent link="${parent}" />
+            <child link="${prefix}base" />
+        </joint>
+        <!-- 相机TF (待标定)-->
+        <link name="${prefix}link"/>
+        <joint name="${prefix}joint_link" type="fixed">
+            <parent link="${prefix}base" />
+            <child link="${prefix}link" />
+            <origin xyz="${camera_link_xyz}" rpy="${camera_link_rpy}" />
+        </joint>
+        
+        <!-- 夹爪适配器链接 -->
+        <link name="${prefix}adapter"/>
+        <joint name="${prefix}joint_adapter" type="fixed">
+            <parent link="${prefix}base" />
+            <child link="${prefix}adapter" />
+            <origin xyz="0 0 0.01776" rpy="0 0 0" />
+        </joint>
+    </xacro:macro>
+</robot>

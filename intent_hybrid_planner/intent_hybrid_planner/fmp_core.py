@@ -46,6 +46,7 @@ def gk_clustering(
     tol=1e-4,
     max_iter_fcm=30,
     max_iter_gk=30,
+    init_length=None,
 ):
     """
     MATLAB-equivalent FCM pre-iteration + GK clustering.
@@ -79,7 +80,8 @@ def gk_clustering(
         raise ValueError("n_clusters must be positive.")
 
     n_clusters = int(n_clusters)
-    c = _initialize_centers_along_trajectory(p, n_clusters=n_clusters, length=n_p)
+    center_length = n_p if init_length is None else int(init_length)
+    c = _initialize_centers_along_trajectory(p, n_clusters=n_clusters, length=center_length)
 
     # Initial U from Euclidean distance.
     dist2 = _pairwise_sqdist(p, c)

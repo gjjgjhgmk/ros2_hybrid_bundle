@@ -1,0 +1,345 @@
+{
+  "左臂-零位": {
+      "group": "left_arm",
+      "planner": "ptp",
+      "description": "左臂零位位置",
+      "type": "joint",
+      "max_velocity_scaling_factor": 0.3,
+      "max_acceleration_scaling_factor": 0.3,
+      "joint_names": [
+          "left_joint1",
+          "left_joint2",
+          "left_joint3",
+          "left_joint4",
+          "left_joint5",
+          "left_joint6"
+      ],
+      "joint_values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+      ]
+  },
+  "左臂-home": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "左臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            0.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ]
+    },
+  "右臂-零位": {
+      "group": "right_arm",
+      "planner": "ptp",
+      "description": "右臂零位位置",
+      "type": "joint",
+      "max_velocity_scaling_factor": 0.3,
+      "max_acceleration_scaling_factor": 0.3,
+      "joint_names": [
+          "right_joint1",
+          "right_joint2",
+          "right_joint3",
+          "right_joint4",
+          "right_joint5",
+          "right_joint6"
+      ],
+      "joint_values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+      ]
+  },
+  "右臂-home": {
+        "group": "right_arm",
+        "planner": "ptp",
+        "description": "右臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "right_joint1",
+            "right_joint2",
+            "right_joint3",
+            "right_joint4",
+            "right_joint5",
+            "right_joint6"
+        ],
+        "joint_values": [
+            0.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ]
+    },
+  "左臂-测试1": {
+      "group": "left_arm",
+      "planner": "ptp",
+      "description": "测试点2",
+      "type": "joint",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "joint_names": [
+          "left_joint1",
+          "left_joint2",
+          "left_joint3",
+          "left_joint4",
+          "left_joint5",
+          "left_joint6"
+      ],
+      "joint_values": [
+          0.0,
+          -90.0,
+          90.0,
+          -90.0,
+          -90.0,
+          0.0
+      ]
+  },
+  "左臂-测试2": {
+      "group": "left_arm",
+      "planner": "lin",
+      "description": "测试点1",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+          0.2,
+          0.35
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0, 
+          1
+      ]
+  },
+  "左臂-测试3": {
+      "group": "left_arm",
+      "planner": "ptp",
+      "description": "测试点3",
+      "type": "joint",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "joint_names": [
+          "left_joint1",
+          "left_joint2",
+          "left_joint3",
+          "left_joint4",
+          "left_joint5",
+          "left_joint6"
+      ],
+      "joint_values": [
+          0.0,
+          -90.0,
+          90.0,
+          -90.0,
+          -90.0,
+          0.0
+      ]
+  },
+  "右臂-测试1": {
+      "group": "right_arm",
+      "planner": "ompl",
+      "description": "使用OMPL规划器到达笛卡尔目标",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.2,
+      "max_acceleration_scaling_factor": 0.2,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_base_link",
+      "position": [
+          0.6,
+          0.2,
+          0.35
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0, 
+          1
+      ]
+  },
+  "右臂-测试2": {
+      "group": "right_arm",
+      "planner": "lin",
+      "description": "测试点2",
+      "type": "joint",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_base_link",
+      "joint_names": [
+          "right_joint1",
+          "right_joint2",
+          "right_joint3",
+          "right_joint4",
+          "right_joint5",
+          "right_joint6"
+      ],
+      "joint_values": [
+          0.0,
+          -90.0,
+          90.0,
+          -90.0,
+          -90.0,
+          0.0
+      ]
+  },
+  "左臂-预抓取": {
+      "group": "left_arm",
+      "planner": "ptp",
+      "description": "左臂预抓取位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+          0.2,
+          0.2
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0.382683, 
+          0.923880
+      ]
+  },
+  "左臂-抓取": {
+      "group": "left_arm",
+      "planner": "lin",
+      "description": "左臂抓取位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+          0.2,
+          0.05
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0.382683, 
+          0.923880
+      ]
+  },
+  "左臂-抓取撤退": {
+      "group": "left_arm",
+      "planner": "lin",
+      "description": "左臂抓取撤退位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+          0.2,
+          0.2
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0.382683, 
+          0.923880
+      ]
+    },
+    "左臂-预放置": {
+      "group": "left_arm",
+      "planner": "ptp",
+      "description": "左臂预放置位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+         -0.35,
+          0.3
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    },
+    "左臂-放置": {
+      "group": "left_arm",
+      "planner": "lin",
+      "description": "左臂放置位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+         -0.35,
+          0.05
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    },
+    "左臂-放置撤退": {
+      "group": "left_arm",
+      "planner": "lin",
+      "description": "左臂放置撤退位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "left_ee_link",
+      "frame_id": "left_base_link",
+      "position": [
+          0.6,
+         -0.35,
+          0.3
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    }
+}
+

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
+
+  <!-- robot name parameter -->
+  <xacro:arg name="name" default="single_arm"/>
+
+  <xacro:include filename="$(find single_arm_moveit_config)/srdf/single_arm_macro.srdf.xacro"/>
+
+  <xacro:single_arm_srdf/>
+
+</robot>

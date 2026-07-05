@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="workstation" params="prefix parent *origin robot_origin">
+        <link name="${prefix}base">
+            <inertial>
+                <origin xyz="0.50995 -0.00013443 0.59751" rpy="0 0 0"/>
+                <mass value="85.331"/>
+                <inertia ixx="2.1887" ixy="0.00033619" ixz="-0.00017033" iyy="4.4353" iyz="5.6434E-05" izz="5.4093"/>
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://single_arm_config/description/meshes/workstation.STL"/>
+                </geometry>
+                <material name="">
+                    <color rgba="0.79216 0.81961 0.93333 1"/>
+                </material>
+            </visual>
+            <collision>
+                <origin xyz="0.5 0 0.45" rpy="0 0 0"/>
+                <geometry>
+                    <box size="1 2.01 0.9"/>  <!-- 修改为 box -->
+                </geometry>
+            </collision>
+        </link>
+        <joint name="${prefix}joint_base" type="fixed">
+            <xacro:insert_block name="origin" />
+            <parent link="${parent}" />
+            <child link="${prefix}base" />
+        </joint>
+        <link name="arm_interface_link"/>
+        <joint name="${prefix}joint_arm_interface_link" type="fixed">
+            <origin xyz="${robot_origin}" rpy="0 0 0" />
+            <parent link="${prefix}base"/>
+            <child link="arm_interface_link"/>
+            <axis xyz="0 0 0"/>
+        </joint>
+    </xacro:macro>
+</robot>

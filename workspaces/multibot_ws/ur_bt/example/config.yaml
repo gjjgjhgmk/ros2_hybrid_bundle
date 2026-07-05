@@ -1,0 +1,61 @@
+# PARM BT 配置文件
+
+# ZMQ 连接配置
+zmq:
+  arm:
+    # ur_move接口 - 用于轨迹规划和执行
+    # 注意：端口固定为5605，在代码中定义，无需在配置中指定
+    ur_move:
+      host: "192.168.56.122"
+      timeout_ms: 120000  # 超时时间(毫秒)
+      
+      # 执行服务器配置（用于远程执行）
+      # 如果未配置或设置为 null，则不会尝试连接该手臂的执行PC
+      executor:
+        left_arm_host: 192.168.56.222   # 左臂执行PC的IP地址，null表示不执行左臂
+        right_arm_host: 192.168.56.122  # 右臂执行PC的IP地址，null表示不执行右臂
+      
+      use_remote_execution: true  # 是否使用远程执行（true=在远程驱动PC执行，false=在规划服务器执行/模拟）
+  
+  vision:
+    # 视觉服务接口 - 支持左右两个视觉服务
+    # 左手视觉服务接口 - 应该与 left_arm_host 保持一致
+    left:
+      host: "192.168.56.222"  # 应该与 zmq.arm.ur_move.executor.left_arm_host 保持一致
+      port: 7020  # 默认端口7020，通常不需要修改
+      timeout: 30
+    # 右手视觉服务接口 - 应该与 right_arm_host 保持一致
+    right:
+      host: "192.168.56.122"  # 应该与 zmq.arm.ur_move.executor.right_arm_host 保持一致
+      port: 7020  # 默认端口7020，通常不需要修改
+      timeout: 30
+  
+  tf:
+    # TF服务接口 - 用于坐标变换查询
+    host: "192.168.56.122"
+    port: 5609  # 默认端口5609，通常不需要修改
+    timeout: 5  # 超时时间(秒)
+  
+  gripper:
+    # 注意：夹爪服务器与对应手臂的执行服务器在同一台驱动端PC上
+    # 左手夹爪接口 - 应该与 left_arm_host 保持一致
+    left:
+      host: 192.168.56.222  # 应该与 zmq.arm.ur_move.executor.left_arm_host 保持一致
+      port: 5630  # 默认端口5630，通常不需要修改
+      timeout_ms: 20000
+    # 右手夹爪接口 - 应该与 right_arm_host 保持一致
+    right:
+      host: "192.168.56.122"  # 应该与 zmq.arm.ur_move.executor.right_arm_host 保持一致
+      port: 5640  # 默认端口5640，通常不需要修改
+      timeout_ms: 20000
+
+# 行为树配置
+behavior_tree:
+  tick_rate: 10  # Hz
+  timeout: 120.0  # 秒
+  debug: true
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "ur_bt.log"

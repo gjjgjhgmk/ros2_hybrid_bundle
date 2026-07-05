@@ -1,0 +1,73 @@
+# Real-hardware demo config for moving the right arm above a ChArUco board.
+# The vision side is expected to run the calibration ZMQ service. The board pose
+# is returned in the camera frame, while the camera pose relative to right_tool0
+# is loaded from right_handeye_calibration.yaml.
+
+zmq:
+  arm:
+    ur_move:
+      host: "192.168.56.122"
+      timeout_ms: 120000
+      executor:
+        left_arm_host: null
+        right_arm_host: "192.168.56.122"
+      use_remote_execution: true
+      concurrent_remote_execution: false
+
+  vision:
+    left:
+      host: "192.168.56.222"
+      port: 7020
+      timeout: 30
+    right:
+      host: "192.168.56.122"
+      port: 7020
+      timeout: 30
+
+  tf:
+    host: "192.168.56.122"
+    port: 5609
+    timeout: 5
+
+  calibration:
+    host: "192.168.56.122"
+    port: 7021
+    timeout: 10
+
+  gripper:
+    left:
+      host: "192.168.56.222"
+      port: 5630
+      timeout_ms: 20000
+    right:
+      host: "192.168.56.122"
+      port: 5640
+      timeout_ms: 20000
+
+behavior_tree:
+  tick_rate: 10
+  timeout: 300.0
+  debug: true
+
+logging:
+  level: "INFO"
+  file: "vision_and_move_demo.log"
+
+vision_and_move:
+  source_frame: "right_base_link"
+  waypoint_frame: "right_interface_link"
+  end_effector_frame: "right_tool0"
+  orientation_reference_frame: "right_interface_link"
+  camera_optical_frame: "right_camera_opencv_optical_frame"
+  camera_link_to_optical_xyz: [0.0, 0.0, 0.0]
+  camera_link_to_optical_rpy: [-1.57079632679, 0.0, -1.57079632679]
+  handeye_calibration_file: "right_handeye_calibration.yaml"
+  waypoint_name: "right_above_charuco_board"
+  approach_height_m: 0.10
+  group: "right_arm"
+  planner: "lin"
+  ik_frame: "right_ee_link"
+  max_velocity_scaling_factor: 0.05
+  max_acceleration_scaling_factor: 0.05
+  orientation_mode: "ik_frame_in_reference_frame"
+  fixed_orientation: [0.0, 0.0, 0.0, 1.0]

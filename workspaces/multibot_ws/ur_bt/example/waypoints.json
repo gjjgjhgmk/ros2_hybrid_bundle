@@ -1,0 +1,294 @@
+{
+  "左臂-home": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "右臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            90.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ]
+    },
+  "右臂-home": {
+        "group": "right_arm",
+        "planner": "ptp",
+        "description": "右臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "right_joint1",
+            "right_joint2",
+            "right_joint3",
+            "right_joint4",
+            "right_joint5",
+            "right_joint6"
+        ],
+        "joint_values": [
+            90.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ]
+    },
+  "右臂-预抓取": {
+      "group": "right_arm",
+      "planner": "ptp",
+      "description": "右臂预抓取位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.0,
+          0.15
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0, 
+          1
+      ]
+  },
+  "右臂-抓取": {
+      "group": "right_arm",
+      "planner": "lin",
+      "description": "右臂抓取位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.0,
+          0.04
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0, 
+          1
+      ]
+  },
+  "右臂-抓取撤退": {
+      "group": "right_arm",
+      "planner": "lin",
+      "description": "右臂抓取撤退位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.0,
+          0.2
+      ],
+      "orientation": [
+          0, 
+          0, 
+          0, 
+          1
+      ]
+    },
+    "右臂-交接": {
+      "group": "right_arm",
+      "planner": "ptp",
+      "description": "右臂预放置位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.45,
+          0.4
+      ],
+      "orientation": [
+        0.000000, 
+        0.000000, 
+        -0.707885, 
+        0.706327
+      ]
+    },
+    "左臂-预交接": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "左臂预交接位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            61.21,
+            -73.2,
+            121.03,
+            -226.89,
+            -150.99,
+            -89.06
+        ]
+    },
+    "左臂-交接": {
+        "group": "left_arm",
+        "planner": "lin",
+        "description": "左臂交接位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            42.21,
+            -66.84,
+            111.28,
+            -223.89,
+            -131.99,
+            -89.46
+        ]
+    },
+    "左臂-预放置": {
+        "group": "left_arm",
+        "planner": "lin",
+        "description": "左臂预放置位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            61.21,
+            -73.2,
+            121.03,
+            -226.89,
+            -150.99,
+            -89.06
+        ]
+    },
+    "左臂-放置": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "左臂放置位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            100.0,
+            -81.78,
+            114.11,
+            -122.77,
+            -90.53,
+            0.0
+        ]
+    },
+    "右臂-预放置": {
+      "group": "right_arm",
+      "planner": "ptp",
+      "description": "右臂预放置位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.2,
+          0.15
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    },
+    "右臂-放置": {
+      "group": "right_arm",
+      "planner": "lin",
+      "description": "右臂放置位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.2,
+          0.05
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    },
+    "右臂-放置撤退": {
+      "group": "right_arm",
+      "planner": "lin",
+      "description": "右臂放置撤退位置",
+      "type": "cart",
+      "max_velocity_scaling_factor": 0.1,
+      "max_acceleration_scaling_factor": 0.1,
+      "ik_frame": "right_ee_link",
+      "frame_id": "right_interface_link",
+      "position": [
+          0.4,
+          0.2,
+          0.15
+      ],
+      "orientation": [
+        0, 
+        0, 
+        0, 
+        1
+      ]
+    }
+}
+

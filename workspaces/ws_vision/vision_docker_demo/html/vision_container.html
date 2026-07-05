@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视觉容器管理系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 5px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 2560px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 100vh;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 .subtitle {
+            font-size: 1rem;
+            font-weight: 300;
+            opacity: 0.8;
+            margin-left: 15px;
+        }
+
+        .tab-container {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            justify-content: flex-start;
+        }
+
+        .tab-button {
+            padding: 18px 20px;
+            background: transparent;
+            color: #6c757d;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .tab-button.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+            min-height: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        iframe {
+            width: 100%;
+            height: calc(100vh - 120px);
+            border: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 3px;
+            }
+
+            .container {
+                width: 99%;
+                min-height: 100vh;
+            }
+
+            .tab-content {
+                min-height: auto;
+            }
+
+            iframe {
+                height: calc(100vh - 100px);
+            }
+
+            .tab-button {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 2px;
+            }
+
+            .container {
+                width: 99.5%;
+                min-height: 100vh;
+            }
+
+            .tab-content {
+                min-height: auto;
+            }
+
+            iframe {
+                height: calc(100vh - 90px);
+            }
+
+            .tab-button {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .header p {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐳 视觉容器管理系统 <span class="subtitle">容器管理与实时监控一体化平台</span></h1>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab(event, 'manager')">📊 容器管理</button>
+            <button class="tab-button" onclick="openTab(event, 'monitor')">📝 日志查看</button>
+            <button class="tab-button" onclick="openTab(event, 'imageViewer')">🖼️ 图像查看</button>
+        </div>
+
+        <div id="manager" class="tab-content active">
+            <iframe id="managerFrame" src="" title="管理器"></iframe>
+        </div>
+
+        <div id="monitor" class="tab-content">
+            <iframe id="monitorFrame" src="" title="监视器"></iframe>
+        </div>
+
+        <div id="imageViewer" class="tab-content">
+            <iframe id="imageViewerFrame" src="" title="图像查看器"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // 定义iframe事件处理函数
+        function handleIframeLoad() {
+            console.log('图像查看器iframe加载成功');
+        }
+
+        function handleIframeError() {
+            console.error('图像查看器iframe加载失败');
+            const iframe = document.getElementById('imageViewerFrame');
+            if (iframe) {
+                iframe.style.display = 'none';
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = '<p style="color: red; text-align: center; margin-top: 50px;">无法加载图像查看器，请检查文件路径</p>';
+                iframe.parentNode.appendChild(errorDiv);
+            }
+        }
+
+        // 页面加载时初始化iframe的src
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeIframes();
+        });
+
+        function initializeIframes() {
+            // 获取当前页面的IP和端口
+            const currentHost = window.location.hostname;
+            const currentPort = window.location.port;
+
+            // 构建API基础URL
+            const apiBaseUrl = `http://${currentHost}:${currentPort}`;
+
+            // 设置manager iframe的src，传递API配置参数
+            const managerFrame = document.getElementById('managerFrame');
+            if (managerFrame) {
+                managerFrame.src = `/manager?api_host=${currentHost}&api_port=${currentPort}&api_base_url=${encodeURIComponent(apiBaseUrl)}`;
+            }
+
+            // 设置monitor iframe的src，传递API配置参数
+            const monitorFrame = document.getElementById('monitorFrame');
+            if (monitorFrame) {
+                monitorFrame.src = `/monitor?api_host=${currentHost}&api_port=${currentPort}&api_base_url=${encodeURIComponent(apiBaseUrl)}`;
+            }
+
+            // 设置imageViewer iframe的src，传递IP参数
+            const imageViewerFrame = document.getElementById('imageViewerFrame');
+            if (imageViewerFrame) {
+                // 先添加事件监听器
+                imageViewerFrame.addEventListener('load', handleIframeLoad);
+                imageViewerFrame.addEventListener('error', handleIframeError);
+
+                // 然后设置src
+                imageViewerFrame.src = `image_viewer_module.html?ip=${currentHost}`;
+            }
+
+            console.log(`初始化iframe，API配置: ${apiBaseUrl}`);
+        }
+
+        function openTab(evt, tabName) {
+            // 隐藏所有标签内容
+            var tabcontents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabcontents.length; i++) {
+                tabcontents[i].classList.remove("active");
+            }
+
+            // 移除所有按钮的活动状态
+            var tabbuttons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].classList.remove("active");
+            }
+
+            // 显示选中的标签内容并激活对应按钮
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+numpy>=1.21
+PyYAML>=5.4
+matplotlib>=3.5
+pyzmq>=22.0
+pytest>=6.2
+

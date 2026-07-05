@@ -1,0 +1,54 @@
+services:
+  vision_calibration_local:
+    container_name: vision_calibration_local
+    image: papjia-docker.pkg.coding.net/pvision/dockerhub/vision_calibration:local
+    # 内存限制
+    mem_limit: 16g # 最大内存限制
+    mem_reservation: 8g # 最小内存保证
+    memswap_limit: 24g # 最大内存+交换空间限制
+    volumes:
+      - ../../vision_calibration:/home/yw/workspace/src/vision_calibration
+      - ../../vision_calibration/html:/home/yw/workspace/html
+      - ../../vision_calibration/config:/home/yw/workspace/config
+      - ../../vision_calibration/log:/tmp/log
+      - ../../vision_calibration/data:/home/yw/workspace/data/vision_calibration
+    network_mode: host
+    ipc: host
+    stdin_open: true # 允许交互
+    tty: true # 保持终端运行
+    privileged: true
+    environment:
+      - ROS_DOMAIN_ID=27
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp # 指定 ROS 2 中间件
+      - TZ=Asia/Shanghai
+      - USER_NAME=${USER_NAME:-yw}
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+    user: yw # 确保以指定用户运行
+    command: bash
+
+  ur_move_server:
+    container_name: ur_move_server
+    image: papjia-docker.pkg.coding.net/pvision/dockerhub/ur-move-server:20251222
+    network_mode: host
+    ipc: host
+    stdin_open: true
+    tty: true
+    privileged: true
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
+      - ../../vision_calibration/log:/tmp/log
+    environment:
+      - ROS_DOMAIN_ID=27
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp # 指定 ROS 2 中间件
+      - DISPLAY=${DISPLAY:-:0} # X11转发，带默认值
+      - QT_X11_NO_MITSHM=1 # 修复 Qt GUI 应用问题
+      - XAUTHORITY=/home/developer/.Xauthority # X11 认证文件路径
+      - QT_QPA_PLATFORM=xcb # Qt 平台设置
+      - LIBGL_ALWAYS_INDIRECT=0 # OpenGL 渲染设置
+      - LEFT_ROBOT_IP=192.168.21.100
+      - RIGHT_ROBOT_IP=192.168.22.100
+      - LEFT_GRIPPER_COM_PORT=/dev/ttyUSB0
+      - RIGHT_GRIPPER_COM_PORT=/dev/ttyUSB1
+    command: bash

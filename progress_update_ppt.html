@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Progress update - ROS2 Hybrid Planner</title>
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --ink: #17202a;
+      --muted: #5f6c72;
+      --line: #d8d2c2;
+      --panel: #ffffff;
+      --green: #1f8a5b;
+      --blue: #2f6f9f;
+      --red: #b84a42;
+      --gold: #b8860b;
+      --dark: #253238;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      overflow: hidden;
+    }
+    .deck { width: 100vw; height: 100vh; position: relative; }
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 46px 62px 54px;
+      background:
+        linear-gradient(90deg, rgba(31,138,91,0.08), transparent 34%),
+        radial-gradient(circle at 92% 12%, rgba(184,134,11,0.13), transparent 24%),
+        var(--bg);
+    }
+    .slide.active { display: block; }
+    h1 { font-size: 48px; line-height: 1.12; margin: 0 0 18px; letter-spacing: 0; }
+    h2 { font-size: 36px; margin: 0 0 20px; letter-spacing: 0; }
+    h3 { font-size: 23px; margin: 0 0 12px; color: var(--green); letter-spacing: 0; }
+    p, li { font-size: 20px; line-height: 1.55; }
+    ul { margin: 10px 0 0 24px; padding: 0; }
+    .sub { font-size: 22px; color: var(--muted); max-width: 900px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+    .panel {
+      background: rgba(255,255,255,0.88);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px 22px;
+      box-shadow: 0 10px 28px rgba(23,32,42,0.08);
+    }
+    .plain {
+      background: rgba(255,255,255,0.56);
+      border-left: 5px solid var(--green);
+      padding: 16px 20px;
+      margin-top: 18px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 15px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .ok { color: var(--green); font-weight: 700; }
+    .warn { color: var(--gold); font-weight: 700; }
+    .bad { color: var(--red); font-weight: 700; }
+    .mono {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      background: #eef1ef;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.92em;
+    }
+    .code {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      white-space: pre-wrap;
+      background: #17202a;
+      color: #f5f7f2;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.42;
+    }
+    table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.9); }
+    th, td { border: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: 18px; line-height: 1.4; }
+    th { background: #e9efe8; color: var(--dark); }
+    svg text { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    .footer {
+      position: absolute;
+      left: 62px;
+      right: 62px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .bar-bg { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: rgba(23,32,42,0.1); }
+    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--green), var(--blue)); transition: width 0.2s; }
+    @media print {
+      body { overflow: visible; background: #fff; }
+      .slide { display: block !important; height: auto; min-height: 100vh; page-break-after: always; }
+      .footer, .bar-bg { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide active">
+      <h1>Progress update</h1>
+      <p class="sub">ROS2 Humble + MoveIt2 + UR ROS2 Driver 下的混合避障算法迁移进展</p>
+      <div class="plain">
+        <p><strong>汇报主线：</strong>我的核心工作是将 MATLAB 中的混合避障思路迁移到 ROS2 机械臂仿真/实机链路中，并围绕“可执行、可复核、可评估”补齐工程闭环。</p>
+      </div>
+      <div style="margin-top: 26px;">
+        <span class="tag">FMP 调制</span>
+        <span class="tag">RRT / RRT-Connect 局部避障</span>
+        <span class="tag">C++ MoveIt2 collision backend</span>
+        <span class="tag">FollowJointTrajectory</span>
+        <span class="tag">Evaluator 指标体系</span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>实验现状与总体判断</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>当前已经完成</h3>
+          <ul>
+            <li>离线规划主链路已经形成：名义轨迹、危险段检测、局部路径、FMP 调制、轨迹下发。</li>
+            <li>C++ runtime bridge 已接入 MoveIt2，用于碰撞检查、局部规划、轨迹下发与可视化。</li>
+            <li>已加入严格的 post-check 和 evaluator，不再只看“是否发出去”，而是看“轨迹是否可解释、可执行”。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>当前实验状态</h3>
+          <ul>
+            <li>算法链路和评估框架已基本跑通，能够输出轨迹、日志、图表与 JSON/CSV 指标。</li>
+            <li>仿真侧仍在打通和稳定：主要集中在 MoveIt collision backend、Gazebo 控制器、轨迹可视化的一致性。</li>
+            <li>下一阶段重点是用固定场景做可复现实验，而不是继续临时调参。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>原有架构</h2>
+      <div class="panel">
+        <svg viewBox="0 0 1120 430" width="100%" height="380">
+          <defs>
+            <marker id="arr1" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#2f6f9f"></path>
+            </marker>
+          </defs>
+          <rect x="40" y="80" width="220" height="70" rx="8" fill="#e9efe8" stroke="#1f8a5b"/>
+          <text x="150" y="110" text-anchor="middle" font-size="18">Nominal Trajectory</text>
+          <text x="150" y="134" text-anchor="middle" font-size="14" fill="#5f6c72">关节空间预设轨迹</text>
+
+          <rect x="320" y="55" width="260" height="120" rx="8" fill="#e9efe8" stroke="#1f8a5b"/>
+          <text x="450" y="88" text-anchor="middle" font-size="18">Python 主节点</text>
+          <text x="450" y="116" text-anchor="middle" font-size="14" fill="#5f6c72">危险检测 / RRT / FMP</text>
+          <text x="450" y="138" text-anchor="middle" font-size="14" fill="#5f6c72">直接组织执行</text>
+
+          <rect x="650" y="55" width="220" height="120" rx="8" fill="#fff3d7" stroke="#b8860b"/>
+          <text x="760" y="88" text-anchor="middle" font-size="18">Collision Backend</text>
+          <text x="760" y="116" text-anchor="middle" font-size="14" fill="#5f6c72">moveit_py 或 analytic</text>
+          <text x="760" y="138" text-anchor="middle" font-size="14" fill="#5f6c72">环境依赖较强</text>
+
+          <rect x="320" y="250" width="260" height="90" rx="8" fill="#e8f0f8" stroke="#2f6f9f"/>
+          <text x="450" y="282" text-anchor="middle" font-size="18">FollowJointTrajectory</text>
+          <text x="450" y="308" text-anchor="middle" font-size="14" fill="#5f6c72">控制器接收整段轨迹</text>
+
+          <rect x="650" y="250" width="220" height="90" rx="8" fill="#e8f0f8" stroke="#2f6f9f"/>
+          <text x="760" y="282" text-anchor="middle" font-size="18">Gazebo / RViz</text>
+          <text x="760" y="308" text-anchor="middle" font-size="14" fill="#5f6c72">动画与可视化</text>
+
+          <line x1="260" y1="115" x2="320" y2="115" stroke="#2f6f9f" stroke-width="3" marker-end="url(#arr1)"/>
+          <line x1="580" y1="115" x2="650" y2="115" stroke="#2f6f9f" stroke-width="3" marker-end="url(#arr1)"/>
+          <line x1="450" y1="175" x2="450" y2="250" stroke="#2f6f9f" stroke-width="3" marker-end="url(#arr1)"/>
+          <line x1="580" y1="295" x2="650" y2="295" stroke="#2f6f9f" stroke-width="3" marker-end="url(#arr1)"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>原有架构存在的问题</h2>
+      <div class="row3">
+        <div class="panel">
+          <h3>安全正确性不足</h3>
+          <ul>
+            <li>早期更关注轨迹是否发出，而不是发出前是否全路径无碰撞。</li>
+            <li>局部路径、FMP 后轨迹、控制器执行结果之间缺少统一门禁。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>平台迁移复杂</h3>
+          <ul>
+            <li>MATLAB 中轨迹更接近任务空间演示；ROS2 中控制器接收关节轨迹。</li>
+            <li>任务空间到关节空间的 IK、FK、时间尺度都需要重新对齐。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>调参难度高</h3>
+          <ul>
+            <li>障碍物尺寸、RRT 步长、边采样、via 插值密度相互耦合。</li>
+            <li>一个参数变化可能同时影响绕障效果、平滑性和控制器可执行性。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="plain">
+        <p>因此本阶段工作的重点不是单纯让某一次动画看起来能绕开，而是把迁移后的系统变成可复核、可定位、可继续实验的工程系统。</p>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>当前最新架构</h2>
+      <div class="panel">
+        <svg viewBox="0 0 1180 510" width="100%" height="420">
+          <defs>
+            <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#1f8a5b"></path>
+            </marker>
+          </defs>
+          <rect x="35" y="45" width="250" height="95" rx="8" fill="#e9efe8" stroke="#1f8a5b"/>
+          <text x="160" y="78" text-anchor="middle" font-size="18">输入层</text>
+          <text x="160" y="104" text-anchor="middle" font-size="14" fill="#5f6c72">joint / ee_plane nominal</text>
+          <text x="160" y="124" text-anchor="middle" font-size="14" fill="#5f6c72">障碍物与场景配置</text>
+
+          <rect x="335" y="35" width="300" height="150" rx="8" fill="#fff" stroke="#1f8a5b"/>
+          <text x="485" y="68" text-anchor="middle" font-size="18">Python Offline Orchestrator</text>
+          <text x="485" y="96" text-anchor="middle" font-size="14" fill="#5f6c72">全局扫描 / 分段 / FMP</text>
+          <text x="485" y="118" text-anchor="middle" font-size="14" fill="#5f6c72">benchmark / evaluator input</text>
+          <text x="485" y="140" text-anchor="middle" font-size="14" fill="#5f6c72">保留 Python fallback</text>
+
+          <rect x="700" y="35" width="400" height="170" rx="8" fill="#e8f0f8" stroke="#2f6f9f"/>
+          <text x="900" y="68" text-anchor="middle" font-size="18">C++ Runtime Bridge</text>
+          <text x="900" y="96" text-anchor="middle" font-size="14" fill="#5f6c72">CheckMotionBatch: states + edges</text>
+          <text x="900" y="118" text-anchor="middle" font-size="14" fill="#5f6c72">PlanLocalSegment: RRT-Connect</text>
+          <text x="900" y="140" text-anchor="middle" font-size="14" fill="#5f6c72">DispatchJointTrajectory</text>
+          <text x="900" y="162" text-anchor="middle" font-size="14" fill="#5f6c72">PlanningScene / MoveIt2 collision</text>
+
+          <rect x="335" y="285" width="300" height="115" rx="8" fill="#fff3d7" stroke="#b8860b"/>
+          <text x="485" y="318" text-anchor="middle" font-size="18">Safety Gate</text>
+          <text x="485" y="345" text-anchor="middle" font-size="14" fill="#5f6c72">FMP 后严格 post-check</text>
+          <text x="485" y="367" text-anchor="middle" font-size="14" fill="#5f6c72">起点一致性 / 动态约束</text>
+
+          <rect x="700" y="285" width="400" height="115" rx="8" fill="#e9efe8" stroke="#1f8a5b"/>
+          <text x="900" y="318" text-anchor="middle" font-size="18">Evaluator</text>
+          <text x="900" y="345" text-anchor="middle" font-size="14" fill="#5f6c72">绕障成功 / 平滑性 / 可执行性</text>
+          <text x="900" y="367" text-anchor="middle" font-size="14" fill="#5f6c72">JSON / CSV / PNG 图表</text>
+
+          <line x1="285" y1="92" x2="335" y2="92" stroke="#1f8a5b" stroke-width="3" marker-end="url(#arr2)"/>
+          <line x1="635" y1="110" x2="700" y2="110" stroke="#1f8a5b" stroke-width="3" marker-end="url(#arr2)"/>
+          <line x1="485" y1="185" x2="485" y2="285" stroke="#1f8a5b" stroke-width="3" marker-end="url(#arr2)"/>
+          <line x1="635" y1="342" x2="700" y2="342" stroke="#1f8a5b" stroke-width="3" marker-end="url(#arr2)"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>工作重点 1：C++ Runtime Bridge</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>为什么要做</h3>
+          <ul>
+            <li>Humble 环境中 <span class="mono">moveit_py</span> 可用性不稳定。</li>
+            <li>真实机械臂仿真不能长期依赖简化 analytic 球体碰撞。</li>
+            <li>碰撞检查和轨迹下发属于运行时关键路径，适合下沉到 C++ MoveIt2 接口。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>具体改动</h3>
+          <ul>
+            <li>新增 <span class="mono">CheckStatesBatch</span> 和 <span class="mono">CheckMotionBatch</span> 服务。</li>
+            <li>新增 <span class="mono">PlanLocalSegment</span> 服务，提供 C++ RRT-Connect 局部规划。</li>
+            <li>保留 Python fallback，方便开发阶段回退和对照。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>工作重点 2：安全正确性补丁</h2>
+      <table>
+        <thead>
+          <tr><th>修改点</th><th>原因</th><th>效果</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>FMP 后强制 <span class="mono">CheckMotionBatch</span></td>
+            <td>避免调制后轨迹穿过障碍仍被下发</td>
+            <td>只有 states 和 edges 全部有效，才进入 dispatch</td>
+          </tr>
+          <tr>
+            <td>C++ RRT-Connect direct shortcut</td>
+            <td>无碰撞局部段不需要随机扰动</td>
+            <td>安全直连时返回 2 点路径，减少不必要 via</td>
+          </tr>
+          <tr>
+            <td>validatePath + 失败空路径</td>
+            <td>防止局部规划失败被当成成功路径</td>
+            <td>失败时 <span class="mono">path_points=0</span>，不进入 FMP</td>
+          </tr>
+          <tr>
+            <td>dispatch 安全门</td>
+            <td>控制器 ABORT 常来自起点断层和速度/加速度不合理</td>
+            <td>加入起点一致性、关节边界、速度/加速度估计与保守时间缩放</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="slide">
+      <h2>工作重点 3：最小评估体系</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>评价内容</h3>
+          <ul>
+            <li>绕障成功性：invalid state / invalid edge count。</li>
+            <li>轨迹平滑性：路径长度、最大关节跳变、jerk、速度、加速度。</li>
+            <li>执行状态：action status、error code、是否 abort。</li>
+            <li>局部路径复核：RRT stop reason、耗时、碰撞查询次数。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>新增连通性增强</h3>
+          <ul>
+            <li>评估前执行 collision backend preflight。</li>
+            <li>区分“算法失败”和“后端不可用”。</li>
+            <li>新增 <span class="mono">result_interpretable</span> 字段，避免误读 dry-run 结果。</li>
+            <li>支持 planner output 到 evaluator 到图表的一条命令流程。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>迁移难点：为什么这件事复杂</h2>
+      <div class="row3">
+        <div class="panel">
+          <h3>任务空间到关节空间</h3>
+          <ul>
+            <li>MATLAB 中更容易直接观察二维/三维轨迹。</li>
+            <li>ROS2 控制器需要关节轨迹，末端轨迹需要 IK 映射。</li>
+            <li>IK 解的连续性会影响后续 FMP 平滑性。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>尺度映射</h3>
+          <ul>
+            <li>MATLAB 参数在抽象空间中较稳定。</li>
+            <li>ROS2 中障碍物尺寸、机械臂 link 尺寸、RRT 步长、edge resolution 都是物理尺度。</li>
+            <li>这些尺度必须成组调整，不能孤立调参。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>执行链路</h3>
+          <ul>
+            <li>规划成功不等于控制器能跟踪。</li>
+            <li>Gazebo/RViz 可视化、MoveIt PlanningScene、控制器状态需要保持一致。</li>
+            <li>因此我补了安全门和 evaluator，而不是只看单次动画。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>当前预期效果</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>短期效果</h3>
+          <ul>
+            <li>形成一条稳定的离线实验流程：启动仿真、规划、复核、执行、评估。</li>
+            <li>每次实验都有 JSON、CSV 和图表产物，便于复现和汇报。</li>
+            <li>当仿真后端不连通时，系统会明确指出问题，而不是把它误判为算法失败。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>中期效果</h3>
+          <ul>
+            <li>用 5 类固定场景评价：无障碍、轻微障碍、中等障碍、窄通道、不可绕障。</li>
+            <li>逐步对齐 MATLAB 参数尺度，建立可解释的参数组合。</li>
+            <li>为后续真实 UR 机械臂迁移保留安全约束和回退机制。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>论文阅读：pRRTC 是什么</h2>
+      <div class="panel">
+        <h3>论文核心</h3>
+        <p>《pRRTC: GPU-Parallel RRT-Connect for Fast, Consistent, and Low-Cost Motion Planning》提出了一种面向 GPU 的并行 RRT-Connect。它不是简单多开几个 RRT，而是从树扩展、碰撞检测、最近邻搜索和内存访问方式上重新设计 RRT-Connect。</p>
+      </div>
+      <div class="row" style="margin-top: 18px;">
+        <div class="panel">
+          <h3>主要结果</h3>
+          <ul>
+            <li>在 MotionBenchMaker 上最高约 10 倍加速。</li>
+            <li>规划时间标准差最高降低约 5.4 倍。</li>
+            <li>初始路径代价平均降低约 1.4 倍。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>应用场景</h3>
+          <ul>
+            <li>高自由度机械臂规划。</li>
+            <li>狭窄通道和受约束任务。</li>
+            <li>动态障碍物场景下实时 replanning。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>pRRTC 的关键技术点</h2>
+      <table>
+        <thead>
+          <tr><th>技术点</th><th>论文做法</th><th>对我项目的启发</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>双树并行扩展</td>
+            <td>多个 GPU block 同时执行 RRT-Connect 扩展，并使用 atomic 操作维护共享树。</td>
+            <td>说明局部规划瓶颈不只在采样策略，也在扩展和数据结构。</td>
+          </tr>
+          <tr>
+            <td>边碰撞检测并行</td>
+            <td>一条边上的多个离散配置同时检查，碰撞即早停。</td>
+            <td>对应我当前的 <span class="mono">CheckMotionBatch states+edges</span>，后续可以继续优化 edge validation。</td>
+          </tr>
+          <tr>
+            <td>最近邻并行搜索</td>
+            <td>线程分别搜索树节点子集，再 reduction 得到最近邻。</td>
+            <td>目前 C++ RRT-Connect 还偏基础，未来可考虑更高效最近邻或批量查询。</td>
+          </tr>
+          <tr>
+            <td>粗到细碰撞模型</td>
+            <td>使用球体包围模型进行低/高分辨率分层检测。</td>
+            <td>为后续 collision backend 性能优化和安全边界建模提供方向。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="slide">
+      <h2>pRRTC 对本项目的影响</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>可以直接借鉴</h3>
+          <ul>
+            <li>RRT-Connect 比单向 RRT 更适合局部段快速连接。</li>
+            <li>edge validation 是关键，不应只检查离散节点。</li>
+            <li>规划时间稳定性和路径质量都需要指标化，而不是只看是否成功。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>暂不直接实现</h3>
+          <ul>
+            <li>GPU 并行不是当前阶段重点，当前先保证 ROS2 + MoveIt2 链路正确。</li>
+            <li>pRRTC 的球模型和 GPU 内存结构需要较大工程投入。</li>
+            <li>我的近期目标是把 C++ runtime bridge 和 evaluator 做稳，为后续优化留接口。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>后续计划</h2>
+      <div class="row">
+        <div class="panel">
+          <h3>下一阶段实验</h3>
+          <ul>
+            <li>固定 5 类测试场景，形成可重复的评估表。</li>
+            <li>每组实验输出轨迹图、collision timeline、JSON/CSV。</li>
+            <li>把仿真动画、RViz marker 和 evaluator 指标对齐。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>下一阶段算法</h3>
+          <ul>
+            <li>参照 MATLAB 尺度关系，联动调整 RRT step、edge resolution、via 插值密度。</li>
+            <li>继续使用 C++ collision backend 作为真实碰撞判断入口。</li>
+            <li>基于 pRRTC 思想，后续考虑批量 edge check 和更高效局部规划。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="plain">
+        <p><strong>总结：</strong>当前阶段已经从“算法移植能跑”推进到“运行链路可复核、失败原因可区分、实验结果可量化”。</p>
+      </div>
+    </section>
+
+    <div class="footer">
+      <span>Progress update - ROS2 Hybrid Planner</span>
+      <span id="page"></span>
+    </div>
+    <div class="bar-bg"><div class="bar" id="bar"></div></div>
+  </main>
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let index = 0;
+    function render() {
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+      document.getElementById('page').textContent = `${index + 1} / ${slides.length}`;
+      document.getElementById('bar').style.width = `${((index + 1) / slides.length) * 100}%`;
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        index = Math.min(index + 1, slides.length - 1);
+        render();
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        index = Math.max(index - 1, 0);
+        render();
+      }
+      if (e.key.toLowerCase() === 'f') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+      if (e.key.toLowerCase() === 'p') window.print();
+    });
+    render();
+  </script>
+</body>
+</html>

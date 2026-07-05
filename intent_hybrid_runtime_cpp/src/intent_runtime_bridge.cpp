@@ -21,6 +21,7 @@
 #include "intent_hybrid_interfaces/srv/publish_planning_markers.hpp"
 #include "intent_hybrid_runtime_cpp/collision_checker.hpp"
 #include "intent_hybrid_runtime_cpp/intent_rrt_connect.hpp"
+#include "intent_hybrid_runtime_cpp/ompl_rrt_connect.hpp"
 #include "intent_hybrid_runtime_cpp/planner_types.hpp"
 #include "moveit_msgs/msg/robot_state.hpp"
 #include "moveit_msgs/srv/get_position_fk.hpp"
@@ -50,6 +51,14 @@ class IntentRuntimeBridge : public rclcpp::Node {
 
   IntentRuntimeBridge() : Node("intent_runtime_bridge") {
     moveit_group_name_ = this->declare_parameter<std::string>("moveit_group_name", "ur_manipulator");
+    planner_type_ = this->declare_parameter<std::string>("planner_type", "rrt_connect");
+    if (planner_type_ != "rrt_connect" && planner_type_ != "ompl_rrt_connect") {
+      RCLCPP_WARN(
+          this->get_logger(),
+          "Unsupported planner_type=%s, fallback to rrt_connect.",
+          planner_type_.c_str());
+      planner_type_ = "rrt_connect";
+    }
     use_planning_scene_monitor_ = this->declare_parameter<bool>("use_planning_scene_monitor", true);
     robot_description_param_ = this->declare_parameter<std::string>("robot_description_param", "robot_description");
     default_edge_resolution_ = this->declare_parameter<double>("default_edge_resolution", 0.02);
@@ -57,6 +66,10 @@ class IntentRuntimeBridge : public rclcpp::Node {
     default_planner_max_iter_ = this->declare_parameter<int>("default_planner_max_iter", 500);
     default_planner_step_size_ = this->declare_parameter<double>("default_planner_step_size", 0.15);
     default_goal_tolerance_ = this->declare_parameter<double>("default_goal_tolerance", 0.08);
+    ompl_simplify_enable_ = this->declare_parameter<bool>("ompl_simplify_enable", false);
+    ompl_simplify_timeout_sec_ = this->declare_parameter<double>("ompl_simplify_timeout_sec", 0.05);
+    ompl_simplify_at_least_once_ = this->declare_parameter<bool>("ompl_simplify_at_least_once", true);
+    ompl_simplify_timeout_sec_ = std::max(ompl_simplify_timeout_sec_, 0.0);
     state_stale_timeout_sec_ = this->declare_parameter<double>("state_stale_timeout_sec", 1.0);
     state_validity_service_wait_sec_ = this->declare_parameter<double>("state_validity_service_wait_sec", 3.0);
     state_validity_call_timeout_sec_ = this->declare_parameter<double>("state_validity_call_timeout_sec", 1.0);
@@ -64,6 +77,7 @@ class IntentRuntimeBridge : public rclcpp::Node {
     fk_timeout_sec_ = this->declare_parameter<double>("fk_timeout_sec", 0.5);
     action_server_wait_sec_ = this->declare_parameter<double>("action_server_wait_sec", 3.0);
     dispatch_result_wait_sec_ = this->declare_parameter<double>("dispatch_result_wait_sec", 30.0);
+    dispatch_result_margin_sec_ = this->declare_parameter<double>("dispatch_result_margin_sec", 8.0);
 
     client_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
     service_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -122,7 +136,8 @@ class IntentRuntimeBridge : public rclcpp::Node {
         this->get_logger(),
         "intent_runtime_bridge started (state_stale_timeout=%.2fs, state_validity_wait=%.2fs, "
         "state_validity_call_timeout=%.2fs, fk_wait=%.2fs, fk_timeout=%.2fs, action_wait=%.2fs, "
-        "dispatch_result_wait=%.2fs, moveit_group=%s, psm=%s).",
+        "dispatch_result_wait=%.2fs, dispatch_result_margin=%.2fs, moveit_group=%s, planner_type=%s, "
+        "ompl_simplify=%s, ompl_simplify_timeout=%.3fs, psm=%s).",
         state_stale_timeout_sec_,
         state_validity_service_wait_sec_,
         state_validity_call_timeout_sec_,
@@ -130,7 +145,11 @@ class IntentRuntimeBridge : public rclcpp::Node {
         fk_timeout_sec_,
         action_server_wait_sec_,
         dispatch_result_wait_sec_,
+        dispatch_result_margin_sec_,
         moveit_group_name_.c_str(),
+        planner_type_.c_str(),
+        ompl_simplify_enable_ ? "true" : "false",
+        ompl_simplify_timeout_sec_,
         use_planning_scene_monitor_ ? "true" : "false");
   }
 
@@ -481,14 +500,24 @@ class IntentRuntimeBridge : public rclcpp::Node {
     }
 
     uint32_t collision_queries = 0U;
-    intent_hybrid_runtime_cpp::IntentRRTConnect planner;
     auto state_valid = [&](const std::vector<double> &q, std::string &e) {
       return collision_checker_.isStateValid(plan_req.group_name, plan_req.joint_names, q, e, &collision_queries);
     };
     auto edge_valid = [&](const std::vector<double> &a, const std::vector<double> &b, double resolution, std::string &e) {
       return collision_checker_.isEdgeValid(plan_req.group_name, plan_req.joint_names, a, b, resolution, e, &collision_queries);
     };
-    const auto planned = planner.plan(plan_req, state_valid, edge_valid);
+    intent_hybrid_runtime_cpp::RRTConnectResult planned;
+    if (planner_type_ == "ompl_rrt_connect") {
+      intent_hybrid_runtime_cpp::OmplRRTConnectOptions options;
+      options.simplify_enable = ompl_simplify_enable_;
+      options.simplify_timeout_sec = ompl_simplify_timeout_sec_;
+      options.simplify_at_least_once = ompl_simplify_at_least_once_;
+      intent_hybrid_runtime_cpp::OmplRRTConnect planner(options);
+      planned = planner.plan(plan_req, state_valid, edge_valid);
+    } else {
+      intent_hybrid_runtime_cpp::IntentRRTConnect planner;
+      planned = planner.plan(plan_req, state_valid, edge_valid);
+    }
 
     res->ok = planned.ok;
     res->path_points = planned.ok ? static_cast<uint32_t>(planned.path.size()) : 0U;
@@ -509,13 +538,20 @@ class IntentRuntimeBridge : public rclcpp::Node {
 
     RCLCPP_INFO(
         this->get_logger(),
-        "plan_local_segment ok=%s stop=%s iter=%u time=%.2fms queries=%u path_points=%u",
+        "plan_local_segment planner=%s ok=%s stop=%s iter=%u time=%.2fms queries=%u path_points=%u",
+        planner_type_.c_str(),
         res->ok ? "true" : "false",
         res->stop_reason.c_str(),
         res->iter_used,
         res->elapsed_ms,
         res->collision_queries,
         res->path_points);
+    if (res->ok && !res->error_message.empty()) {
+      RCLCPP_INFO(
+          this->get_logger(),
+          "plan_local_segment solution detail: %s",
+          res->error_message.c_str());
+    }
     if (res->ok && res->stop_reason == "direct") {
       RCLCPP_INFO(
           this->get_logger(),
@@ -770,7 +806,8 @@ class IntentRuntimeBridge : public rclcpp::Node {
     res->points_sent = static_cast<uint32_t>(traj_msg.points.size());
 
     const double expected_exec_sec = t.empty() ? 0.0 : std::max(t.back(), 0.0);
-    const double result_wait_sec = std::max(dispatch_result_wait_sec_, expected_exec_sec + 2.0);
+    const double result_wait_sec = std::max(
+        dispatch_result_wait_sec_, expected_exec_sec + std::max(dispatch_result_margin_sec_, 0.0));
     const auto result_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::duration<double>(std::max(result_wait_sec, 0.05)));
 
@@ -1026,6 +1063,9 @@ class IntentRuntimeBridge : public rclcpp::Node {
   int default_planner_max_iter_{500};
   double default_planner_step_size_{0.15};
   double default_goal_tolerance_{0.08};
+  bool ompl_simplify_enable_{false};
+  double ompl_simplify_timeout_sec_{0.05};
+  bool ompl_simplify_at_least_once_{true};
   double state_stale_timeout_sec_{1.0};
   double state_validity_service_wait_sec_{3.0};
   double state_validity_call_timeout_sec_{1.0};
@@ -1033,6 +1073,8 @@ class IntentRuntimeBridge : public rclcpp::Node {
   double fk_timeout_sec_{0.5};
   double action_server_wait_sec_{3.0};
   double dispatch_result_wait_sec_{30.0};
+  double dispatch_result_margin_sec_{8.0};
+  std::string planner_type_{"rrt_connect"};
 
   rclcpp::Client<GetStateValidity>::SharedPtr state_validity_client_;
   rclcpp::Client<GetPositionFK>::SharedPtr fk_client_;

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="双臂机器人">
+    <xacro:arg name="initial_positions_file" default="$(find dual_arm_moveit_config)/config/initial_positions.yaml" />
+
+    <!-- Import 双臂机器人 urdf file -->
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/dual_arm.urdf.xacro" />
+
+    <!-- Import control_xacro -->
+    <xacro:include filename="双臂机器人.ros2_control.xacro" />
+
+    <xacro:双臂机器人_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+
+</robot>

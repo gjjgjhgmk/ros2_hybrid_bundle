@@ -28,9 +28,11 @@ from action_msgs.msg import GoalStatus
 from control_msgs.action import FollowJointTrajectory
 from control_msgs.msg import JointTolerance
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
-from moveit_msgs.msg import MoveItErrorCodes, RobotState
-from moveit_msgs.srv import GetPositionFK, GetPositionIK, GetStateValidity
+from moveit_msgs.msg import CollisionObject, MoveItErrorCodes, PlanningScene, RobotState
+from moveit_msgs.srv import ApplyPlanningScene, GetPositionFK, GetPositionIK, GetStateValidity
 from sensor_msgs.msg import JointState
+from shape_msgs.msg import SolidPrimitive
+from std_msgs.msg import Header
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from visualization_msgs.msg import Marker, MarkerArray
@@ -889,7 +891,7 @@ class IntentHybridPlannerNode(Node):
         # -------------------------
         self.declare_parameter(
             "trajectory_action_name",
-            "/scaled_joint_trajectory_controller/follow_joint_trajectory",
+            "/joint_trajectory_controller/follow_joint_trajectory",
         )
         self.declare_parameter("min_send_interval", 0.3)
         self.declare_parameter("min_preempt_interval", 0.2)
@@ -910,6 +912,9 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("ee_orientation_mode", "z_axis_lock")
         self.declare_parameter("ee_path_json", "")
         self.declare_parameter("plane_obstacles_json", "")
+        self.declare_parameter("obstacle_config_file", "")
+        self.declare_parameter("obstacle_config_apply_to_planning_scene", True)
+        self.declare_parameter("obstacle_config_apply_timeout_sec", 5.0)
         self.declare_parameter("ik_fail_max_ratio", 0.1)
         self.declare_parameter("ik_retry_per_point", 2)
         self.declare_parameter("ik_timeout_sec", 0.05)
@@ -924,6 +929,8 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("cpp_local_planner_service", "/intent_runtime/plan_local_segment")
         self.declare_parameter("cpp_motion_check_service", "/intent_runtime/check_motion_batch")
         self.declare_parameter("planner_type", "rrt_connect")
+        self.declare_parameter("ompl_simplify_enable", False)
+        self.declare_parameter("ompl_simplify_timeout_sec", 0.05)
         self.declare_parameter("cpp_planner_timeout_sec", 0.10)
         self.declare_parameter("cpp_planner_max_iter", 500)
         self.declare_parameter("cpp_planner_step_size", 0.15)
@@ -941,6 +948,7 @@ class IntentHybridPlannerNode(Node):
         self.declare_parameter("segment_gap", 10)
         self.declare_parameter("segment_pad", 4)
         self.declare_parameter("via_interp_dist", 0.5)
+        self.declare_parameter("via_densify_enable", True)
         self.declare_parameter("via_trim_sec", 0.05)
         self.declare_parameter("via_global_dedup_enable", True)
         self.declare_parameter("refine_fixed_budget", 100)
@@ -1051,6 +1059,15 @@ class IntentHybridPlannerNode(Node):
         self.plane_obstacles_json = (
             self.get_parameter("plane_obstacles_json").get_parameter_value().string_value
         )
+        self.obstacle_config_file = (
+            self.get_parameter("obstacle_config_file").get_parameter_value().string_value
+        )
+        self.obstacle_config_apply_to_planning_scene = (
+            self.get_parameter("obstacle_config_apply_to_planning_scene").get_parameter_value().bool_value
+        )
+        self.obstacle_config_apply_timeout_sec = float(
+            self.get_parameter("obstacle_config_apply_timeout_sec").get_parameter_value().double_value
+        )
         self.ik_fail_max_ratio = float(
             self.get_parameter("ik_fail_max_ratio").get_parameter_value().double_value
         )
@@ -1092,6 +1109,12 @@ class IntentHybridPlannerNode(Node):
         )
         self.planner_type = (
             self.get_parameter("planner_type").get_parameter_value().string_value
+        )
+        self.ompl_simplify_enable = bool(
+            self.get_parameter("ompl_simplify_enable").get_parameter_value().bool_value
+        )
+        self.ompl_simplify_timeout_sec = float(
+            self.get_parameter("ompl_simplify_timeout_sec").get_parameter_value().double_value
         )
         self.cpp_planner_timeout_sec = float(
             self.get_parameter("cpp_planner_timeout_sec").get_parameter_value().double_value
@@ -1140,6 +1163,9 @@ class IntentHybridPlannerNode(Node):
         self.segment_pad = int(self.get_parameter("segment_pad").get_parameter_value().integer_value)
         self.via_interp_dist = float(
             self.get_parameter("via_interp_dist").get_parameter_value().double_value
+        )
+        self.via_densify_enable = bool(
+            self.get_parameter("via_densify_enable").get_parameter_value().bool_value
         )
         self.via_trim_sec = float(self.get_parameter("via_trim_sec").get_parameter_value().double_value)
         self.via_global_dedup_enable = (
@@ -1311,11 +1337,13 @@ class IntentHybridPlannerNode(Node):
         self.allow_cpp_local_planner_fallback = bool(self.allow_cpp_local_planner_fallback)
         self.cpp_local_planner_service = self.cpp_local_planner_service.strip() or "/intent_runtime/plan_local_segment"
         self.cpp_motion_check_service = self.cpp_motion_check_service.strip() or "/intent_runtime/check_motion_batch"
-        if self.planner_type not in ("rrt_connect",):
+        if self.planner_type not in ("rrt_connect", "ompl_rrt_connect"):
             self.get_logger().warn(
                 f"Unsupported planner_type={self.planner_type}, fallback to rrt_connect."
             )
             self.planner_type = "rrt_connect"
+        self.ompl_simplify_enable = bool(self.ompl_simplify_enable)
+        self.ompl_simplify_timeout_sec = max(float(self.ompl_simplify_timeout_sec), 0.0)
         self.cpp_planner_timeout_sec = max(float(self.cpp_planner_timeout_sec), 0.0)
         self.cpp_planner_max_iter = max(int(self.cpp_planner_max_iter), 1)
         self.cpp_planner_step_size = max(float(self.cpp_planner_step_size), 1e-4)
@@ -1339,11 +1367,15 @@ class IntentHybridPlannerNode(Node):
         self.sync_nominal_dt_with_demo_dt = bool(self.sync_nominal_dt_with_demo_dt)
         if self.sync_nominal_dt_with_demo_dt:
             self.nominal_dt = float(self.demo_dt)
+        self.obstacle_config_file = str(Path(self.obstacle_config_file).expanduser()) if self.obstacle_config_file else ""
+        self.obstacle_config_apply_to_planning_scene = bool(self.obstacle_config_apply_to_planning_scene)
+        self.obstacle_config_apply_timeout_sec = max(float(self.obstacle_config_apply_timeout_sec), 0.1)
         self.ik_fail_max_ratio = float(np.clip(self.ik_fail_max_ratio, 0.0, 1.0))
         self.ik_retry_per_point = int(max(self.ik_retry_per_point, 1))
         self.ik_timeout_sec = float(max(self.ik_timeout_sec, 0.01))
         self.offline_start_delay_sec = max(float(self.offline_start_delay_sec), 0.0)
         self.via_global_dedup_enable = bool(self.via_global_dedup_enable)
+        self.via_densify_enable = bool(self.via_densify_enable)
         self.action_path_tolerance_rad = max(float(self.action_path_tolerance_rad), 0.0)
         self.action_goal_tolerance_rad = max(float(self.action_goal_tolerance_rad), 0.0)
         self.action_goal_time_tolerance_sec = max(float(self.action_goal_time_tolerance_sec), 0.0)
@@ -1488,6 +1520,7 @@ class IntentHybridPlannerNode(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
         self.vis_pub = self.create_publisher(MarkerArray, "/planning_vis", self._vis_qos)
+        self.collision_object_pub = self.create_publisher(CollisionObject, "/collision_object", 10)
         self._ik_cb_group = ReentrantCallbackGroup()
         self.ik_client = self.create_client(
             GetPositionIK,
@@ -1511,6 +1544,11 @@ class IntentHybridPlannerNode(Node):
         self.cpp_dispatch_client = None
         self.cpp_local_planner_client = None
         self.cpp_publish_markers_client = None
+        self.apply_planning_scene_client = self.create_client(
+            ApplyPlanningScene,
+            "/apply_planning_scene",
+            callback_group=self._runtime_cb_group,
+        )
         self._cpp_rrt_fallback_checker: Optional[Callable[[np.ndarray], bool]] = None
         self._cpp_rrt_fallback_edge_checker = None
         self._cpp_rrt_fallback_warned = False
@@ -1654,8 +1692,16 @@ class IntentHybridPlannerNode(Node):
             f"type={self.planner_type}, service={self._cpp_local_planner_service_name or 'n/a'}, "
             f"motion_check={self._cpp_motion_check_service_name or 'n/a'}, "
             f"timeout={self.cpp_planner_timeout_sec:.3f}s, max_iter={self.cpp_planner_max_iter}, "
-            f"step={self.cpp_planner_step_size:.3f}, edge_res={self.cpp_edge_resolution:.3f}"
+            f"step={self.cpp_planner_step_size:.3f}, edge_res={self.cpp_edge_resolution:.3f}, "
+            f"ompl_simplify_request={self.ompl_simplify_enable}, "
+            f"ompl_simplify_timeout={self.ompl_simplify_timeout_sec:.3f}s"
         )
+        if self.planner_type == "ompl_rrt_connect":
+            self.get_logger().info(
+                "planner_type=ompl_rrt_connect selected in Python; "
+                "make sure intent_runtime_bridge is launched with planner_type:=ompl_rrt_connect. "
+                "OMPL simplify is applied inside intent_runtime_bridge; check bridge startup log."
+            )
         self.get_logger().info(
             "RRT params: "
             f"step_size={self.rrt_step_size_effective:.3f}, "
@@ -1708,6 +1754,7 @@ class IntentHybridPlannerNode(Node):
             )
         self.get_logger().info(
             "Via settings: "
+            f"densify={self.via_densify_enable}, "
             f"interp_dist={self.via_interp_dist:.4f}, "
             f"trim_sec={self.via_trim_sec:.4f}, "
             f"global_dedup_enable={self.via_global_dedup_enable}"
@@ -1928,6 +1975,152 @@ class IntentHybridPlannerNode(Node):
         except Exception as exc:  # pylint: disable=broad-except
             self.get_logger().warn(f"analytic_obstacles_json parse failed: {exc}. Use default spheres.")
         return default_obs
+
+    def _load_obstacle_config_scene(self) -> Optional[Dict[str, Any]]:
+        path_text = str(getattr(self, "obstacle_config_file", "") or "").strip()
+        if not path_text:
+            return None
+        path = Path(path_text).expanduser()
+        if not path.exists():
+            self.get_logger().error(f"obstacle_config_file does not exist: {path}")
+            return {"error": f"missing obstacle config: {path}", "obstacles": []}
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # pylint: disable=broad-except
+            self.get_logger().error(f"obstacle_config_file parse failed: {path}: {exc}")
+            return {"error": f"parse failed: {exc}", "obstacles": []}
+
+        frame_id = str(raw.get("frame_id", "base_link")).strip() or "base_link"
+        world_name = str(raw.get("world_name", "empty")).strip() or "empty"
+        obstacles: List[Dict[str, Any]] = []
+        for i, item in enumerate(raw.get("obstacles", []), start=1):
+            if not isinstance(item, dict):
+                continue
+            obs_type = str(item.get("type", "cylinder")).strip().lower()
+            if obs_type != "cylinder":
+                self.get_logger().warn(f"Unsupported obstacle type in config ignored: {obs_type}")
+                continue
+            try:
+                radius = float(item.get("radius", 0.08))
+                height = float(item.get("height", 0.8))
+                if radius <= 0.0 or height <= 0.0:
+                    continue
+                obstacles.append(
+                    {
+                        "id": str(item.get("id", f"pillar_{i:02d}")).strip() or f"pillar_{i:02d}",
+                        "type": "cylinder",
+                        "x": float(item.get("x", 0.0)),
+                        "y": float(item.get("y", 0.0)),
+                        "z": float(item.get("z", 0.0)),
+                        "radius": radius,
+                        "height": height,
+                        "frame_id": frame_id,
+                    }
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                self.get_logger().warn(f"Invalid obstacle entry ignored: {exc}")
+
+        return {
+            "path": str(path),
+            "world_name": world_name,
+            "frame_id": frame_id,
+            "obstacles": obstacles,
+        }
+
+    def _build_collision_objects_from_obstacle_config(
+        self, scene_cfg: Dict[str, Any]
+    ) -> List[CollisionObject]:
+        frame_id = str(scene_cfg.get("frame_id", "base_link") or "base_link")
+        out: List[CollisionObject] = []
+        for obs in scene_cfg.get("obstacles", []):
+            obj = CollisionObject()
+            obj.header = Header(frame_id=frame_id)
+            obj.id = str(obs.get("id", "obstacle"))
+            obj.operation = CollisionObject.ADD
+
+            prim = SolidPrimitive()
+            prim.type = SolidPrimitive.CYLINDER
+            prim.dimensions = [float(obs["height"]), float(obs["radius"])]
+
+            pose = Pose()
+            pose.position.x = float(obs["x"])
+            pose.position.y = float(obs["y"])
+            pose.position.z = float(obs["z"])
+            pose.orientation.w = 1.0
+
+            obj.primitives.append(prim)
+            obj.primitive_poses.append(pose)
+            out.append(obj)
+        return out
+
+    def _sync_obstacle_config_to_planning_scene(self, where: str) -> bool:
+        if not str(getattr(self, "obstacle_config_file", "") or "").strip():
+            return True
+        scene_cfg = self._load_obstacle_config_scene()
+        if not scene_cfg or scene_cfg.get("error"):
+            return False
+        objs = self._build_collision_objects_from_obstacle_config(scene_cfg)
+        if not objs:
+            self.get_logger().error(
+                f"obstacle_config_file has no valid collision objects ({where}): "
+                f"{scene_cfg.get('path', self.obstacle_config_file)}"
+            )
+            return False
+
+        if self.obstacle_config_apply_to_planning_scene:
+            if self.apply_planning_scene_client is None:
+                self.get_logger().error("ApplyPlanningScene client is unavailable.")
+                return False
+            timeout_sec = float(self.obstacle_config_apply_timeout_sec)
+            if not self.apply_planning_scene_client.wait_for_service(timeout_sec=timeout_sec):
+                self.get_logger().error("/apply_planning_scene is not ready for obstacle sync.")
+                return False
+            req = ApplyPlanningScene.Request()
+            req.scene = PlanningScene()
+            req.scene.is_diff = True
+            req.scene.world.collision_objects = objs
+            fut = self.apply_planning_scene_client.call_async(req)
+            resp = self._wait_future_blocking(fut, timeout_sec)
+            if resp is None or not bool(getattr(resp, "success", False)):
+                self.get_logger().error("/apply_planning_scene failed during obstacle sync.")
+                return False
+
+        for _ in range(3):
+            for obj in objs:
+                self.collision_object_pub.publish(obj)
+            time.sleep(0.05)
+
+        ids = ",".join(obj.id for obj in objs)
+        self.get_logger().info(
+            "Obstacle config synced to MoveIt PlanningScene and /collision_object "
+            f"({where}): ids=[{ids}], frame={scene_cfg.get('frame_id')}, "
+            f"source={scene_cfg.get('path')}"
+        )
+        return True
+
+    def _scene_obstacles_for_export(self) -> List[Any]:
+        scene_cfg = self._load_obstacle_config_scene()
+        if scene_cfg and not scene_cfg.get("error") and scene_cfg.get("obstacles"):
+            return list(scene_cfg.get("obstacles", []))
+
+        obstacles: List[Any] = []
+        if self._plane_obstacles:
+            for obs in self._plane_obstacles:
+                p_xyz = self._map_uvz_to_xyz(obs["u"], obs["v"], obs.get("z", 0.0))
+                obstacles.append(
+                    {
+                        "x": float(p_xyz[0]),
+                        "y": float(p_xyz[1]),
+                        "z": float(p_xyz[2]),
+                        "radius": float(obs.get("radius", 0.0)),
+                    }
+                )
+        elif self._analytic_obstacles:
+            for obs in self._analytic_obstacles:
+                arr = np.asarray(obs, dtype=float).reshape(-1)
+                if arr.size == 4:
+                    obstacles.append([float(arr[0]), float(arr[1]), float(arr[2]), float(arr[3])])
+        return obstacles
 
     def _init_moveit_py_backend(self) -> bool:
         if self.rrt_collision_backend != "moveit_py":
@@ -2392,6 +2585,22 @@ class IntentHybridPlannerNode(Node):
             f"reason={self._last_cpp_collision_error or 'strict motion check failed'}"
         )
 
+    def _motion_invalid_indices(self, motion: Optional[Dict[str, Any]]) -> List[int]:
+        if motion is None:
+            return []
+        out = set()
+        state_valid = np.asarray(motion.get("state_valid", []), dtype=bool).reshape(-1)
+        for i, v in enumerate(state_valid.tolist()):
+            if not bool(v):
+                out.add(int(i))
+        edge_valid = np.asarray(motion.get("edge_valid", []), dtype=bool).reshape(-1)
+        for i, v in enumerate(edge_valid.tolist()):
+            if not bool(v):
+                out.add(int(i))
+                out.add(int(i + 1))
+        n = int(state_valid.size)
+        return sorted(int(i) for i in out if 0 <= int(i) < n)
+
     def _validate_local_path_with_cpp_motion(self, path: np.ndarray, label: str) -> bool:
         arr = np.asarray(path, dtype=float)
         if arr.ndim != 2 or arr.shape[0] != len(self.joint_names) or arr.shape[1] < 2:
@@ -2424,7 +2633,7 @@ class IntentHybridPlannerNode(Node):
     ) -> Optional[Dict[str, Any]]:
         if not (self.execution_mode == "offline" and self.use_cpp_local_planner):
             return None
-        if self.planner_type != "rrt_connect":
+        if self.planner_type not in ("rrt_connect", "ompl_rrt_connect"):
             self.get_logger().warn(f"Unsupported C++ planner type: {self.planner_type}")
             return None
         if not self._use_cpp_runtime_for_offline():
@@ -2537,7 +2746,8 @@ class IntentHybridPlannerNode(Node):
             "C++ local planner success "
             f"({segment_label}): iter={int(resp.iter_used)}, "
             f"time_ms={float(resp.elapsed_ms):.1f}, queries={int(resp.collision_queries)}, "
-            f"path_points={path_points}, stop_reason={str(resp.stop_reason)}"
+            f"path_points={path_points}, stop_reason={str(resp.stop_reason)}, "
+            f"detail={str(resp.error_message)}"
         )
         return {
             "path_first": path,
@@ -2698,7 +2908,11 @@ class IntentHybridPlannerNode(Node):
         dof = len(self.joint_names)
         if traj.ndim != 2 or traj.shape[0] != dof:
             return "rejected_bad_shape"
-        self._update_dispatch_trajectory_diag(traj)
+        dispatch_dt = float(self.nominal_dt if nominal_dt_override is None else nominal_dt_override)
+        self._update_dispatch_trajectory_diag(
+            traj,
+            duration_sec=float(max(traj.shape[1] - 1, 0) * max(dispatch_dt, 1e-6)),
+        )
         if not self._validate_offline_dispatch_start(traj, where="cpp_bridge offline dispatch"):
             return "failed_start_state_mismatch"
         req = DispatchJointTrajectory.Request()
@@ -2706,7 +2920,7 @@ class IntentHybridPlannerNode(Node):
         req.joint_names = list(self.joint_names)
         req.dof = int(dof)
         req.q_flat = traj.T.reshape(-1).tolist()
-        req.nominal_dt = float(self.nominal_dt if nominal_dt_override is None else nominal_dt_override)
+        req.nominal_dt = dispatch_dt
         req.vel_limits = np.asarray(self.vel_limits, dtype=float).reshape(-1).tolist()
         req.acc_limits = np.asarray(self.acc_limits, dtype=float).reshape(-1).tolist()
         req.stitch_from_current = bool(self.offline_stitch_start_from_current)
@@ -2716,11 +2930,11 @@ class IntentHybridPlannerNode(Node):
         fut = self.cpp_dispatch_client.call_async(req)
         if self.offline_wait_action_result:
             expected_exec_sec = max(
-                float(max(traj.shape[1] - 1, 1)) * max(float(self.nominal_dt), 1e-3),
+                float(max(traj.shape[1] - 1, 1)) * max(dispatch_dt, 1e-3),
                 1.0,
             )
             wait_sec = max(
-                float(self.cpp_bridge_timeout_sec) + expected_exec_sec + 2.0,
+                float(self.cpp_bridge_timeout_sec) + expected_exec_sec + 6.0,
                 float(self.offline_action_result_timeout_sec) + 1.0,
                 # Keep client-side wait >= runtime bridge default result wait (30s)
                 # plus a small margin, otherwise Python may timeout before bridge replies.
@@ -3699,23 +3913,7 @@ class IntentHybridPlannerNode(Node):
         out_path = out_dir / f"offline_eval_input_{stamp}.json"
         latest_path = out_dir / "offline_eval_input_latest.json"
 
-        obstacles: List[Any] = []
-        if self._plane_obstacles:
-            for obs in self._plane_obstacles:
-                p_xyz = self._map_uvz_to_xyz(obs["u"], obs["v"], obs.get("z", 0.0))
-                obstacles.append(
-                    {
-                        "x": float(p_xyz[0]),
-                        "y": float(p_xyz[1]),
-                        "z": float(p_xyz[2]),
-                        "radius": float(obs.get("radius", 0.0)),
-                    }
-                )
-        elif self._analytic_obstacles:
-            for obs in self._analytic_obstacles:
-                arr = np.asarray(obs, dtype=float).reshape(-1)
-                if arr.size == 4:
-                    obstacles.append([float(arr[0]), float(arr[1]), float(arr[2]), float(arr[3])])
+        obstacles: List[Any] = self._scene_obstacles_for_export()
 
         via_arr = np.asarray(via_points, dtype=float) if via_points is not None else np.empty((len(self.joint_names), 0))
         via_time_arr = np.asarray(via_times, dtype=float).reshape(-1) if via_times is not None else np.empty((0,))
@@ -4008,6 +4206,41 @@ class IntentHybridPlannerNode(Node):
             out[j, :] = np.interp(t_axis, t_knots, q_knots[j, :])
         return out
 
+    def _path_to_vias(
+        self,
+        path_points: np.ndarray,
+        t_start: float,
+        t_end: float,
+    ) -> Tuple[np.ndarray, np.ndarray, str]:
+        if self.via_densify_enable:
+            via, via_time = hm_compat.densify_path_to_vias(
+                path_points,
+                t_start,
+                t_end,
+                interp_dist=self.via_interp_dist,
+                via_trim_sec=self.via_trim_sec,
+            )
+            return via, via_time, "dense"
+
+        arr = np.asarray(path_points, dtype=float)
+        if arr.ndim != 2 or arr.size == 0:
+            return np.empty((0, 0), dtype=float), np.empty((0,), dtype=float), "raw"
+        if arr.shape[1] < 2 and arr.shape[0] >= 2:
+            arr = arr.T
+        dim, count = arr.shape
+        if count < 2:
+            return np.empty((dim, 0), dtype=float), np.empty((0,), dtype=float), "raw"
+
+        diff = np.diff(arr, axis=1)
+        seg_len = np.linalg.norm(diff, axis=0)
+        arc = np.concatenate(([0.0], np.cumsum(seg_len)))
+        total = float(arc[-1])
+        if total <= 1e-12:
+            via_time = np.linspace(float(t_start), float(t_end), count, dtype=float)
+        else:
+            via_time = float(t_start) + (arc / total) * (float(t_end) - float(t_start))
+        return arr, via_time, "raw"
+
     def _repair_modulated_with_via_projection(
         self,
         modulated_traj: np.ndarray,
@@ -4173,15 +4406,13 @@ class IntentHybridPlannerNode(Node):
             if path_for_via.size == 0:
                 continue
 
-            dense_via, dense_time = hm_compat.densify_path_to_vias(
-                path_for_via,
-                t_start,
-                t_end,
-                interp_dist=self.via_interp_dist,
-                via_trim_sec=self.via_trim_sec,
-            )
+            dense_via, dense_time, via_mode = self._path_to_vias(path_for_via, t_start, t_end)
             if dense_via.size == 0 or dense_time.size == 0:
                 continue
+            self.get_logger().debug(
+                f"Phase B local path converted to {via_mode} via points: "
+                f"{dense_via.shape[1]} (raw_path_points={path_for_via.shape[1]})"
+            )
             via_points_all.append(dense_via)
             via_times_all.append(dense_time)
 
@@ -4401,6 +4632,13 @@ class IntentHybridPlannerNode(Node):
         ):
             return False
 
+        if not self._sync_obstacle_config_to_planning_scene("offline pre-scan"):
+            self.get_logger().error(
+                "Offline planning aborted because obstacle_config_file could not be synced "
+                "to MoveIt PlanningScene."
+            )
+            return False
+
         n_points = int(nominal_traj.shape[1])
         self.get_logger().info("Step 1/4: global collision scan.")
         try:
@@ -4408,6 +4646,19 @@ class IntentHybridPlannerNode(Node):
         except RuntimeError as exc:
             self.get_logger().error(f"Step 1/4 failed: {exc}")
             return False
+
+        danger_index_count = int(len(danger_indices))
+        nominal_index_count = max(n_points - danger_index_count, 0)
+        self._danger_count += danger_index_count
+        self._nominal_count += nominal_index_count
+        if danger_index_count > 0:
+            self._danger_event_count += 1
+        self.get_logger().info(
+            "Offline scan counters: "
+            f"nominal_count_added={nominal_index_count}, "
+            f"danger_count_added={danger_index_count}, "
+            f"danger_event_added={1 if danger_index_count > 0 else 0}"
+        )
 
         via_points_all: List[np.ndarray] = []
         via_times_all: List[np.ndarray] = []
@@ -4422,7 +4673,19 @@ class IntentHybridPlannerNode(Node):
                 pad=self.segment_pad,
             )
             self.get_logger().info(f"Step 2/4: planning {len(segments)} collision segments.")
+            if not segments:
+                self.get_logger().error(
+                    "Nominal trajectory has collision indices but no danger segments were extracted; "
+                    "this run is not a valid local-planner comparison."
+                )
+                return False
             self._rrt_call_count += int(len(segments))
+            if self._rrt_call_count <= 0:
+                self.get_logger().error(
+                    "rrt_call_count is zero after danger segment extraction; "
+                    "this run is not a valid OMPL/local-planner comparison."
+                )
+                return False
             chosen_budget = int(self.refine_fixed_budget)
             if chosen_budget < 0:
                 chosen_budget = int(self.refine_budget_candidates[0]) if self.refine_budget_candidates else 100
@@ -4536,20 +4799,14 @@ class IntentHybridPlannerNode(Node):
                     )
                     return False
 
-                dense_via, dense_time = hm_compat.densify_path_to_vias(
-                    path_for_via,
-                    t_start,
-                    t_end,
-                    interp_dist=self.via_interp_dist,
-                    via_trim_sec=self.via_trim_sec,
-                )
+                dense_via, dense_time, via_mode = self._path_to_vias(path_for_via, t_start, t_end)
                 if dense_via.size <= 0 or dense_time.size <= 0:
                     partial_via = np.hstack(via_points_all) if via_points_all else None
                     self._publish_debug_markers_with_backend(nominal_traj, partial_via, nominal_traj)
-                    self.get_logger().error(f"Segment {seg_idx + 1} failed: via densify returned empty.")
+                    self.get_logger().error(f"Segment {seg_idx + 1} failed: via conversion returned empty.")
                     return False
                 self.get_logger().info(
-                    f"Segment {seg_idx + 1}: dense via points={dense_via.shape[1]} "
+                    f"Segment {seg_idx + 1}: {via_mode} via points={dense_via.shape[1]} "
                     f"(raw_path_points={path_for_via.shape[1]})"
                 )
                 via_points_all.append(dense_via)
@@ -4640,20 +4897,61 @@ class IntentHybridPlannerNode(Node):
                 post_motion,
                 expected_states=int(modulated.shape[1]),
             )
-            if self.execute_only_if_postcheck_passed:
-                self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
-                self._export_offline_eval_input(
-                    nominal_traj,
-                    global_via_points,
-                    global_via_times,
-                    modulated,
-                    time_axis,
-                    dispatch_result="failed_postcheck",
-                )
-                return False
-            self.get_logger().warn(
-                "Unsafe experimental mode: dispatching trajectory even though post-check failed."
+            invalid_idx = self._motion_invalid_indices(post_motion)
+            repaired = self._repair_modulated_with_via_projection(
+                modulated,
+                nominal_traj,
+                time_axis,
+                global_via_points,
+                global_via_times,
+                invalid_idx,
             )
+            if repaired is not None:
+                self.get_logger().warn(
+                    "Offline post-check repair: replacing "
+                    f"{len(invalid_idx)} invalid index neighborhoods with time-aligned via projection."
+                )
+                repair_motion = self._check_motion_batch_cpp(
+                    repaired.T,
+                    check_edges=True,
+                    where="offline postcheck repair strict check",
+                    edge_resolution=self.postcheck_edge_resolution,
+                )
+                repair_ok = self._strict_motion_check_passed(
+                    repair_motion,
+                    expected_states=int(repaired.shape[1]),
+                    require_edges=True,
+                )
+                self._record_postcheck_metrics(repair_motion, passed=repair_ok)
+                if repair_ok:
+                    modulated = repaired
+                    post_motion = repair_motion
+                    postcheck_ok = True
+                    self.get_logger().info(
+                        "Offline post-check repair succeeded; repaired trajectory will be dispatched."
+                    )
+                else:
+                    self._log_motion_check_failure(
+                        "Offline post-check repair rejected trajectory",
+                        repair_motion,
+                        expected_states=int(repaired.shape[1]),
+                    )
+            if self.execute_only_if_postcheck_passed:
+                if not postcheck_ok:
+                    self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
+                    self._export_offline_eval_input(
+                        nominal_traj,
+                        global_via_points,
+                        global_via_times,
+                        modulated,
+                        time_axis,
+                        dispatch_result="failed_postcheck",
+                    )
+                    return False
+            if not postcheck_ok:
+                self.get_logger().warn(
+                    "Unsafe experimental mode: dispatching trajectory even though post-check failed."
+                )
 
         self._publish_debug_markers_with_backend(nominal_traj, global_via_points, modulated)
 

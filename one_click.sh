@@ -21,6 +21,9 @@ EE_PLANE_START_Q="${EE_PLANE_START_Q:-[0.0, -1.57, 1.57, -1.57, -1.57, 0.0]}"
 EE_TRACE_MAX_POINTS="${EE_TRACE_MAX_POINTS:-20000}"
 EE_TRACE_EE_LINK="${EE_TRACE_EE_LINK:-tool0}"
 RUNTIME_BACKEND="${RUNTIME_BACKEND:-cpp_bridge}"
+PLANNER_TYPE="${PLANNER_TYPE:-rrt_connect}"
+OMPL_SIMPLIFY_ENABLE="${OMPL_SIMPLIFY_ENABLE:-false}"
+OMPL_SIMPLIFY_TIMEOUT_SEC="${OMPL_SIMPLIFY_TIMEOUT_SEC:-0.05}"
 ENABLE_OBSTACLES="${ENABLE_OBSTACLES:-0}"
 OBSTACLE_CONFIG_FILE="${OBSTACLE_CONFIG_FILE:-}"
 OBSTACLE_WORLD_NAME="${OBSTACLE_WORLD_NAME:-}"
@@ -44,6 +47,7 @@ usage() {
   cat <<'EOF'
 Usage:
   ./one_click.sh start [--prealign]
+  ./one_click.sh prealign
   ./one_click.sh stop
 
 Environment:
@@ -55,6 +59,9 @@ Environment:
   EE_TRACE_MAX_POINTS      (default: 20000)
   EE_TRACE_EE_LINK         (default: tool0)
   RUNTIME_BACKEND          (python|cpp_bridge, default: cpp_bridge)
+  PLANNER_TYPE             (rrt_connect|ompl_rrt_connect, default: rrt_connect)
+  OMPL_SIMPLIFY_ENABLE     (true|false, default: false)
+  OMPL_SIMPLIFY_TIMEOUT_SEC (default: 0.05)
   ENABLE_OBSTACLES         (0|1, default: 0)
   OBSTACLE_CONFIG_FILE     (default: <pkg_share>/config/obstacles_default.json)
   OBSTACLE_WORLD_NAME      (default: from config world_name, fallback empty)
@@ -253,10 +260,13 @@ start_runtime_bridge_if_enabled() {
     return 1
   fi
 
-  log "Starting C++ runtime bridge: ${bridge_bin}"
+  log "Starting C++ runtime bridge: ${bridge_bin} (planner_type=${PLANNER_TYPE}, ompl_simplify=${OMPL_SIMPLIFY_ENABLE})"
   # Use setsid to detach bridge into a new session; this avoids parent-shell
   # lifecycle interference and keeps bridge alive across launcher exit.
-  nohup setsid "${bridge_bin}" \
+  nohup setsid "${bridge_bin}" --ros-args \
+    -p "planner_type:=${PLANNER_TYPE}" \
+    -p "ompl_simplify_enable:=${OMPL_SIMPLIFY_ENABLE}" \
+    -p "ompl_simplify_timeout_sec:=${OMPL_SIMPLIFY_TIMEOUT_SEC}" \
     > "${LOG_DIR}/intent_runtime_bridge.log" 2>&1 &
   bridge_pid="$!"
   echo "${bridge_pid}" > "${LOG_DIR}/intent_runtime_bridge.pid"
@@ -457,7 +467,7 @@ spawn_obstacles_if_enabled() {
     --mode both \
     --config "${OBSTACLE_CONFIG_FILE}" \
     --world-name "${OBSTACLE_WORLD_NAME}" \
-    --publish-count 3 \
+    --publish-count 5 \
     > "${OBSTACLE_LOG_FILE}" 2>&1; then
     log "Obstacle injection succeeded."
     OBSTACLE_STATUS="success"
@@ -517,16 +527,28 @@ source ~/ws_ur_sim/install/setup.bash
 source ${ROOT_DIR}/install/setup.bash
 ros2 run intent_hybrid_planner intent_hybrid_planner_node --ros-args \
   -p runtime_backend:=${RUNTIME_BACKEND} \
+  -p planner_type:=${PLANNER_TYPE} \
   -p cpp_bridge_collision_required:=true \
   -p moveit_group_name:=ur_manipulator \
   -p use_sim_time:=true \
   -p execution_mode:=offline \
   -p hybrid_mode:=matlab_compat \
+EOF
+    if [[ -n "${OBSTACLE_CONFIG_FILE:-}" ]]; then
+      cat <<EOF
+  -p obstacle_config_file:=${OBSTACLE_CONFIG_FILE} \
+EOF
+    fi
+    cat <<EOF
   -p trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory \
-  -p action_path_tolerance_rad:=0.5 \
-  -p action_goal_tolerance_rad:=0.2 \
-  -p action_goal_time_tolerance_sec:=5.0 \
-  -p nominal_dt:=0.12
+  -p sync_nominal_dt_with_demo_dt:=false \
+  -p nominal_dt:=0.20 \
+  -p action_path_tolerance_rad:=0.8 \
+  -p action_goal_tolerance_rad:=0.3 \
+  -p action_goal_time_tolerance_sec:=8.0 \
+  -p velocity_scale:=0.10 \
+  -p acceleration_scale:=0.10 \
+  -p max_time_scaling_factor:=8.0
 EOF
   else
     log "Robot is NOT pre-aligned."
@@ -542,7 +564,7 @@ main() {
 
   while (( $# > 0 )); do
     case "$1" in
-      start|stop)
+      start|prealign|stop)
         if [[ "${mode_set}" == "true" ]]; then
           log "ERROR: Multiple modes specified."
           usage
@@ -572,6 +594,22 @@ main() {
     log "Stopped."
     exit 0
   fi
+  if [[ "${mode}" == "prealign" ]]; then
+    source_env
+    export ROS_LOCALHOST_ONLY="${ONE_CLICK_LOCALHOST_ONLY}"
+    export ROS_DOMAIN_ID="${ONE_CLICK_DOMAIN_ID}"
+    log "ROS_LOCALHOST_ONLY=${ROS_LOCALHOST_ONLY}"
+    log "ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
+    log "Waiting for action server ${ACTION_NAME}..."
+    if ! wait_for_action_server "${ACTION_NAME}" 30; then
+      log "ERROR: action server not ready. Is simulation running?"
+      exit 1
+    fi
+    target_q="$(resolve_prealign_target_q)"
+    log "Pre-align target q: ${target_q}"
+    run_prealign "${target_q}"
+    exit $?
+  fi
   if [[ "${mode}" != "start" ]]; then
     log "ERROR: Unknown mode: ${mode}"
     usage
@@ -585,6 +623,9 @@ main() {
   log "ROS_LOCALHOST_ONLY=${ROS_LOCALHOST_ONLY}"
   log "ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
   log "RUNTIME_BACKEND=${RUNTIME_BACKEND}"
+  log "PLANNER_TYPE=${PLANNER_TYPE}"
+  log "OMPL_SIMPLIFY_ENABLE=${OMPL_SIMPLIFY_ENABLE}"
+  log "OMPL_SIMPLIFY_TIMEOUT_SEC=${OMPL_SIMPLIFY_TIMEOUT_SEC}"
   setup_gz_resource_paths
 
   ros2 daemon stop >/dev/null 2>&1 || true

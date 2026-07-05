@@ -186,6 +186,35 @@ std::vector<double> make_times(
   return times;
 }
 
+double path_length(const std::vector<std::vector<double>> &path) {
+  double out = 0.0;
+  for (std::size_t i = 1; i < path.size(); ++i) {
+    out += distance_l2(path[i - 1U], path[i]);
+  }
+  return out;
+}
+
+double path_smoothness_cost(const std::vector<std::vector<double>> &path) {
+  if (path.size() < 3U) {
+    return 0.0;
+  }
+  double out = 0.0;
+  for (std::size_t i = 1; i + 1U < path.size(); ++i) {
+    const std::size_t dof = std::min(path[i - 1U].size(), std::min(path[i].size(), path[i + 1U].size()));
+    for (std::size_t j = 0; j < dof; ++j) {
+      const double second_diff = path[i + 1U][j] - 2.0 * path[i][j] + path[i - 1U][j];
+      out += second_diff * second_diff;
+    }
+  }
+  return out;
+}
+
+double path_cost(
+    const std::vector<std::vector<double>> &path,
+    double smoothness_weight) {
+  return path_length(path) + std::max(smoothness_weight, 0.0) * path_smoothness_cost(path);
+}
+
 bool validate_path_edges(
     std::vector<std::vector<double>> &path,
     const RRTConnectRequestData &req,
@@ -265,6 +294,26 @@ RRTConnectResult IntentRRTConnect::plan(
     res.elapsed_ms = elapsed_ms();
     return res;
   };
+  auto mark_success = [&](
+      const std::vector<std::vector<double>> &path,
+      const std::string &reason,
+      uint32_t solution_count,
+      double cost,
+      uint32_t best_iter) {
+    res.path = path;
+    res.via_times = make_times(res.path, req.t_start, req.t_end);
+    res.ok = true;
+    res.stop_reason = reason;
+    std::ostringstream oss;
+    oss << "solutions=" << solution_count
+        << ", best_iter=" << best_iter
+        << ", cost=" << cost
+        << ", length=" << path_length(path)
+        << ", smoothness=" << path_smoothness_cost(path);
+    res.error_message = oss.str();
+    res.elapsed_ms = elapsed_ms();
+    return res;
+  };
 
   if (req.dof == 0U || req.start.size() != req.dof || req.goal.size() != req.dof ||
       req.joint_names.size() != req.dof) {
@@ -281,13 +330,9 @@ RRTConnectResult IntentRRTConnect::plan(
   if (!state_valid(req.goal, err)) {
     return mark_failure("collision_goal", err);
   }
-  if (edge_valid(req.start, req.goal, req.edge_resolution, err)) {
-    res.path = {req.start, req.goal};
-    res.via_times = {req.t_start, req.t_end};
-    res.ok = true;
-    res.stop_reason = "direct";
-    res.elapsed_ms = elapsed_ms();
-    return res;
+  if (!req.disable_direct_shortcut && edge_valid(req.start, req.goal, req.edge_resolution, err)) {
+    res.iter_used = 0U;
+    return mark_success({req.start, req.goal}, "direct", 1U, distance_l2(req.start, req.goal), 0U);
   }
 
   Tree start_tree;
@@ -304,10 +349,19 @@ RRTConnectResult IntentRRTConnect::plan(
 
   const double timeout_ms = req.timeout_sec > 0.0 ? req.timeout_sec * 1000.0 : 0.0;
   const uint32_t max_iter = std::max<uint32_t>(req.max_iter, 1U);
+  const bool optimize_candidates = req.continue_after_first_solution;
+  const uint32_t max_solution_candidates = req.max_solution_candidates;
+  uint32_t solution_count = 0U;
+  uint32_t best_iter = 0U;
+  double best_cost = std::numeric_limits<double>::infinity();
+  std::vector<std::vector<double>> best_path;
 
   for (uint32_t iter = 0; iter < max_iter; ++iter) {
     res.iter_used = iter + 1U;
     if (timeout_ms > 0.0 && elapsed_ms() >= timeout_ms) {
+      if (optimize_candidates && !best_path.empty()) {
+        return mark_success(best_path, "optimized_timeout", solution_count, best_cost, best_iter);
+      }
       return mark_failure("timeout");
     }
 
@@ -357,12 +411,24 @@ RRTConnectResult IntentRRTConnect::plan(
     if (!validate_path_edges(candidate, req, state_valid, edge_valid, err)) {
       continue;
     }
-    res.path = candidate;
-    res.via_times = make_times(res.path, req.t_start, req.t_end);
-    res.ok = true;
-    res.stop_reason = "success";
-    res.elapsed_ms = elapsed_ms();
-    return res;
+    const double cost = path_cost(candidate, req.solution_smoothness_weight);
+    ++solution_count;
+    if (cost < best_cost) {
+      best_cost = cost;
+      best_path = candidate;
+      best_iter = iter + 1U;
+    }
+    if (!optimize_candidates) {
+      return mark_success(candidate, "success", solution_count, cost, iter + 1U);
+    }
+    if (max_solution_candidates > 0U && solution_count >= max_solution_candidates) {
+      return mark_success(best_path, "optimized_candidates", solution_count, best_cost, best_iter);
+    }
+  }
+
+  if (optimize_candidates && !best_path.empty()) {
+    res.iter_used = max_iter;
+    return mark_success(best_path, "optimized_max_iter", solution_count, best_cost, best_iter);
   }
 
   return mark_failure("max_iter");

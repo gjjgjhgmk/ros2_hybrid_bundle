@@ -1,0 +1,1 @@
+ros2 launch realsense2_camera rs_launch.py depth_module.profile:=640,480,30 rgb_camera.profile:=1280,720,30 align_depth.enable:=true pointcloud.enable:=false depth_module.visual_preset:=3 camera_name:=left_camera serial_no:=f1480604

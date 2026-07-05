@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="机器人本体" params="prefix parent *origin">
+      <link name="${prefix}base">
+          <inertial>
+              <origin xyz="-0.0024131 -0.33545 0.54007" rpy="0 0 0"/>
+              <mass value="31.941"/>
+              <inertia ixx="0.92096" ixy="0.00011008" ixz="-0.00018878" iyy="0.73076" iyz="-2.3445E-05" izz="1.5012"/>
+          </inertial>
+          <visual>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                  <mesh filename="package://dual_arm_config/description/meshes/body/base.STL"/>
+              </geometry>
+              <material name="">
+                  <color rgba="1 1 1 1"/>
+              </material>
+          </visual>
+          <collision>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                  <mesh filename="package://dual_arm_config/description/meshes/body/base.STL"/>
+              </geometry>
+          </collision>
+      </link>
+      <joint name="${prefix}joint_base" type="fixed">
+          <xacro:insert_block name="origin" />
+          <parent link="${parent}" />
+          <child link="${prefix}base" />
+      </joint>
+      <link name="${prefix}body">
+          <inertial>
+              <origin xyz="0.00072338 -3.9169E-05 0.40322" rpy="0 0 0"/>
+              <mass value="4.6093"/>
+              <inertia ixx="0.099737" ixy="-1.0465E-06" ixz="0.00022933" iyy="0.070879" iyz="1.5079E-06" izz="0.042061"/>
+          </inertial>
+          <visual>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                  <mesh filename="package://dual_arm_config/description/meshes/body/body.STL"/>
+              </geometry>
+              <material name="">
+                  <color rgba="1 1 1 1"/>
+              </material>
+          </visual>
+          <collision>
+              <origin xyz="0 0 0" rpy="0 0 0"/>
+              <geometry>
+                  <mesh filename="package://dual_arm_config/description/meshes/body/body.STL"/>
+              </geometry>
+          </collision>
+      </link>
+      <link name="${prefix}left_interface_link"/>
+
+      <link name="${prefix}right_interface_link"/>
+
+      <joint name="${prefix}joint1" type="revolute">
+          <origin xyz="0 0 0.97515" rpy="0 0 0"/>
+          <parent link="${prefix}base"/>
+          <child link="${prefix}body"/>
+          <axis xyz="0 0 1"/>
+          <limit lower="-1.57" upper="1.57" effort="5" velocity="5"/>
+      </joint>
+      <joint name="${prefix}left_interface_joint" type="fixed">
+          <origin xyz="0 0.12743 0.4916" rpy="-1.3264 -0.77032 -0.17193"/>
+          <parent link="${prefix}body"/>
+          <child link="${prefix}left_interface_link"/>
+          <axis xyz="0 0 0"/>
+      </joint>
+      <joint name="${prefix}right_interface_joint" type="fixed">
+          <origin xyz="0 -0.12743 0.4916" rpy="-1.3264 0.77032 -2.9697"/>
+          <parent link="${prefix}body"/>
+          <child link="${prefix}right_interface_link"/>
+          <axis xyz="0 0 0"/>
+      </joint>
+  </xacro:macro>
+</robot>
+

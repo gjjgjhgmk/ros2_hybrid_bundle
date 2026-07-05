@@ -1,0 +1,650 @@
+{
+  "available": true,
+  "planning_success": false,
+  "execution_requested": true,
+  "execution_success": false,
+  "execution_id": "",
+  "error": "Trajectory planning failed: no valid trajectories generated",
+  "error_kind": "",
+  "transport": "workspace_client",
+  "workspace_client_error": "",
+  "request": {
+    "waypoints": [
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.361,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_000"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.36403448275862066,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_001"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3670689655172414,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_002"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.37010344827586206,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_003"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.37313793103448273,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_004"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.37617241379310346,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_005"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3792068965517241,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_006"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3822413793103448,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_007"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3852758620689655,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_008"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3883103448275862,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_009"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3913448275862069,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_010"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.3943793103448276,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_011"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.39741379310344827,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_012"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.400448275862069,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_013"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.40348275862068966,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_014"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.40651724137931033,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_015"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.40955172413793106,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_016"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.41258620689655173,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_017"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.4156206896551724,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_018"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.41865517241379313,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_019"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.4216896551724138,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_020"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.4247241379310345,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_021"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.4277586206896552,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_022"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.43079310344827587,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_023"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.43382758620689654,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_024"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.43686206896551727,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_025"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.43989655172413794,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_026"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.4429310344827586,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_027"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.44596551724137934,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_028"
+      },
+      {
+        "group": "left_arm",
+        "planner": "lin",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "base_link",
+        "position": [
+          0.449,
+          -0.04999999999999999,
+          1.05
+        ],
+        "orientation": [
+          0.023005867244316355,
+          0.02600663253705327,
+          -0.7071803539883331,
+          0.7061800988907542
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_029"
+      }
+    ],
+    "execute": true
+  },
+  "response": {
+    "error": "Trajectory planning failed: no valid trajectories generated",
+    "success": false
+  }
+}

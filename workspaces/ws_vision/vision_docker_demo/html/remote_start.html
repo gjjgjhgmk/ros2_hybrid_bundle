@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>远程启动管理</title>
+    <link rel="stylesheet" href="/static/common.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .form-section.ssh-config {
+            background-color: #f5f5f5;
+            border: 1px solid #e0e0e0;
+        }
+
+        .form-section.file-transfer {
+            background-color: #f0f8ff;
+            border: 1px solid #d0e8ff;
+        }
+
+        .form-section.command-config {
+            background-color: #fff8f0;
+            border: 1px solid #ffe8d0;
+        }
+
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 1200px) {
+            .two-column-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-section-title .title-help {
+            font-size: 12px;
+            font-weight: 400;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .form-section-title:hover {
+            color: #007bff;
+        }
+
+        .collapse-icon {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            font-size: 14px;
+        }
+
+        .form-section.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .form-section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .form-section.collapsed .form-section-content {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* remote_start.html 使用纵向布局 - 每个表单项占一行 */
+        /* 确保所有表单组默认使用纵向布局，输入框占满整行 */
+        .form-section .form-group {
+            flex-direction: column;
+            align-items: stretch;
+            /* 拉伸子元素填满宽度 */
+        }
+
+        .form-section .form-group .form-label {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .form-section .form-group .form-input,
+        .form-section .form-group .form-textarea {
+            width: 100%;
+            max-width: 100%;
+            /* 占满整行 */
+            box-sizing: border-box;
+            /* 确保padding和border包含在宽度内 */
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .form-label .label-help {
+            font-size: 12px;
+            font-weight: 400;
+            color: #666;
+        }
+
+        /* 输入框样式已移至 common.css */
+        /* 在纵向布局中，输入框会通过 .form-section .form-group 样式占满整行 */
+
+        .form-help {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* 按钮和消息样式已移至 common.css */
+
+        .output-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .output-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .output-box {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .output-box.success {
+            color: #155724;
+        }
+
+        .output-box.error {
+            color: #721c24;
+        }
+
+        /* 状态指示器和加载样式已移至 common.css */
+
+        /* 目录树样式 */
+        .directory-tree {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .tree-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tree-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .tree-refresh-btn {
+            padding: 4px 12px;
+            font-size: 12px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .tree-refresh-btn:hover {
+            background: #1177bb;
+        }
+
+        .tree-item {
+            padding: 4px 8px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .tree-item:hover {
+            background: #e8f4f8;
+        }
+
+        .tree-item.directory {
+            font-weight: 500;
+        }
+
+        .tree-icon {
+            width: 16px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .tree-item-name {
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .tree-copy-btn,
+        .tree-delete-btn {
+            padding: 2px 8px;
+            font-size: 11px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            margin-left: 4px;
+        }
+
+        .tree-copy-btn {
+            background: #6c757d;
+        }
+
+        .tree-delete-btn {
+            background: #dc3545;
+        }
+
+        .tree-item:hover .tree-copy-btn,
+        .tree-item:hover .tree-delete-btn {
+            opacity: 1;
+        }
+
+        .tree-copy-btn:hover {
+            background: #5a6268;
+        }
+
+        .tree-delete-btn:hover {
+            background: #c82333;
+        }
+
+        .tree-children {
+            margin-left: 24px;
+            border-left: 1px dashed #d0d0d0;
+            padding-left: 8px;
+        }
+
+        .tree-empty {
+            color: #999;
+            font-size: 12px;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 远程启动管理</h1>
+            <p>通过SSH连接远程主机并启动后端程序</p>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <div class="two-column-layout">
+            <!-- 左栏：SSH连接配置 -->
+            <div class="left-column">
+                <div class="form-section ssh-config">
+                    <div class="form-section-title">SSH连接配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label required" for="host">
+                                主机IP地址
+                                <span class="label-help">目标主机的IP地址</span>
+                            </label>
+                            <input type="text" id="host" class="form-input" placeholder="例如: 192.168.1.100">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="port">
+                                SSH端口
+                                <span class="label-help">默认22</span>
+                            </label>
+                            <input type="number" id="port" class="form-input" value="22" placeholder="22">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="username">
+                                用户名
+                                <span class="label-help">SSH登录用户名</span>
+                            </label>
+                            <input type="text" id="username" class="form-input" placeholder="例如: root">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="password">
+                                密码
+                                <span class="label-help">SSH登录密码（不会保存）</span>
+                            </label>
+                            <input type="password" id="password" class="form-input" placeholder="输入密码">
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="testBtn" onclick="testConnection()">
+                            <span id="testBtnText">🔍 测试连接</span>
+                        </button>
+                        <span id="connectionStatus"></span>
+                    </div>
+                </div>
+
+                <!-- 远程目录树 -->
+                <div class="directory-tree" id="directoryTree" style="display: none;">
+                    <div class="tree-header">
+                        <div class="tree-title">远程目录</div>
+                        <button class="tree-refresh-btn" onclick="refreshDirectoryTree()">刷新</button>
+                    </div>
+                    <div id="treeContent"></div>
+                </div>
+            </div>
+
+            <!-- 右栏：文件传输和启动命令配置 -->
+            <div class="right-column">
+                <!-- 文件传输配置 -->
+                <div class="form-section file-transfer">
+                    <div class="form-section-title" onclick="toggleSection(this)">
+                        <span class="collapse-icon">▼</span>
+                        <span>文件传输配置</span>
+                    </div>
+
+                    <div class="form-section-content">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label required" for="localPath">
+                                本地路径
+                                <span class="label-help">本地文件或文件夹路径（服务器可访问）</span>
+                            </label>
+                            <input type="text" id="localPath" class="form-input"
+                                placeholder="例如: /home/user/file.txt 或 /home/user/folder">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="remotePath">
+                                远程目标路径
+                                <span class="label-help">远程文件或文件夹路径（文件夹以/结尾表示拷贝到目录下）</span>
+                            </label>
+                            <input type="text" id="remotePath" class="form-input"
+                                placeholder="例如: /home/user/file.txt 或 /home/user/folder/">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-success" id="uploadBtn" onclick="uploadDirectory()">
+                                <span id="uploadBtnText">📤 上传文件/文件夹</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 启动命令配置 -->
+                <div class="form-section command-config">
+                    <div class="form-section-title" onclick="toggleSection(this)">
+                        <span class="collapse-icon">▼</span>
+                        <span>启动命令配置</span>
+                    </div>
+
+                    <div class="form-section-content">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label" for="workDir">
+                                工作目录（可选）
+                                <span class="label-help">程序所在的工作目录</span>
+                            </label>
+                            <input type="text" id="workDir" class="form-input"
+                                placeholder="例如: /home/user/workspaces/ws_vision/vision_docker_demo">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="command">
+                                启动命令
+                                <span class="label-help">要在远程主机上执行的启动命令</span>
+                            </label>
+                            <textarea id="command" class="form-textarea"
+                                placeholder="例如: python start_config_rest_api.py --host 0.0.0.0 --port 7002"></textarea>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="startBtn" onclick="startRemoteProgram()">
+                                <span id="startBtnText">▶️ 启动程序</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输出结果 -->
+        <div class="output-section" id="outputSection" style="display: none;">
+            <div class="output-title">执行结果</div>
+            <div id="outputBox" class="output-box"></div>
+        </div>
+    </div>
+
+    <script src="/static/common.js"></script>
+    <script>
+        // 切换折叠/展开状态
+        function toggleSection(titleElement) {
+            const section = titleElement.closest('.form-section');
+            section.classList.toggle('collapsed');
+        }
+
+        // 显示消息（使用公共函数）
+        function showRemoteMessage(message, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            if (container) {
+                container.innerHTML = '';
+                showMessage(message, type, container);
+            }
+        }
+
+        // 获取SSH连接信息
+        function getSSHConfig() {
+            return {
+                host: document.getElementById('host').value.trim(),
+                port: parseInt(document.getElementById('port').value) || 22,
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value
+            };
+        }
+
+        // 验证SSH连接信息
+        function validateSSHConfig(config) {
+            if (!config.host || !config.username || !config.password) {
+                showRemoteMessage('请填写完整的SSH连接信息', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // 注意: setButtonLoading 已移至 common.js
+
+        // 更新输出框
+        function updateOutputBox(content, isSuccess = true) {
+            const outputSection = document.getElementById('outputSection');
+            const outputBox = document.getElementById('outputBox');
+            if (outputSection && outputBox) {
+                outputSection.style.display = 'block';
+                outputBox.textContent = content;
+                outputBox.className = `output-box ${isSuccess ? 'success' : 'error'}`;
+            }
+        }
+
+        // 注意: callAPI 已移至 common.js，这里使用公共版本
+
+        // 测试SSH连接
+        async function testConnection() {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) return;
+
+            const statusSpan = document.getElementById('connectionStatus');
+            setButtonLoading('testBtn', 'testBtnText', true, '测试中...');
+            statusSpan.innerHTML = '<span class="status-indicator testing"></span>测试中...';
+
+            let connectionSuccess = false;
+            try {
+                await callAPI('/api/remote/test', config, {
+                    successText: 'SSH连接测试成功！',
+                    errorText: '连接测试失败',
+                    onSuccess: () => {
+                        statusSpan.innerHTML = '<span class="status-indicator connected"></span>连接成功';
+                        connectionSuccess = true;
+                    },
+                    onError: (result, errorMsg) => {
+                        statusSpan.innerHTML = '<span class="status-indicator disconnected"></span>连接失败';
+                        connectionSuccess = false;
+                        showRemoteMessage(errorMsg || '连接失败', 'error');
+                    }
+                });
+            } finally {
+                setButtonLoading('testBtn', 'testBtnText', false, '🔍 测试连接');
+                // 如果连接成功，自动加载目录树
+                if (connectionSuccess) {
+                    setTimeout(() => refreshDirectoryTree(), 500);
+                }
+            }
+        }
+
+        // 启动远程程序
+        async function startRemoteProgram() {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) return;
+
+            const workDir = document.getElementById('workDir').value.trim();
+            const command = document.getElementById('command').value.trim();
+
+            if (!command) {
+                showRemoteMessage('请输入启动命令', 'error');
+                return;
+            }
+
+            if (!confirm(`确定要在 ${config.username}@${config.host}:${config.port} 上执行以下命令吗？\n\n${command}`)) {
+                return;
+            }
+
+            setButtonLoading('startBtn', 'startBtnText', true, '启动中...');
+            updateOutputBox('正在执行命令...\n', true);
+
+            try {
+                await callAPI('/api/remote/start', {
+                    ...config,
+                    command,
+                    work_dir: workDir
+                }, {
+                    successText: '远程程序启动成功！',
+                    errorText: '启动失败',
+                    onSuccess: (result) => {
+                        let output = '✅ 启动成功！\n\n';
+                        output += '=== 标准输出 ===\n';
+                        output += result.stdout || '(无输出)\n';
+                        if (result.stderr) {
+                            output += '\n=== 标准错误 ===\n';
+                            output += result.stderr;
+                        }
+                        updateOutputBox(output, true);
+                        showRemoteMessage('远程程序启动成功！', 'success');
+                    },
+                    onError: (result, errorMsg) => {
+                        let output = '❌ 启动失败\n\n';
+                        output += `错误信息: ${errorMsg}\n\n`;
+                        if (result) {
+                            if (result.stdout) {
+                                output += '=== 标准输出 ===\n';
+                                output += result.stdout + '\n';
+                            }
+                            if (result.stderr) {
+                                output += '\n=== 标准错误 ===\n';
+                                output += result.stderr;
+                            }
+                        }
+                        updateOutputBox(output, false);
+                        showRemoteMessage(errorMsg || '启动失败', 'error');
+                    }
+                });
+            } catch (error) {
+                updateOutputBox(`❌ 请求失败: ${error.message}`, false);
+            } finally {
+                setButtonLoading('startBtn', 'startBtnText', false, '▶️ 启动程序');
+            }
+        }
+
+        // 上传文件或文件夹到远程主机
+        async function uploadDirectory() {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) return;
+
+            const localPath = document.getElementById('localPath').value.trim();
+            const remotePath = document.getElementById('remotePath').value.trim();
+
+            if (!localPath) {
+                showRemoteMessage('请输入本地路径', 'error');
+                return;
+            }
+
+            if (!remotePath) {
+                showRemoteMessage('请输入远程目标路径', 'error');
+                return;
+            }
+
+            // 构建确认消息
+            const remoteIsDir = remotePath.endsWith('/');
+            let confirmMsg = `确定要将本地路径\n${localPath}\n传输到远程主机 ${config.username}@${config.host}:${config.port}\n目标路径: ${remotePath} 吗？\n\n`;
+
+            if (remoteIsDir) {
+                confirmMsg += '注意：远程路径以/结尾，本地文件夹将拷贝到目标目录下';
+            } else {
+                confirmMsg += '注意：远程路径不以/结尾，将直接替换目标路径';
+            }
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            setButtonLoading('uploadBtn', 'uploadBtnText', true, '传输中...');
+            updateOutputBox('正在传输文件/文件夹...\n', true);
+
+            try {
+                await callAPI('/api/remote/upload', {
+                    ...config,
+                    local_path: localPath,
+                    remote_path: remotePath
+                }, {
+                    successText: '传输成功！',
+                    errorText: '传输失败',
+                    onSuccess: (result) => {
+                        let output = `✅ 传输成功！\n\n`;
+                        output += `本地路径: ${result.local_path}\n`;
+                        output += `远程路径: ${result.remote_path}\n`;
+                        output += `传输文件数: ${result.file_count}\n\n`;
+                        output += `消息: ${result.message}\n`;
+                        updateOutputBox(output, true);
+                        showRemoteMessage(`传输成功！共传输 ${result.file_count} 个文件`, 'success');
+                    },
+                    onError: (result, errorMsg) => {
+                        let output = `❌ 传输失败\n\n`;
+                        output += `错误信息: ${errorMsg}\n`;
+                        if (result && result.file_count > 0) {
+                            output += `\n已传输文件数: ${result.file_count}\n`;
+                        }
+                        updateOutputBox(output, false);
+                    }
+                });
+            } catch (error) {
+                updateOutputBox(`❌ 请求失败: ${error.message}`, false);
+            } finally {
+                setButtonLoading('uploadBtn', 'uploadBtnText', false, '📤 上传文件/文件夹');
+            }
+        }
+
+        // 目录树相关函数
+        let expandedPaths = new Set();
+
+        // 刷新目录树
+        async function refreshDirectoryTree() {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) {
+                showRemoteMessage('请先填写SSH连接信息', 'error');
+                return;
+            }
+
+            const treeContent = document.getElementById('treeContent');
+            const directoryTree = document.getElementById('directoryTree');
+            treeContent.innerHTML = '<div class="tree-empty">加载中...</div>';
+            directoryTree.style.display = 'block';
+
+            try {
+                // 直接使用 ~ 作为起始路径，后端会处理
+                await loadDirectoryTree('~');
+            } catch (error) {
+                treeContent.innerHTML = `<div class="tree-empty">加载失败: ${error.message}</div>`;
+                showMessage(`加载目录树失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 加载目录树
+        async function loadDirectoryTree(path = '~') {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) {
+                return;
+            }
+
+            const treeContent = document.getElementById('treeContent');
+            const directoryTree = document.getElementById('directoryTree');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/remote/list`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...config,
+                        path: path
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    directoryTree.style.display = 'block';
+                    // 保存当前路径，用于刷新
+                    treeContent.dataset.currentPath = path;
+                    renderTreeItems(result.items, treeContent, path);
+                } else {
+                    treeContent.innerHTML = `<div class="tree-empty">${result.error || '加载失败'}</div>`;
+                    showRemoteMessage(`加载目录失败: ${result.error || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                treeContent.innerHTML = `<div class="tree-empty">加载失败: ${error.message}</div>`;
+                showRemoteMessage(`加载目录树失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 渲染目录树项
+        function renderTreeItems(items, container, parentPath) {
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="tree-empty">目录为空</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `tree-item ${item.type}`;
+
+                const icon = item.type === 'directory' ? '📁' : '📄';
+                const isExpanded = expandedPaths.has(item.path);
+
+                itemDiv.innerHTML = `
+                    <span class="tree-icon">${icon}</span>
+                    <span class="tree-item-name">${item.name}</span>
+                    <button class="tree-copy-btn" onclick="event.stopPropagation(); copyPath('${item.path.replace(/'/g, "\\'")}')">复制路径</button>
+                    <button class="tree-delete-btn" onclick="event.stopPropagation(); deleteRemoteItem('${item.path.replace(/'/g, "\\'")}', '${item.type}', this.closest('.tree-item'))">删除</button>
+                `;
+
+                if (item.type === 'directory') {
+                    itemDiv.onclick = (e) => {
+                        if (e.target.classList.contains('tree-copy-btn') || e.target.classList.contains('tree-delete-btn')) return;
+                        toggleDirectory(item.path, itemDiv);
+                    };
+
+                    // 如果已展开，加载子项
+                    if (isExpanded) {
+                        loadDirectoryChildren(item.path, itemDiv);
+                    }
+                } else {
+                    itemDiv.onclick = (e) => {
+                        if (e.target.classList.contains('tree-copy-btn') || e.target.classList.contains('tree-delete-btn')) return;
+                        copyPath(item.path);
+                    };
+                }
+
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // 切换目录展开/折叠
+        async function toggleDirectory(path, itemElement) {
+            if (expandedPaths.has(path)) {
+                // 折叠：移除子项
+                const childrenDiv = itemElement.nextElementSibling;
+                if (childrenDiv && childrenDiv.classList.contains('tree-children')) {
+                    childrenDiv.remove();
+                }
+                expandedPaths.delete(path);
+                // 更新图标
+                const icon = itemElement.querySelector('.tree-icon');
+                if (icon) icon.textContent = '📁';
+            } else {
+                // 展开：加载子项
+                expandedPaths.add(path);
+                // 更新图标
+                const icon = itemElement.querySelector('.tree-icon');
+                if (icon) icon.textContent = '📂';
+                loadDirectoryChildren(path, itemElement);
+            }
+        }
+
+        // 加载目录子项
+        async function loadDirectoryChildren(path, parentElement) {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) return;
+
+            // 创建子容器
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'tree-children';
+            childrenDiv.innerHTML = '<div class="tree-empty">加载中...</div>';
+            parentElement.after(childrenDiv);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/remote/list`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...config,
+                        path: path
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    renderTreeItems(result.items, childrenDiv, path);
+                } else {
+                    childrenDiv.innerHTML = `<div class="tree-empty">${result.error || '加载失败'}</div>`;
+                }
+            } catch (error) {
+                childrenDiv.innerHTML = `<div class="tree-empty">加载失败: ${error.message}</div>`;
+            }
+        }
+
+        // 复制路径（使用公共函数）
+        async function copyPath(path) {
+            const success = await copyToClipboard(path);
+            if (success) {
+                showRemoteMessage(`已复制路径: ${path}`, 'success');
+            } else {
+                showRemoteMessage('复制失败，请手动复制', 'error');
+            }
+        }
+
+        // 删除远程文件或目录
+        async function deleteRemoteItem(path, itemType, itemElement) {
+            const config = getSSHConfig();
+            if (!validateSSHConfig(config)) return;
+
+            const itemTypeName = itemType === 'directory' ? '目录' : '文件';
+            const confirmMsg = `确定要删除以下${itemTypeName}吗？\n\n${path}\n\n此操作不可恢复！`;
+
+            // 再次确认：要求用户输入 "DELETE" 确认删除
+            const userInput = prompt(`${confirmMsg}\n\n请输入 "DELETE" 确认删除:`);
+            if (userInput !== 'DELETE') {
+                if (userInput !== null) {
+                    showRemoteMessage('已取消删除操作', 'info');
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/remote/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...config,
+                        path: path,
+                        type: itemType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showRemoteMessage(`删除成功: ${path}`, 'success');
+
+                    // 只移除被删除的项，不刷新整个目录树
+                    if (itemElement) {
+                        // 如果是目录，同时移除其子项容器
+                        if (itemType === 'directory') {
+                            const childrenDiv = itemElement.nextElementSibling;
+                            if (childrenDiv && childrenDiv.classList.contains('tree-children')) {
+                                childrenDiv.remove();
+                            }
+                            // 从展开列表中移除
+                            expandedPaths.delete(path);
+                        }
+                        // 移除该项本身
+                        itemElement.remove();
+                    } else {
+                        // 如果找不到元素，则刷新目录树
+                        const treeContent = document.getElementById('treeContent');
+                        const currentPath = treeContent.dataset.currentPath || '~';
+                        await loadDirectoryTree(currentPath);
+                    }
+                } else {
+                    showRemoteMessage(`删除失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showRemoteMessage(`删除失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 修改测试连接函数，成功后自动加载目录树
+        const originalTestConnection = testConnection;
+        testConnection = async function () {
+            await originalTestConnection();
+            // 如果连接成功，自动加载目录树
+            const statusSpan = document.getElementById('connectionStatus');
+            if (statusSpan && statusSpan.innerHTML.includes('连接成功')) {
+                setTimeout(() => refreshDirectoryTree(), 500);
+            }
+        };
+
+        // 页面加载时的初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            showRemoteMessage('请填写SSH连接信息并测试连接，然后配置文件传输或启动命令', 'info');
+
+            // 注意：远程启动页面使用纵向布局，输入框占满整行，不需要动态宽度调整
+        });
+    </script>
+</body>
+
+</html>

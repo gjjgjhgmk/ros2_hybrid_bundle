@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="夹爪" params="prefix parent *origin use_fake_hardware:=true gripper_type:=robotiq_2f_85">
+    <!-- 引入 robotiq 的宏定义 -->
+    <xacro:include filename="$(find robotiq_description)/urdf/${gripper_type}_macro.urdf.xacro"/>
+    
+    <!-- 调用 robotiq_gripper 宏（包含 ros2_control） -->
+    <xacro:robotiq_gripper 
+        name="${prefix}RobotiqGripperHardwareInterface"
+        prefix="${prefix}"
+        parent="${parent}"
+        use_fake_hardware="${use_fake_hardware}"
+        include_ros2_control="${not use_fake_hardware}">
+        <xacro:insert_block name="origin" />
+    </xacro:robotiq_gripper>
+  </xacro:macro>
+</robot>

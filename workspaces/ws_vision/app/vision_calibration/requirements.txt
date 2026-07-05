@@ -1,0 +1,11 @@
+--trusted-host mirrors.aliyun.com
+--index-url http://mirrors.aliyun.com/pypi/simple/
+pymongo>=4.0.0
+pyzmq>=24.0.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pyyaml>=6.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+scipy>=1.10.0
+numpy==1.26.4

@@ -1,0 +1,12 @@
+# 进程监控配置文件
+monitor_processes:
+  - "__node:=camera_l515 -r __ns:=/camera_l515"
+
+# 监控配置
+monitor_config:
+  interval: 3 # 默认监控间隔（秒）
+  cpu_interval: 2 # CPU采样间隔（秒），用于获取更准确的CPU使用率，如果未设置则使用interval值
+  log_level: "INFO" # 日志级别
+  log_to_file: false # 是否输出日志到文件（true/false），默认true
+  log_file: "process_monitor.log" # 日志文件路径（仅在log_to_file为true时生效）
+  output_format: "text" # 输出格式：text, json

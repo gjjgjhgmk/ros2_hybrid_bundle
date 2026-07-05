@@ -9,6 +9,23 @@ from typing import List, Optional
 from intent_hybrid_planner.intent_hybrid_evaluator import main as evaluator_main
 
 
+def _default_obstacle_config_file() -> str:
+    try:
+        out = subprocess.run(
+            ["ros2", "pkg", "prefix", "intent_hybrid_planner"],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        prefix = out.stdout.strip()
+        if not prefix:
+            return ""
+        path = Path(prefix) / "share" / "intent_hybrid_planner" / "config" / "obstacles_default.json"
+        return str(path) if path.exists() else ""
+    except Exception:  # pylint: disable=broad-except
+        return ""
+
+
 def main(args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-planner", action="store_true")
@@ -33,7 +50,8 @@ def main(args: Optional[List[str]] = None) -> None:
 
     if ns.run_planner:
         cmd = ["ros2", "run", "intent_hybrid_planner", "intent_hybrid_planner_node"]
-        # Keep a demo-friendly offline profile unless the caller overrides it.
+        obstacle_config = _default_obstacle_config_file()
+        # Keep a conservative offline demo profile unless the caller overrides it.
         default_planner_args = [
             "--ros-args",
             "-p",
@@ -43,15 +61,27 @@ def main(args: Optional[List[str]] = None) -> None:
             "-p",
             "hybrid_mode:=matlab_compat",
             "-p",
+            "trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory",
+            "-p",
             "offline_export_eval_input_enable:=true",
             "-p",
-            "action_path_tolerance_rad:=0.5",
+            f"obstacle_config_file:={obstacle_config}",
             "-p",
-            "action_goal_tolerance_rad:=0.2",
+            "sync_nominal_dt_with_demo_dt:=false",
             "-p",
-            "action_goal_time_tolerance_sec:=5.0",
+            "nominal_dt:=0.20",
             "-p",
-            "nominal_dt:=0.12",
+            "action_path_tolerance_rad:=0.8",
+            "-p",
+            "action_goal_tolerance_rad:=0.3",
+            "-p",
+            "action_goal_time_tolerance_sec:=8.0",
+            "-p",
+            "velocity_scale:=0.10",
+            "-p",
+            "acceleration_scale:=0.10",
+            "-p",
+            "max_time_scaling_factor:=8.0",
         ]
         cmd.extend(default_planner_args)
         if ns.planner_extra.strip():

@@ -1,0 +1,36 @@
+# PapJia Camera Calibration Service Configuration
+# 此配置文件包含 ZeroMQ 服务器、REST API 和日志的设置
+
+# ZeroMQ 服务器配置
+zeromq:
+  enabled: true # 是否启用 ZeroMQ 服务器
+  host: "0.0.0.0" # 绑定主机地址
+  port: 7021 # 绑定端口
+  max_workers: 2 # 最大工作线程数
+  calibration_config_file: "/home/yw/workspace/config/vision_calibration/calibration_config_129.yaml" # 标定配置文件路径
+  root_data_path: "/home/yw/workspace/data/vision_calibration" # 根数据路径
+
+# REST API 服务器配置
+rest_api:
+  enabled: true # 是否启用 REST API 服务器
+  host: "0.0.0.0" # 绑定主机地址（Docker容器中必须使用0.0.0.0）
+  port: 7001 # 绑定端口
+  workers: 1 # 工作进程数
+  reload: false # 是否启用自动重载（开发模式）
+  debug: true # 是否启用调试模式
+  cors_enabled: true # 是否启用 CORS
+  cors_origins: # 允许的 CORS 源
+    - "*"
+  calibration_config_file: "/home/yw/workspace/config/vision_calibration/calibration_config_129.yaml" # 标定配置文件路径
+  root_data_path: "/home/yw/workspace/data/vision_calibration" # 根数据路径
+  html_file_path: "/home/yw/workspace/html/camera_calibration.html" # HTML文件路径
+  # 图像压缩配置（用于前端显示）
+  image_compress_enabled: true # 是否启用图像压缩
+  image_compress_max_width: 1280 # 压缩后最大宽度（像素）
+  image_compress_max_height: 1280 # 压缩后最大高度（像素）
+  image_compress_quality: 85 # JPEG压缩质量（1-100，数值越大质量越好但文件越大）
+
+# 日志配置
+logging:
+  level: "INFO" # 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" # 日志格式

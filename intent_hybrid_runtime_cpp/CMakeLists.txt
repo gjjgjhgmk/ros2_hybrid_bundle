@@ -19,15 +19,18 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(intent_hybrid_interfaces REQUIRED)
+find_package(ompl REQUIRED)
 
 add_executable(intent_runtime_bridge
   src/intent_runtime_bridge.cpp
   src/collision_checker.cpp
   src/intent_rrt_connect.cpp
+  src/ompl_rrt_connect.cpp
 )
 target_include_directories(intent_runtime_bridge PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+  ${OMPL_INCLUDE_DIRS}
 )
 ament_target_dependencies(intent_runtime_bridge
   rclcpp
@@ -43,6 +46,9 @@ ament_target_dependencies(intent_runtime_bridge
   std_msgs
   builtin_interfaces
   intent_hybrid_interfaces
+)
+target_link_libraries(intent_runtime_bridge
+  ${OMPL_LIBRARIES}
 )
 
 target_compile_features(intent_runtime_bridge PUBLIC cxx_std_17)

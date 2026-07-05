@@ -1,0 +1,629 @@
+{
+  "左臂-home": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "右臂home位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "右臂-home": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "右臂home位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "right_joint1",
+      "right_joint2",
+      "right_joint3",
+      "right_joint4",
+      "right_joint5",
+      "right_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "右臂-预抓取": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "右臂预抓取位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.0,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "右臂-抓取": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "右臂抓取位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.0,
+      0.04
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "右臂-抓取撤退": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "右臂抓取撤退位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.0,
+      0.2
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "右臂-交接": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "右臂预放置位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.45,
+      0.4
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      -0.707885,
+      0.706327
+    ]
+  },
+  "左臂-预交接": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "左臂预交接位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      61.21,
+      -73.2,
+      121.03,
+      -226.89,
+      -150.99,
+      -89.06
+    ]
+  },
+  "左臂-交接": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "左臂交接位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      42.21,
+      -66.84,
+      111.28,
+      -223.89,
+      -131.99,
+      -89.46
+    ]
+  },
+  "左臂-预放置": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "左臂预放置位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      61.21,
+      -73.2,
+      121.03,
+      -226.89,
+      -150.99,
+      -89.06
+    ]
+  },
+  "左臂-放置": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "左臂放置位置",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.3,
+    "max_acceleration_scaling_factor": 0.3,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      100.0,
+      -81.78,
+      114.11,
+      -122.77,
+      -90.53,
+      0.0
+    ]
+  },
+  "右臂-预放置": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "右臂预放置位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.2,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "右臂-放置": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "右臂放置位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.2,
+      0.05
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "右臂-放置撤退": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "右臂放置撤退位置",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      0.2,
+      0.15
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "weld_stage_01_left_approach": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "weld_stage_01_left_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.36,
+      0.22,
+      0.42000000000000004
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_01_left": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "weld_stage_01_left",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.36,
+      0.22,
+      0.34
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_01_right_approach": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "weld_stage_01_right_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.36,
+      -0.22,
+      0.3
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_01_right": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "weld_stage_01_right",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.36,
+      -0.22,
+      0.22
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_02_left_approach": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "weld_stage_02_left_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.4,
+      0.22,
+      0.42000000000000004
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_02_left": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "weld_stage_02_left",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.4,
+      0.22,
+      0.34
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_02_right_approach": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "weld_stage_02_right_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      -0.22,
+      0.3
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_02_right": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "weld_stage_02_right",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.4,
+      -0.22,
+      0.22
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_03_left_approach": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "weld_stage_03_left_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.44,
+      0.22,
+      0.44
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_03_left": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "weld_stage_03_left",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.44,
+      0.22,
+      0.36
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_03_right_approach": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "weld_stage_03_right_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.44,
+      -0.22,
+      0.32
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_03_right": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "weld_stage_03_right",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.44,
+      -0.22,
+      0.24
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_04_left_approach": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "weld_stage_04_left_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.48,
+      0.22,
+      0.44
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_04_left": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "weld_stage_04_left",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.48,
+      0.22,
+      0.36
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_04_right_approach": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "weld_stage_04_right_approach",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.48,
+      -0.22,
+      0.32
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "weld_stage_04_right": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "weld_stage_04_right",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.48,
+      -0.22,
+      0.24
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  }
+}

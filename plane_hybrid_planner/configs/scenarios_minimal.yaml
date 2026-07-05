@@ -1,0 +1,166 @@
+matlab_defaults:
+  environment_seed: 2025
+  matlab_fmp:
+    demo_len: 150
+    demo_dt: 0.1
+    alpha: 0.1
+    n_clusters: 20
+    online_dt: 0.05
+    interp_dist: 0.5
+    via_trim: 0.05
+    transition_ratio: 0.10
+    transition_gamma: 1.0
+    safe_margin: 0.2
+    danger_segment_gap: 10
+    segment_padding: 4
+    corner_smoothing_enabled: true
+    corner_angle_threshold_rad: 0.01
+    corner_window_mode: "time"
+    corner_window_value: 0.1
+  matlab_rrt:
+    step_size: 1.5
+    r_neighbor: 4.0
+    max_iter: 6000
+    edge_sample_step: 0.5
+    rrt_inflation: 0.5
+    convergence_window: 200
+    convergence_epsilon_rel: 0.001
+    convergence_hits: 3
+    lambda_k: 0.15
+    enable_refine: true
+    refine_budget: 100
+    enable_intent_bias: true
+    p_intent_pre: 0.55
+    p_goal_pre: 0.15
+    p_uniform_pre: 0.30
+    p_intent_post: 0.65
+    p_informed_post: 0.30
+    p_goal_post: 0.05
+    sigma_intent: 1.2
+    post_intent_max_retry: 10
+
+scenarios:
+  matlab_sine_no_obstacle:
+    nominal:
+      type: matlab_sine
+      num_points: 150
+      u_range: [0.10, 0.88]
+      v_range: [0.28, 0.72]
+      cycles: 1.0
+      amplitude_raw: 30.0
+      center_raw: 50.0
+    obstacles: []
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
+  matlab_sine_three_obstacles:
+    nominal:
+      type: matlab_sine
+      num_points: 150
+      u_range: [0.10, 0.88]
+      v_range: [0.28, 0.72]
+      cycles: 1.0
+      amplitude_raw: 30.0
+      center_raw: 50.0
+    obstacles:
+      - type: circle
+        center: [0.28, 0.67]
+        radius: 0.08
+      - type: circle
+        center: [0.50, 0.50]
+        radius: 0.08
+      - type: circle
+        center: [0.72, 0.33]
+        radius: 0.08
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
+  no_obstacle_line:
+    nominal:
+      type: line
+      start: [0.1, 0.5]
+      goal: [0.9, 0.5]
+      num_points: 150
+    obstacles: []
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
+  obstacle_middle:
+    nominal:
+      type: line
+      start: [0.1, 0.5]
+      goal: [0.9, 0.5]
+      num_points: 150
+    obstacles:
+      - type: circle
+        center: [0.5, 0.5]
+        radius: 0.12
+    safety_margin: 0.0035
+    fmp:
+      enabled: true
+      smoothing: true
+      corner_smoothing_enabled: false
+      smoothing_window: 11
+      smoothing_iterations: 2
+      blend_strength: 1.0
+
+  obstacle_near_path:
+    nominal:
+      type: sine
+      start: [0.1, 0.45]
+      goal: [0.9, 0.45]
+      amplitude: 0.04
+      cycles: 1.0
+      num_points: 150
+    obstacles:
+      - type: circle
+        center: [0.52, 0.61]
+        radius: 0.09
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
+  two_obstacles:
+    nominal:
+      type: polyline
+      points: [[0.08, 0.45], [0.50, 0.55], [0.92, 0.45]]
+      num_points: 150
+    obstacles:
+      - type: circle
+        center: [0.36, 0.50]
+        radius: 0.10
+      - type: circle
+        center: [0.66, 0.50]
+        radius: 0.10
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+      smoothing_window: 9
+
+  narrow_passage:
+    nominal:
+      type: line
+      start: [0.08, 0.50]
+      goal: [0.92, 0.50]
+      num_points: 150
+    obstacles:
+      - type: circle
+        center: [0.46, 0.37]
+        radius: 0.13
+      - type: circle
+        center: [0.54, 0.67]
+        radius: 0.13
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+      smoothing_window: 7
+      smoothing_iterations: 1

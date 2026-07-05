@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志监视器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --text-color: #333;
+            --border-color: #e9ecef;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: var(--light-bg);
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .section-content {
+            padding: 6px 10px;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-item label {
+            margin-bottom: 0;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .control-item.lines-select {
+            margin-left: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        select,
+        input,
+        button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .warning-btn {
+            background: var(--warning-color);
+        }
+
+        .warning-btn:hover {
+            background: #e67e22;
+        }
+
+        .clear-btn {
+            background: var(--danger-color);
+        }
+
+        .clear-btn:hover {
+            background: #c0392b;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .status-value {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            flex-shrink: 0;
+        }
+
+        .status-dot.connected {
+            background: var(--success-color);
+        }
+
+        /* 连接控制和状态布局 */
+        .connection-controls {
+            margin-bottom: 20px;
+        }
+
+        .connection-status {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .logs-container {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--primary-color);
+            color: #ecf0f1;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+            border-left: 3px solid transparent;
+            padding-left: 8px;
+        }
+
+        .log-entry.info {
+            border-left-color: var(--secondary-color);
+        }
+
+        .log-entry.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .log-entry.error {
+            border-left-color: var(--danger-color);
+        }
+
+        .log-entry.realtime-log {
+            background-color: transparent;
+            color: #ecf0f1;
+            border-left-color: #28a745;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            opacity: 1.0;
+            position: relative;
+        }
+
+        .log-entry.realtime-log::before {
+            content: "🔴";
+            margin-right: 8px;
+            font-size: 10px;
+        }
+
+        .log-entry.history-log {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #ecf0f1;
+            border-left-color: var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            opacity: 0.8;
+            position: relative;
+        }
+
+        .log-entry.history-log::before {
+            content: "📄";
+            margin-right: 8px;
+            font-size: 10px;
+        }
+
+        .log-timestamp {
+            color: #95a5a6;
+            margin-right: 10px;
+        }
+
+        .log-source {
+            color: var(--warning-color);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .log-content {
+            color: #ecf0f1;
+        }
+
+        /* 日志类型图例 */
+        .log-legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-icon {
+            font-size: 12px;
+        }
+
+        .legend-text {
+            color: #ffffff;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 连接控制和状态区域 -->
+        <div class="section">
+            <div class="section-header">🔗 连接控制和状态</div>
+            <div class="section-content">
+                <!-- 连接控制 -->
+                <div class="connection-controls">
+                    <div class="controls-row">
+                        <div class="control-item">
+                            <label for="containerSelect">容器:</label>
+                            <select id="containerSelect">
+                                <option value="">选择容器...</option>
+                            </select>
+                        </div>
+
+                        <div class="control-item">
+                            <label for="commandSelect">程序:</label>
+                            <select id="commandSelect">
+                                <option value="">选择程序...</option>
+                            </select>
+                        </div>
+
+                        <div class="control-item">
+                            <button id="connectBtn" onclick="toggleConnection()">连接</button>
+                        </div>
+
+                        <div class="control-item lines-select">
+                            <label for="linesSelect">加载行数:</label>
+                            <select id="linesSelect">
+                                <option value="0">全部</option>
+                                <option value="100" selected>最近100行</option>
+                                <option value="500">最近500行</option>
+                                <option value="1000">最近1000行</option>
+                            </select>
+                        </div>
+
+                        <div class="control-item">
+                            <button id="loadHistoryBtn" onclick="loadHistoryLogs()">加载历史日志</button>
+                        </div>
+
+                        <div class="control-item">
+                            <button id="clearBtn" onclick="clearLogs()" class="clear-btn">清空日志</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 连接状态 -->
+                <div class="connection-status">
+                    <div class="status-row">
+                        <div class="status-item">
+                            <div class="status-dot" id="statusDot"></div>
+                            <span id="statusText">未连接</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">总日志数:</span>
+                            <span class="status-value" id="logCount">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">每分钟日志:</span>
+                            <span class="status-value" id="logsPerMinute">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">连接时间:</span>
+                            <span class="status-value" id="connectionTime">00:00:00</span>
+                        </div>
+                    </div>
+                    <div class="connection-info" id="connectionInfo"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志显示区域 -->
+        <div class="section">
+            <div class="section-header">📝 实时日志</div>
+            <div class="section-content">
+                <!-- 日志类型图例 -->
+                <div class="log-legend">
+                    <div class="legend-item">
+                        <span class="legend-icon">🔴</span>
+                        <span class="legend-text">实时日志</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">📄</span>
+                        <span class="legend-text">历史日志</span>
+                    </div>
+                </div>
+                <div class="logs-container" id="logsContainer">
+                    [等待连接] 点击"连接"按钮开始监控日志...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        let logCount = 0;
+        let startTime = null;
+        let lastMinuteLogs = 0;
+        let logTimes = [];
+
+        // API配置 - 从URL参数获取API配置，如果没有则使用默认值
+        function getApiConfig() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const apiHost = urlParams.get('api_host') || window.location.hostname;
+            const apiPort = urlParams.get('api_port') || '8080';
+            const apiBaseUrl = urlParams.get('api_base_url') || `http://${apiHost}:${apiPort}`;
+
+            console.log(`Monitor API配置加载: ${apiBaseUrl}`);
+            return { apiHost, apiPort, apiBaseUrl };
+        }
+
+        const apiConfig = getApiConfig();
+        const apiHost = apiConfig.apiHost;
+        const apiPort = apiConfig.apiPort;
+        const apiBaseUrl = apiConfig.apiBaseUrl;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            initElements();
+            loadContainers();
+            updateStats();
+            setInterval(updateStats, 1000);
+        });
+
+        // 加载容器列表
+        async function loadContainers() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/containers`);
+                const data = await response.json();
+
+                elements.containerSelect.innerHTML = '<option value="">选择容器...</option>';
+
+                if (data.success && data.containers) {
+                    Object.keys(data.containers).forEach(containerKey => {
+                        const option = document.createElement('option');
+                        option.value = containerKey;
+                        option.textContent = containerKey;
+                        elements.containerSelect.appendChild(option);
+                    });
+                }
+
+                loadCommands();
+            } catch (error) {
+                console.error('加载容器列表失败:', error);
+                addLogEntry('error', '加载容器列表失败: ' + error.message);
+            }
+        }
+
+        // 缓存DOM元素
+        const elements = {
+            containerSelect: null,
+            commandSelect: null,
+            linesSelect: null,
+            logContainer: null,
+            statusDot: null,
+            statusText: null,
+            logCount: null,
+            avgLogsPerMin: null
+        };
+
+        // 初始化DOM元素缓存
+        function initElements() {
+            elements.containerSelect = document.getElementById('containerSelect');
+            elements.commandSelect = document.getElementById('commandSelect');
+            elements.linesSelect = document.getElementById('linesSelect');
+            elements.logContainer = document.getElementById('logContainer');
+            elements.statusDot = document.getElementById('statusDot');
+            elements.statusText = document.getElementById('statusText');
+            elements.logCount = document.getElementById('logCount');
+            elements.avgLogsPerMin = document.getElementById('avgLogsPerMin');
+        }
+
+        // 加载程序列表
+        async function loadCommands() {
+            elements.commandSelect.innerHTML = '<option value="">选择程序...</option>';
+
+            if (elements.containerSelect.value) {
+                try {
+                    const response = await fetch(`${apiBaseUrl}/api/logs`);
+                    const data = await response.json();
+
+                    if (data.success && data.containers) {
+                        const container = data.containers.find(c => c.key === containerSelect.value);
+                        if (container && container.commands) {
+                            container.commands.forEach(command => {
+                                const option = document.createElement('option');
+                                option.value = command;
+                                option.textContent = command;
+                                commandSelect.appendChild(option);
+                            });
+                        } else {
+                            const defaultCommands = ['启动', '停止', '重启'];
+                            defaultCommands.forEach(command => {
+                                const option = document.createElement('option');
+                                option.value = command;
+                                option.textContent = command;
+                                commandSelect.appendChild(option);
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('加载程序列表失败:', error);
+                    const defaultCommands = ['启动', '停止', '重启'];
+                    defaultCommands.forEach(command => {
+                        const option = document.createElement('option');
+                        option.value = command;
+                        option.textContent = command;
+                        commandSelect.appendChild(option);
+                    });
+                }
+            }
+        }
+
+        // 监听容器选择变化
+        document.addEventListener('DOMContentLoaded', function () {
+            elements.containerSelect.addEventListener('change', function () {
+                // 如果已连接，先断开连接
+                if (isConnected) {
+                    disconnect();
+                    addLogEntry('info', '容器已更换，自动断开连接');
+                }
+                loadCommands();
+            });
+
+            // 监听程序选择变化
+            elements.commandSelect.addEventListener('change', function () {
+                // 如果已连接，先断开连接然后自动重连
+                if (isConnected) {
+                    disconnect();
+                    addLogEntry('info', '程序已更换，自动断开连接');
+                    // 延迟一点时间后自动重连
+                    setTimeout(() => {
+                        if (elements.containerSelect.value && elements.commandSelect.value) {
+                            addLogEntry('info', '正在自动重连到新程序...');
+                            connect();
+                        }
+                    }, 500);
+                }
+            });
+        });
+
+        // 连接/断开WebSocket
+        function toggleConnection() {
+            if (isConnected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+
+        // 连接实时日志流
+        async function connect() {
+            if (ws) {
+                disconnect();
+            }
+
+            const containerKey = elements.containerSelect.value;
+            const commandName = elements.commandSelect.value;
+
+            if (!containerKey || !commandName) {
+                addLogEntry('warning', '请选择容器和程序');
+                return;
+            }
+
+            // 先检查容器和程序状态
+            try {
+                const statusResponse = await fetch(`${apiBaseUrl}/api/status`);
+                const statusData = await statusResponse.json();
+
+                if (!statusData.success) {
+                    addLogEntry('error', '无法获取系统状态');
+                    return;
+                }
+
+                const status = statusData.status;
+                const containerExists = status.containers && status.containers[containerKey];
+                const programExists = status.processes && status.processes[containerKey] && status.processes[containerKey][commandName];
+
+                if (!containerExists) {
+                    alert(`容器 "${containerKey}" 不存在，无法连接实时日志流\n\n提示：您可以点击"加载历史日志"查看历史记录`);
+                    return;
+                }
+
+                if (!programExists) {
+                    alert(`程序 "${commandName}" 不存在，无法连接实时日志流\n\n提示：您可以点击"加载历史日志"查看历史记录`);
+                    return;
+                }
+
+                // 检查程序是否正在运行
+                const programStatus = status.processes[containerKey][commandName];
+                if (!programStatus.running) {
+                    alert(`程序 "${commandName}" 未运行，无法连接实时日志流\n\n提示：您可以点击"加载历史日志"查看历史记录`);
+                    return;
+                }
+
+                // 容器和程序都存在且运行中，可以连接
+                addLogEntry('info', `容器 "${containerKey}" 和程序 "${commandName}" 状态正常，开始连接实时日志流`);
+
+            } catch (error) {
+                addLogEntry('error', '检查容器状态失败: ' + error.message);
+                return;
+            }
+
+            // 连接实时日志流
+            const streamUrl = `/api/logs/${containerKey}/${commandName}/stream`;
+            const fullUrl = `${apiBaseUrl}${streamUrl}`;
+
+            addLogEntry('info', `正在连接到: ${fullUrl}`);
+
+            ws = new EventSource(fullUrl);
+
+            ws.onopen = function () {
+                isConnected = true;
+                startTime = new Date();
+                updateConnectionStatus(true);
+                addLogEntry('info', '已连接到实时日志流');
+                addLogEntry('info', `监控容器: ${containerKey}, 程序: ${commandName}`);
+            };
+
+            ws.onmessage = function (event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleLogMessage(data);
+                } catch (error) {
+                    console.error('解析日志消息失败:', error);
+                    addLogEntry('error', '解析日志消息失败: ' + error.message);
+                }
+            };
+
+            ws.onerror = function (error) {
+                console.error('日志流错误:', error);
+                addLogEntry('error', '日志流连接错误，请检查：');
+                addLogEntry('error', '1. 容器是否正在运行');
+                addLogEntry('error', '2. 程序是否已启动');
+                addLogEntry('error', '3. 日志文件是否存在');
+                addLogEntry('error', `连接URL: ${fullUrl}`);
+                disconnect();
+            };
+        }
+
+        // 断开连接
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            isConnected = false;
+            updateConnectionStatus(false);
+            addLogEntry('warning', '实时日志流已断开');
+        }
+
+
+        // 处理日志消息
+        function handleLogMessage(data) {
+            if (data.error) {
+                addLogEntry('error', '服务器错误: ' + data.error);
+                return;
+            }
+
+            if (data.content) {
+                // 实时日志不添加到操作日志，只显示在实时日志区域
+                displayRealtimeLog(data.content, data.container_key, data.command_name);
+                logCount++;
+                logTimes.push(new Date());
+            }
+        }
+
+        // 显示实时日志（不添加到操作日志）
+        function displayRealtimeLog(content, containerKey = '', commandName = '') {
+            const logsContainer = document.getElementById('logsContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry realtime-log';
+
+            const timestamp = new Date().toLocaleTimeString();
+            const source = containerKey && commandName ? `${containerKey}-${commandName}` : '';
+
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                ${source ? `<span class="log-source">[${source}]</span>` : ''}
+                <span class="log-content">${content}</span>
+            `;
+
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // 添加日志条目
+        function addLogEntry(type, content, containerKey = '', commandName = '', isHistory = false) {
+            const logsContainer = document.getElementById('logsContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type} ${isHistory ? 'history-log' : 'realtime-log'}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            const source = containerKey && commandName ? `${containerKey}-${commandName}` : '';
+
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                ${source ? `<span class="log-source">[${source}]</span>` : ''}
+                <span class="log-content">${content}</span>
+            `;
+
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // 更新连接状态
+        function updateConnectionStatus(connected) {
+            const statusDot = elements.statusDot;
+            const statusText = elements.statusText;
+            const connectBtn = document.getElementById('connectBtn');
+            const connectionInfo = document.getElementById('connectionInfo');
+
+            if (connected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = '已连接';
+                connectBtn.textContent = '断开';
+                connectionInfo.textContent = `实时日志流: ${apiBaseUrl}`;
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = '未连接';
+                connectBtn.textContent = '连接';
+                connectionInfo.textContent = '';
+            }
+        }
+
+        // 清空日志
+        function clearLogs() {
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = '';
+            logCount = 0;
+            logTimes = [];
+            addLogEntry('info', '日志已清空');
+        }
+
+        // 加载历史日志
+        async function loadHistoryLogs() {
+            const containerKey = elements.containerSelect.value;
+            const commandName = elements.commandSelect.value;
+            const linesSelect = elements.linesSelect.value;
+
+            if (!containerKey || !commandName) {
+                addLogEntry('warning', '请先选择容器和程序');
+                return;
+            }
+
+            try {
+                const linesParam = linesSelect === '0' ? 'lines=0' : `lines=${linesSelect}`;
+                const response = await fetch(`${apiBaseUrl}/api/logs/${containerKey}/${commandName}?${linesParam}`);
+                const data = await response.json();
+
+                if (data.success && data.logs) {
+                    const logsContainer = document.getElementById('logsContainer');
+                    logsContainer.innerHTML = '';
+                    logCount = 0;
+                    logTimes = [];
+
+                    data.logs.forEach(log => {
+                        addLogEntry('info', log.content, containerKey, commandName, true);
+                        logCount++;
+                        logTimes.push(new Date());
+                    });
+
+                    const linesText = linesSelect === '0' ? '全部' : `最近${linesSelect}行`;
+                    addLogEntry('info', `已加载 ${data.logs.length} 条历史日志 (${linesText})`, '', '', true);
+                } else {
+                    addLogEntry('error', '加载历史日志失败: ' + (data.error || '未知错误'), '', '', true);
+                }
+            } catch (error) {
+                console.error('加载历史日志失败:', error);
+                addLogEntry('error', '加载历史日志失败: ' + error.message, '', '', true);
+            }
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            elements.logCount.textContent = logCount;
+
+            // 计算每分钟日志数
+            const now = new Date();
+            const oneMinuteAgo = new Date(now.getTime() - 60000);
+            const recentLogs = logTimes.filter(time => time > oneMinuteAgo);
+            document.getElementById('logsPerMinute').textContent = recentLogs.length;
+
+            // 更新连接时间
+            if (startTime) {
+                const elapsed = Math.floor((now - startTime) / 1000);
+                const hours = Math.floor(elapsed / 3600);
+                const minutes = Math.floor((elapsed % 3600) / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('connectionTime').textContent =
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    </script>
+</body>
+
+</html>

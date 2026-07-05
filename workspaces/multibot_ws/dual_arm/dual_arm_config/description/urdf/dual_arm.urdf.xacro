@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="双臂机器人">
+
+    <!-- ros2_control 参数 -->
+    <xacro:arg name="use_mock_hardware" default="true"/>
+    
+    <!-- 夹爪参数 -->
+    <xacro:arg name="use_fake_gripper_hardware" default="true"/>
+    
+    <!-- 初始位置文件参数 -->
+    <xacro:arg name="initial_positions_file" default="$(find dual_arm_config)/config/initial_positions.yaml"/>
+
+    <!-- 手眼标定参数文件路径（从单臂配置导入） -->
+    <xacro:property name="left_handeye_calibration_params" 
+                    value="$(find single_arm_config)/config/left_handeye_calibration.yaml"/>
+    <xacro:property name="right_handeye_calibration_params" 
+                    value="$(find single_arm_config)/config/right_handeye_calibration.yaml"/>
+    
+    <!-- 运动学参数文件路径（从单臂配置导入） -->
+    <xacro:property name="left_kinematics_params" 
+                    value="$(find single_arm_config)/config/left_arm_kinematics.yaml"/>
+    <xacro:property name="right_kinematics_params" 
+                    value="$(find single_arm_config)/config/right_arm_kinematics.yaml"/>
+    
+    <!-- 加载手眼标定数据 -->
+    <xacro:property name="left_handeye_calibration_data" 
+                    value="${xacro.load_yaml(left_handeye_calibration_params)}"/>
+    <xacro:property name="right_handeye_calibration_data" 
+                    value="${xacro.load_yaml(right_handeye_calibration_params)}"/>
+
+    <!-- 定义基座连杆 -->
+    <link name="base_link" />
+
+    <!-- 引入工作台定义 -->
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/workstation/workstation.urdf.xacro"/>
+    <xacro:工作台 prefix="workstation_" parent="base_link">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:工作台>
+    
+    <!-- 引入手臂定义 -->
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/arm/arm.urdf.xacro"/>
+    
+    <!-- 左臂 -->
+    <xacro:手臂
+      prefix="left_"
+      parent="left_interface_link"
+      ur_type="ur7e"
+      use_mock_hardware="$(arg use_mock_hardware)"
+      initial_positions_file="$(arg initial_positions_file)"
+      kinematics_file="${left_kinematics_params}">
+      <origin xyz="0 0 0" rpy="0 0 -1.573" />
+    </xacro:手臂>
+
+    <!-- 右臂 -->
+    <xacro:手臂
+      prefix="right_"
+      parent="right_interface_link"
+      ur_type="ur7e"
+      use_mock_hardware="$(arg use_mock_hardware)"
+      initial_positions_file="$(arg initial_positions_file)"
+      kinematics_file="${right_kinematics_params}">
+      <origin xyz="0 0 0" rpy="0 0 -1.573" />
+    </xacro:手臂>
+
+    <!-- 引入相机定义 -->
+    <!-- 相机标定参数从单臂配置文件中导入 -->
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/camera/camera.urdf.xacro"/>
+    <xacro:相机 
+        prefix="left_camera_" 
+        parent="left_tool0"
+        camera_link_xyz="${left_handeye_calibration_data['camera_link_xyz']}"
+        camera_link_rpy="${left_handeye_calibration_data['camera_link_rpy']}">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:相机>
+
+    <xacro:相机 
+        prefix="right_camera_" 
+        parent="right_tool0"
+        camera_link_xyz="${right_handeye_calibration_data['camera_link_xyz']}"
+        camera_link_rpy="${right_handeye_calibration_data['camera_link_rpy']}">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:相机>
+    
+    <!-- 引入夹爪定义 -->
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/gripper/gripper.urdf.xacro"/>
+    <xacro:夹爪 
+        prefix="left_gripper_" 
+        parent="left_camera_adapter"
+        use_fake_hardware="$(arg use_fake_gripper_hardware)">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:夹爪> 
+
+    <xacro:夹爪 
+        prefix="right_gripper_" 
+        parent="right_camera_adapter"
+        use_fake_hardware="$(arg use_fake_gripper_hardware)">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:夹爪> 
+
+    <!-- 待TCP标定 -->
+    <link name="left_ee_link"/>
+    <joint name="left_ee_joint" type="fixed">
+        <origin xyz="0 0 0.15" rpy="3.14 0 -1.57"/>
+        <parent link="left_tool0"/>
+        <child link="left_ee_link"/>
+    </joint>
+
+    <link name="right_ee_link"/>
+    <joint name="right_ee_joint" type="fixed">
+        <origin xyz="0 0 0.15" rpy="3.14 0 -1.57"/>
+        <parent link="right_tool0"/>
+        <child link="right_ee_link"/>
+    </joint>
+
+</robot>

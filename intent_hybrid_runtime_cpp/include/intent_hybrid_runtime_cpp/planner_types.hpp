@@ -39,6 +39,10 @@ struct RRTConnectRequestData {
   double p_uniform{0.35};
   double sigma_intent{0.08};
   uint32_t rng_seed{42};
+  bool continue_after_first_solution{false};
+  uint32_t max_solution_candidates{0};
+  double solution_smoothness_weight{0.0};
+  bool disable_direct_shortcut{false};
 };
 
 struct RRTConnectResult {

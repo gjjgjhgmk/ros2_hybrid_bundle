@@ -1,0 +1,384 @@
+/* ==================== 公共样式文件 ==================== */
+
+/* 基础重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 基础字体和颜色 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    color: #333333;
+}
+
+/* ==================== 按钮样式 ==================== */
+.btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    width: auto;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #0e639c;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #1177bb;
+}
+
+.btn-primary:disabled {
+    background: #cccccc;
+    color: #888888;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333333;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #d0d0d0;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover:not(:disabled) {
+    background: #138496;
+}
+
+.btn-info:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.btn-danger:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #218838;
+}
+
+.btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* ==================== 表单样式 ==================== */
+/* 基础表单组样式 */
+.form-group {
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+/* ==================== 布局变体 ==================== */
+
+/* 横向布局（默认）- 适合配置文件查看器等场景 */
+.form-group,
+.form-group-horizontal {
+    flex-direction: row;
+    align-items: center;
+}
+
+/* 纵向布局 - 适合传统表单 */
+.form-group-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.form-group-vertical .form-label {
+    margin-bottom: 8px;
+}
+
+/* Grid布局 - 适合复杂表单，自动响应式 */
+.form-group-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 16px;
+    align-items: center;
+}
+
+.form-group-grid .form-label {
+    grid-column: 1;
+    justify-self: start;
+    margin-bottom: 0;
+}
+
+.form-group-grid .form-control,
+.form-group-grid .form-input,
+.form-group-grid .form-textarea {
+    grid-column: 2;
+}
+
+/* Grid布局 - 全宽（标签和控件各占一行） */
+.form-group-grid-full {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: start;
+}
+
+.form-group-grid-full .form-label {
+    grid-column: 1;
+    margin-bottom: 0;
+}
+
+.form-group-grid-full .form-control,
+.form-group-grid-full .form-input,
+.form-group-grid-full .form-textarea {
+    grid-column: 1;
+}
+
+/* Grid布局 - 多列（适合多个字段并排） */
+.form-group-grid-cols-2 {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 8px 16px;
+    align-items: center;
+}
+
+.form-group-grid-cols-3 {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr auto 1fr;
+    gap: 8px 16px;
+    align-items: center;
+}
+
+/* 响应式Grid布局 */
+@media (max-width: 768px) {
+
+    .form-group-grid,
+    .form-group-grid-cols-2,
+    .form-group-grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group-grid .form-label,
+    .form-group-grid-cols-2 .form-label,
+    .form-group-grid-cols-3 .form-label {
+        grid-column: 1;
+    }
+
+    .form-group-grid .form-control,
+    .form-group-grid-cols-2 .form-control,
+    .form-group-grid-cols-3 .form-control {
+        grid-column: 1;
+    }
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* margin-bottom 由布局类控制 */
+}
+
+/* 横向布局中标签不需要底部边距 */
+.form-group-horizontal .form-label,
+.form-group .form-label {
+    margin-bottom: 0;
+}
+
+/* 纵向布局中标签需要底部边距 */
+.form-group-vertical .form-label {
+    margin-bottom: 8px;
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-input,
+.form-control {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    /* 动态宽度调整：设置最小和最大宽度 */
+    min-width: 150px;
+    max-width: 1200px;
+    width: auto;
+    /* 允许动态调整 */
+}
+
+.form-input:focus,
+.form-control:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 2px rgba(14, 99, 156, 0.1);
+}
+
+.form-textarea {
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-help {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* ==================== 消息样式 ==================== */
+.message {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.message-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.message-error,
+.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.message-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.success {
+    background: #e8f5e9;
+    border: 1px solid #4caf50;
+    color: #2e7d32;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+}
+
+/* ==================== 加载状态 ==================== */
+.loading {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0e639c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== 状态指示器 ==================== */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.connected {
+    background: #28a745;
+}
+
+.status-indicator.disconnected {
+    background: #dc3545;
+}
+
+.status-indicator.testing {
+    background: #ffc107;
+}
+
+/* ==================== 滚动条样式 ==================== */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cccccc;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #999999;
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999999;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}

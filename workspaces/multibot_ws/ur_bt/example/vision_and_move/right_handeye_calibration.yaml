@@ -1,0 +1,7 @@
+# Right-arm hand-eye calibration copied from:
+# multibot_ws/single_arm/single_arm_config/config/right_handeye_calibration.yaml
+#
+# These values are used as the fixed transform:
+# right_tool0 <- right_camera_link
+camera_link_xyz: -0.0015748838726785414 -0.09772692053933334 0.036578719204405336
+camera_link_rpy: -0.025913953660042788 -1.223198437461627 1.6168486739542376

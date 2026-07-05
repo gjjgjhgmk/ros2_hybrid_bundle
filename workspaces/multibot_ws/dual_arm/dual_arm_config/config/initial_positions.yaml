@@ -1,0 +1,20 @@
+# Default initial positions for 双臂机器人's ros2_control fake system
+
+initial_positions:
+  # 左臂初始位置（与 left_home 状态一致，避免相机与桌子碰撞）
+  left_arm:
+    shoulder_pan_joint: 0.0
+    shoulder_lift_joint: -1.2
+    elbow_joint: 1.8
+    wrist_1_joint: -2.1
+    wrist_2_joint: -1.57
+    wrist_3_joint: 0
+  
+  # 右臂初始位置（与 right_home 状态一致，避免相机与桌子碰撞）
+  right_arm:
+    shoulder_pan_joint: 0.0
+    shoulder_lift_joint: -1.2
+    elbow_joint: 1.8
+    wrist_1_joint: -2.1
+    wrist_2_joint: -1.57
+    wrist_3_joint: 0

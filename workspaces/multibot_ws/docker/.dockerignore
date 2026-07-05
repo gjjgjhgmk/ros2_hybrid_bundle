@@ -1,0 +1,84 @@
+# Git相关
+.git
+.gitignore
+.gitmodules
+
+# 构建产物
+build/
+install/
+log/
+logs/
+
+# IDE和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 编译产物
+*.o
+*.so
+*.a
+*.dylib
+*.exe
+
+# Python缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+*.pid
+*.lock
+
+# 文档
+*.md
+docs/
+documentation/
+
+# 测试相关
+test_results/
+coverage/
+*.coverage
+
+# Docker相关
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 配置文件（可能包含敏感信息）
+.env
+*.env
+config/secrets/
+
+# 大文件和媒体文件
+*.bag
+*.mp4
+*.avi
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# ROS特定
+devel/
+build/
+install/
+.catkin_workspace
+
+# 备份文件
+*.bak
+*.backup
+*~
+

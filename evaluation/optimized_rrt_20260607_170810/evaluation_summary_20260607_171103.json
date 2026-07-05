@@ -1,0 +1,103 @@
+{
+  "timestamp": "20260607_171103",
+  "scenario_count": 1,
+  "success_count": 1,
+  "interpretable_count": 1,
+  "backend_available_count": 1,
+  "backend_unavailable_count": 0,
+  "results": [
+    {
+      "scenario_name": "offline_latest",
+      "timestamp": "20260607_171103",
+      "collision_backend_available": true,
+      "collision_backend_checked": true,
+      "collision_backend_error": "",
+      "dryrun_mode": false,
+      "result_interpretable": true,
+      "failure_reason": "",
+      "inputs": {
+        "group_name": "ur_manipulator",
+        "joint_names": [
+          "shoulder_pan_joint",
+          "shoulder_lift_joint",
+          "elbow_joint",
+          "wrist_1_joint",
+          "wrist_2_joint",
+          "wrist_3_joint"
+        ],
+        "nominal_points": 150,
+        "modulated_points": 150,
+        "edge_resolution": 0.01,
+        "scene_obstacle_count": 2
+      },
+      "avoidance": {
+        "nominal_invalid_state_count": 96,
+        "nominal_invalid_edge_count": 97,
+        "modulated_invalid_state_count": 0,
+        "modulated_invalid_edge_count": 0,
+        "avoidance_success": true,
+        "modulated_postcheck_passed": true
+      },
+      "smoothness": {
+        "joint_path_length": 3.109837268257241,
+        "max_joint_delta": 0.036589671667234036,
+        "joint_jerk_integral": 167.9637662826147,
+        "estimated_max_velocity": 0.18294835833617018,
+        "estimated_max_acceleration": 0.8635887260590558,
+        "trajectory_length_ratio": 1.9436482926607757
+      },
+      "fmp_effect": {
+        "via_count": 31,
+        "max_abs_modulated_minus_nominal": 0.3712347207035156,
+        "effectively_passthrough": false
+      },
+      "executability": {
+        "dispatch_action_status": -1,
+        "dispatch_error_code": 0,
+        "execution_aborted": false,
+        "start_state_error_max": 1.599949178114209,
+        "start_state_error_norm": 1.5999555500381797
+      },
+      "local_path_review": {
+        "rrt_stop_reason": "optimized_timeout",
+        "rrt_elapsed_ms": 2002.219837,
+        "rrt_collision_queries": 90003,
+        "local_paths_checked": 1,
+        "local_paths_passed": 1,
+        "items": [
+          {
+            "index": 0,
+            "postcheck_passed": true,
+            "invalid_state_count": 0,
+            "invalid_edge_count": 0,
+            "first_invalid_state": -1,
+            "first_invalid_edge": -1,
+            "stop_reason": "optimized_timeout",
+            "elapsed_ms": 2002.219837,
+            "collision_queries": 90003
+          }
+        ]
+      },
+      "clearance": {
+        "min_clearance": 0.0,
+        "mean_clearance": 0.0
+      },
+      "motion_raw": {
+        "nominal": {
+          "ok": true,
+          "first_invalid_state": 12,
+          "first_invalid_edge": 11,
+          "elapsed_ms": 8.080134,
+          "collision_queries": 404
+        },
+        "modulated": {
+          "ok": true,
+          "first_invalid_state": -1,
+          "first_invalid_edge": -1,
+          "elapsed_ms": 10.983769,
+          "collision_queries": 624
+        }
+      }
+    }
+  ]
+}

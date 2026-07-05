@@ -17,6 +17,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Pose
 from moveit_msgs.msg import CollisionObject, PlanningScene
+from moveit_msgs.srv import ApplyPlanningScene
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Header
 
@@ -201,20 +202,60 @@ def _build_collision_objects(
     return out
 
 
+def _apply_planning_scene(node: Node, objs: Sequence[CollisionObject], timeout_sec: float = 5.0) -> bool:
+    client = node.create_client(ApplyPlanningScene, "/apply_planning_scene")
+    if not client.wait_for_service(timeout_sec=timeout_sec):
+        node.get_logger().error("/apply_planning_scene service is not available.")
+        return False
+
+    scene = PlanningScene()
+    scene.is_diff = True
+    scene.world.collision_objects = list(objs)
+
+    req = ApplyPlanningScene.Request()
+    req.scene = scene
+    future = client.call_async(req)
+    rclpy.spin_until_future_complete(node, future, timeout_sec=timeout_sec)
+    if not future.done():
+        node.get_logger().error("/apply_planning_scene timed out.")
+        return False
+    try:
+        resp = future.result()
+    except Exception as exc:  # pylint: disable=broad-except
+        node.get_logger().error(f"/apply_planning_scene failed: {exc}")
+        return False
+    if not bool(resp.success):
+        node.get_logger().error("/apply_planning_scene returned success=false.")
+        return False
+    node.get_logger().info("Applied planning_scene obstacles via /apply_planning_scene.")
+    return True
+
+
 def _publish_planning_scene(
     frame_id: str, obstacles: Sequence[CylinderObstacle], publish_count: int
 ) -> bool:
     node = Node("spawn_obstacles")
     pub = node.create_publisher(PlanningScene, "/planning_scene", 10)
+    collision_pub = node.create_publisher(CollisionObject, "/collision_object", 10)
     objs = _build_collision_objects(frame_id, obstacles)
     count = max(1, int(publish_count))
     try:
+        # Authoritative MoveIt update. Topic-only publication is volatile and can be
+        # missed by move_group or by a late-initializing PlanningSceneMonitor.
+        if not _apply_planning_scene(node, objs):
+            node.destroy_node()
+            return False
+
         for i in range(count):
             scene = PlanningScene()
             scene.is_diff = True
             scene.world.collision_objects = objs
             pub.publish(scene)
-            node.get_logger().info(f"Published planning_scene obstacles ({i + 1}/{count}).")
+            for obj in objs:
+                collision_pub.publish(obj)
+            node.get_logger().info(
+                f"Published planning_scene/collision_object obstacles ({i + 1}/{count})."
+            )
             rclpy.spin_once(node, timeout_sec=0.1)
             time.sleep(0.3)
     except Exception as exc:  # pylint: disable=broad-except

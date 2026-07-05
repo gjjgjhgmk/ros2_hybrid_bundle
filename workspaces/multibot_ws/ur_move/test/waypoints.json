@@ -1,0 +1,167 @@
+{
+    "左臂-零位": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "左臂零位位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "左臂-home": {
+        "group": "left_arm",
+        "planner": "ptp",
+        "description": "左臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "left_joint1",
+            "left_joint2",
+            "left_joint3",
+            "left_joint4",
+            "left_joint5",
+            "left_joint6"
+        ],
+        "joint_values": [
+            90.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ],
+        "ik_frame": "left_ee_link",
+        "frame_id": "left_interface_link",
+        "position": [
+            0.6,
+            0.6,
+            0.3
+        ],
+        "orientation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    },
+    "左臂-笛卡尔目标": {
+        "group": "left_arm",
+        "planner": "lin",
+        "description": "使用LIN规划器到达笛卡尔目标",
+        "type": "cart",
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "ik_frame": "left_ee_link",
+        "frame_id": "left_interface_link",
+        "position": [
+            0.6,
+            0.2,
+            0.35
+        ],
+        "orientation": [
+            0.382683, 
+            0, 
+            0, 
+            0.923880
+        ]
+    },
+    "右臂-零位": {
+        "group": "right_arm",
+        "planner": "ptp",
+        "description": "右臂零位位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "right_joint1",
+            "right_joint2",
+            "right_joint3",
+            "right_joint4",
+            "right_joint5",
+            "right_joint6"
+        ],
+        "joint_values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "右臂-home": {
+        "group": "right_arm",
+        "planner": "ptp",
+        "description": "右臂home位置",
+        "type": "joint",
+        "max_velocity_scaling_factor": 0.3,
+        "max_acceleration_scaling_factor": 0.3,
+        "joint_names": [
+            "right_joint1",
+            "right_joint2",
+            "right_joint3",
+            "right_joint4",
+            "right_joint5",
+            "right_joint6"
+        ],
+        "joint_values": [
+            90.0,
+            -90.0,
+            90.0,
+            -90.0,
+            -90.0,
+            0.0
+        ],
+        "ik_frame": "right_ee_link",
+        "frame_id": "right_interface_link",
+        "position": [
+            0.6,
+            0.6,
+            0.3
+        ],
+        "orientation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    },
+    "右臂-笛卡尔目标": {
+        "group": "right_arm",
+        "planner": "ompl",
+        "description": "使用OMPL规划器到达笛卡尔目标",
+        "type": "cart",
+        "max_velocity_scaling_factor": 0.2,
+        "max_acceleration_scaling_factor": 0.2,
+        "ik_frame": "right_ee_link",
+        "frame_id": "right_interface_link",
+        "position": [
+            0.6,
+            0.2,
+            0.35
+        ],
+        "orientation": [
+            0.382683, 
+            0, 
+            0, 
+            0.923880
+        ]
+    }
+}
+

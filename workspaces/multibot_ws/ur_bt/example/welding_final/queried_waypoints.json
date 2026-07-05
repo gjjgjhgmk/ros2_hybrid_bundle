@@ -1,0 +1,44 @@
+{
+  "left_weld_seed": {
+    "group": "left_arm",
+    "planner": "lin",
+    "description": "left_weld_seed",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "left_ee_link",
+    "frame_id": "left_interface_link",
+    "position": [
+      0.6,
+      -0.3,
+      0.07
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "right_weld_seed": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "right_weld_seed",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_interface_link",
+    "position": [
+      0.6,
+      0.3,
+      0.07
+    ],
+    "orientation": [
+      0,
+      0,
+      0,
+      1
+    ]
+  }
+}

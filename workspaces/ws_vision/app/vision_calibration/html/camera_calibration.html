@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>相机内外参标定系统</title>
+    <link rel="stylesheet" href="/static/common.css">
+    <style>
+        :root {
+            --section-padding: 6px;
+            --section-margin: 8px;
+            --section-height: calc(55vh - 100px);
+            --image-viewer-min-height: 100px;
+            --image-viewer-min-height-mobile: 80px;
+            --path-display-min-height: 20px;
+            --border-radius: 6px;
+            --border-color: #e9ecef;
+            --background-light: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 8px;
+        }
+
+        .content-layout {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .content-layout.bottom-row {
+            margin-bottom: 0;
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 0;
+            min-height: var(--section-height);
+        }
+
+        .middle-column {
+            flex: 1;
+            min-width: 0;
+            min-height: var(--section-height);
+        }
+
+        .right-column {
+            flex: 1;
+            min-width: 0;
+            min-height: var(--section-height);
+        }
+
+        .full-width {
+            width: 100%;
+        }
+
+        .section {
+            margin-bottom: var(--section-margin);
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: var(--section-padding);
+            border: 1px solid #e9ecef;
+            height: var(--section-height);
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .right-column .section-title {
+            margin-bottom: 4px;
+        }
+
+        .right-column .section {
+            padding: 4px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 5px;
+        }
+
+        .right-column .form-group {
+            margin-bottom: 3px;
+        }
+
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
+            font-weight: 500;
+            color: #495057;
+            font-size: 12px;
+            /* 添加字体大小 */
+        }
+
+        .form-group .row {
+            align-items: center;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 12px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control-small {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        select.form-control {
+            background-color: white;
+            color: #495057;
+            /* 移除appearance设置，使用浏览器默认样式 */
+        }
+
+        select.form-control option {
+            background-color: white;
+            color: #495057;
+            padding: 8px 12px;
+        }
+
+        /* 基础按钮样式已移至 common.css，这里只定义特殊样式 */
+        .btn {
+            /* 继承 common.css 的基础样式，覆盖特殊样式 */
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .modal-footer .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .project-management .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            /* 防止行被压缩 */
+            align-items: center;
+            /* 添加垂直居中对齐 */
+        }
+
+        /* 包含文件树的row需要能够缩小并传递高度 */
+        .project-management .row:last-child {
+            flex: 1;
+            min-height: 0;
+            align-items: stretch;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* 包含文件树的col需要能够缩小并传递高度 */
+        .project-management .row:last-child .col {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            /* 确保高度限制正确传递 */
+        }
+
+        .col-auto {
+            flex: 0 0 auto;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 25px;
+            /* 增加底部间距 */
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            /* 添加字体大小 */
+        }
+
+        .radio-item input[type="radio"] {
+            width: 14px;
+            /* 减小尺寸 */
+            height: 14px;
+            /* 减小尺寸 */
+            accent-color: #667eea;
+        }
+
+        .form-check-label span {
+            margin-left: 8px;
+            font-size: 12px;
+            /* 添加字体大小 */
+        }
+
+        .form-check-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .file-upload {
+            border: 2px dashed #ced4da;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .file-item .file-name {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .file-item .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .detection-results {
+            margin-top: 10px;
+        }
+
+        .detection-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px;
+            /* 减少内边距 */
+            margin-bottom: 10px;
+            font-size: 12px;
+            /* 添加字体大小 */
+        }
+
+        .detection-item.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .detection-item.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .detection-images {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .detection-image {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.success {
+            background: #28a745;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        .status-indicator.warning {
+            background: #ffc107;
+        }
+
+        .status-indicator.info {
+            background: #17a2b8;
+        }
+
+        .alert {
+            padding: 6px 10px;
+            /* 减少内边距 */
+            border-radius: 4px;
+            margin-bottom: 0;
+            border: 1px solid transparent;
+            font-size: 0.8rem;
+            /* 减少字体大小 */
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: #6c757d;
+        }
+
+        .mt-3 {
+            margin-top: 8px;
+        }
+
+        .mb-3 {
+            margin-bottom: 15px;
+        }
+
+        /* 文件树样式 */
+        .file-tree {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            /* 减少内边距 */
+            flex: 1 1 0;
+            /* 填充剩余空间，允许缩小 */
+            min-height: 0;
+            /* 允许flex子元素缩小 */
+            overflow-y: auto;
+            /* 内容超出时显示滚动条 */
+            overflow-x: hidden;
+            /* 隐藏横向滚动条 */
+            height: 0;
+            /* 强制flex子元素计算高度，确保滚动条显示 */
+            position: relative;
+            /* 确保滚动条正确显示 */
+            /* Firefox滚动条样式 */
+            scrollbar-width: thin;
+            scrollbar-color: #888 #f1f1f1;
+        }
+
+        /* 自定义滚动条样式，确保在暗黑主题下清晰可见 */
+        .file-tree::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .file-tree::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .file-tree::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        .file-tree::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .tree-item {
+            padding: 2px 0;
+            /* 减少垂直内边距 */
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            margin-bottom: 1px;
+            /* 减少底部边距 */
+        }
+
+        .tree-item:hover {
+            background: #f8f9fa;
+        }
+
+        .tree-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .tree-item .tree-icon {
+            margin-right: 8px;
+            font-size: 14px;
+        }
+
+        .tree-item .tree-name {
+            font-size: 12px;
+            /* 减少字体大小 */
+        }
+
+        .tree-children {
+            margin-left: 20px;
+            border-left: 1px solid #e9ecef;
+            padding-left: 10px;
+        }
+
+        .file-selection-area {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 60px;
+        }
+
+        .selected-file {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .selected-file .remove-btn {
+            margin-left: 8px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+
+        /* 图像显示样式 */
+        .image-display-container {
+            display: flex;
+            flex-direction: column;
+            /* 图像和名称竖排 */
+            width: 100%;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .image-viewer {
+            flex: 0 0 auto;
+            width: 100%;
+            min-height: var(--image-viewer-min-height);
+            max-height: none;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .image-viewer img {
+            width: 100%;
+            height: auto;
+            max-height: none;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-viewer .text-muted {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* 图像路径显示样式 */
+        .image-path-display {
+            flex: 0 0 auto;
+            min-height: var(--path-display-min-height);
+            margin-top: 8px;
+            padding: 6px 8px;
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+            word-break: break-all;
+        }
+
+        .text-content-viewer {
+            flex: 1;
+            /* 填充剩余空间 */
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            /* 减少内边距 */
+            background: white;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            /* 减少字体大小 */
+            line-height: 1.3;
+        }
+
+        /* 文件路径链接样式 */
+        .file-path-link {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .file-path-link:hover {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        .file-path-link:active {
+            color: #004085;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 80%;
+            max-height: 80%;
+            width: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #28a745;
+            font-size: 1.2rem;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* 标定结果样式 */
+        .calibration-result {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .calibration-result h4 {
+            color: #28a745;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .calibration-result pre {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .file-list,
+        .folder-list {
+            margin-left: 10px;
+        }
+
+        /* 项目管理行高度调整 */
+        .project-management .row {
+            margin-bottom: 8px;
+            /* 减小行间距 */
+        }
+
+        .project-management .form-control {
+            padding: 6px 10px;
+            /* 减小输入框内边距 */
+            font-size: 12px;
+            /* 减小字体 */
+        }
+
+        .file-item,
+        .folder-item {
+            padding: 2px 0;
+            font-size: 10px;
+            color: #495057;
+        }
+
+        .file-item:hover,
+        .folder-item:hover {
+            background-color: #e9ecef;
+            border-radius: 2px;
+            padding-left: 4px;
+            margin-left: -4px;
+        }
+
+        .image-path-display label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .path-text {
+            font-size: 11px;
+            color: #6c757d;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            line-height: 1.4;
+            background: white;
+            padding: 6px;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
+        }
+
+        /* 图像显示区域的section样式 */
+        .bottom-row .section {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .bottom-row .section .form-group {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0;
+        }
+
+        .bottom-row .image-display-container {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            margin-top: 0;
+        }
+
+        .bottom-row .image-viewer {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .bottom-row .image-path-display {
+            flex-shrink: 0;
+        }
+
+        /* 数据采集表单grid布局 */
+        .capture-form-grid {
+            display: grid;
+            grid-template-columns: 90px 1fr;
+            gap: 8px 12px;
+            align-items: start;
+        }
+
+        .capture-label {
+            display: flex;
+            align-items: center;
+            min-height: 32px;
+            white-space: nowrap;
+        }
+
+        .capture-input {
+            display: flex;
+            align-items: center;
+            min-height: 32px;
+        }
+
+        .capture-input-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .capture-input-vertical .form-control {
+            width: 100%;
+        }
+
+        .capture-buttons {
+            margin-top: 8px;
+        }
+
+        /* 响应式设计 - 保持布局不变 */
+        @media(max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+
+            /* 保持三栏布局，不改变为单栏 */
+            .content-layout {
+                gap: 10px;
+                /* 只减少间距 */
+            }
+
+            .row {
+                flex-direction: column;
+            }
+
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .detection-images {
+                flex-direction: column;
+            }
+
+            .detection-image {
+                max-width: 100%;
+            }
+
+
+            /* 在小屏幕上调整图像查看器高度 */
+            .image-viewer {
+                min-height: var(--image-viewer-min-height-mobile);
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 相机内外参标定系统</h1>
+        </div>
+
+        <div class="main-content">
+            <!-- 上面一行：项目管理、文件内容、标定控制 -->
+            <div class="content-layout top-row">
+                <!-- 左栏：项目管理 -->
+                <div class="left-column">
+                    <div class="section project-management">
+                        <div class="section-title">📁 项目管理</div>
+                        <div class="row">
+                            <div class="col">
+                                <select id="projectSelect" class="form-control" onchange="selectProject()">
+                                    <option value="">请选择项目...</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button id="scanProjectsBtn" class="btn btn-secondary">扫描项目</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <input type="text" id="newProjectName" class="form-control" placeholder="输入新项目名称...">
+                            </div>
+                            <div class="col-auto">
+                                <button id="createProjectBtn" class="btn btn-primary">创建项目</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <input type="text" id="uploadDirectory" class="form-control" placeholder="点击目录选择路径..."
+                                    readonly>
+                            </div>
+                            <div class="col-auto">
+                                <input type="file" id="fileUpload" class="form-control" multiple style="display: none;">
+                                <button id="uploadFileBtn" class="btn btn-success"
+                                    onclick="document.getElementById('fileUpload').click()">📁 添加文件</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="file-tree" id="fileTree">
+                                    <div id="treeContent"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中栏：文件内容 -->
+                <div class="middle-column">
+                    <div class="section">
+                        <div class="section-title">📄 文件内容</div>
+                        <div class="text-content-viewer" id="textContentViewer">
+                            <div class="text-muted text-center">请选择文件查看内容</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右栏：标定控制 -->
+                <div class="right-column">
+                    <div class="section">
+                        <div class="section-title" id="calibrationTitle">🎯 参数标定</div>
+
+                        <!-- 标定类型选择 -->
+                        <div class="radio-group" id="calibrationTypeSelection">
+                            <div class="radio-item">
+                                <input type="radio" id="intrinsic" name="calibrationType" value="intrinsic">
+                                <label for="intrinsic">内参标定</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="extrinsic" name="calibrationType" value="extrinsic" checked>
+                                <label for="extrinsic">外参标定</label>
+                            </div>
+                        </div>
+
+                        <!-- 内参文件路径显示 -->
+                        <div id="parameterSection">
+                            <div class="form-group">
+                                <input type="text" id="cameraParamsFile" class="form-control form-control-small"
+                                    placeholder="请从左侧目录选择yaml文件..." readonly>
+                            </div>
+                        </div>
+
+                        <!-- 检测选项 -->
+                        <div class="form-group" id="detectionOptions" style="margin-top: 20px;">
+                            <input type="text" id="imagePathDisplay" class="form-control form-control-small"
+                                placeholder="图像路径..." readonly>
+                        </div>
+
+                        <!-- 检测控制 -->
+                        <div class="form-group" id="detectionControl">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button id="detectBtn" class="btn btn-primary">检测</button>
+                                <button id="addFileBtn" class="btn btn-success">添加</button>
+                                <button id="removeFileBtn" class="btn btn-warning">移除</button>
+                                <button id="deleteFileBtn" class="btn btn-danger">删除文件</button>
+                                <button id="clearImagePathBtn" class="btn btn-sm btn-outline-danger">清空图像路径</button>
+                            </div>
+                        </div>
+
+                        <!-- 标定选项 -->
+                        <div class="form-group" id="calibrationOptions" style="margin-top: 20px;">
+                            <div class="d-flex align-items-center gap-3">
+                                <label class="mb-0">
+                                    <input type="checkbox" id="useSelectedData" checked>
+                                    使用选择数据
+                                </label>
+                                <button id="calibrateBtn" class="btn btn-success">开始标定</button>
+                            </div>
+                        </div>
+
+                        <!-- 检测结果 -->
+                        <div class="detection-results" id="detectionResults"></div>
+
+                        <!-- 进度条 -->
+                        <div class="progress-bar hidden" id="progressBar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+
+                        <!-- 标定结果 -->
+                        <!-- 标定结果现在使用弹窗显示 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下面一行：数据采集、图像显示1、图像显示2 -->
+            <div class="content-layout bottom-row">
+                <!-- 左栏：数据采集 -->
+                <div class="left-column">
+                    <div class="section">
+                        <div class="section-title">📊 数据采集</div>
+
+                        <!-- 数据采集表单 - 使用grid布局对齐 -->
+                        <div class="capture-form-grid">
+                            <!-- 图像采集 -->
+                            <div class="capture-label">
+                                <label class="form-check-label mb-0">
+                                    <input type="checkbox" id="enableImageCapture" checked>
+                                    <span>图像</span>
+                                </label>
+                            </div>
+                            <div class="capture-input">
+                                <input type="text" id="imageTopic" class="form-control form-control-small"
+                                    placeholder="图像话题 (如: /camera/color/image_raw)">
+                            </div>
+
+                            <!-- 标定板TF -->
+                            <div class="capture-label">
+                                <label class="form-check-label mb-0">
+                                    <input type="checkbox" id="enableBoardTF" checked>
+                                    <span>标定板TF</span>
+                                </label>
+                            </div>
+                            <div class="capture-input-vertical">
+                                <input type="text" id="cameraFrame" class="form-control form-control-small"
+                                    placeholder="相机Frame">
+                                <input type="text" id="boardFrame" class="form-control form-control-small"
+                                    placeholder="标定板Frame">
+                            </div>
+
+                            <!-- 关节 -->
+                            <div class="capture-label">
+                                <label class="form-check-label mb-0">
+                                    <input type="checkbox" id="enableJoint" checked>
+                                    <span>关节</span>
+                                </label>
+                            </div>
+                            <div class="capture-input">
+                                <input type="text" id="jointTopic" class="form-control form-control-small"
+                                    placeholder="关节话题 (如: /joint_states)">
+                            </div>
+
+                            <!-- 末端TF -->
+                            <div class="capture-label">
+                                <label class="form-check-label mb-0">
+                                    <input type="checkbox" id="enableEndTF" checked>
+                                    <span>末端TF</span>
+                                </label>
+                            </div>
+                            <div class="capture-input-vertical">
+                                <input type="text" id="toolFrame" class="form-control form-control-small"
+                                    placeholder="末端Frame">
+                                <input type="text" id="baseFrame" class="form-control form-control-small"
+                                    placeholder="基坐标系Frame">
+                            </div>
+
+                            <!-- 采样文件 -->
+                            <div class="capture-label">
+                                <label class="form-label mb-0">
+                                    <span>采样文件</span>
+                                </label>
+                            </div>
+                            <div class="capture-input">
+                                <input type="text" id="sampleFile" class="form-control form-control-small"
+                                    placeholder="采样文件路径 (如: /path/to/samples.yaml)">
+                            </div>
+
+                            <!-- 采样类型和采样数目 -->
+                            <div
+                                style="grid-column: 1 / -1; display: grid; grid-template-columns: 90px 1fr 90px 1fr; gap: 8px 12px; align-items: start;">
+                                <div class="capture-label">
+                                    <label class="form-label mb-0">
+                                        <span>采样类型</span>
+                                    </label>
+                                </div>
+                                <div class="capture-input">
+                                    <select id="sampleType" class="form-control form-control-small">
+                                        <option value="random">随机</option>
+                                        <option value="file" selected>文件</option>
+                                    </select>
+                                </div>
+                                <div class="capture-label">
+                                    <label class="form-label mb-0">
+                                        <span>采样数目</span>
+                                    </label>
+                                </div>
+                                <div class="capture-input">
+                                    <input type="number" id="sampleCount" class="form-control form-control-small"
+                                        placeholder="数量" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 采集按钮 -->
+                        <div class="form-group capture-buttons">
+                            <div class="d-flex align-items-center gap-3">
+                                <button id="loadDefaultParamsBtn" class="btn btn-secondary">加载默认参数</button>
+                                <button id="singleCaptureBtn" class="btn btn-primary">单次采集</button>
+                                <button id="autoCaptureBtn" class="btn btn-success">自动采集</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中栏：图像显示1 -->
+                <div class="middle-column">
+                    <div class="section">
+                        <div class="form-group">
+                            <div class="image-display-container">
+                                <div class="image-viewer" id="originImageViewer"></div>
+                            </div>
+                            <div class="image-path-display">
+                                <div class="path-text" id="originImagePath">未选择图像</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右栏：图像显示2 -->
+                <div class="right-column">
+                    <div class="section">
+                        <div class="form-group">
+                            <div class="image-display-container">
+                                <div class="image-viewer" id="detectionImageViewer"></div>
+                            </div>
+                            <div class="image-path-display">
+                                <div class="path-text" id="detectionImagePath">未选择图像</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标定结果弹窗 -->
+    <div id="calibrationModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎉 标定结果</h3>
+                <span class="close" onclick="closeCalibrationModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="calibrationModalContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCalibrationModal()">关闭</button>
+                <button class="btn btn-primary" onclick="exportCalibrationResults()">导出结果</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 单次采集确认弹窗 -->
+    <div id="singleCaptureModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📸 单次采集确认</h3>
+                <span class="close" onclick="closeSingleCaptureModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="singleCaptureModalContent">
+                    <p>确认执行单次采集？</p>
+                    <div id="captureConfigPreview"
+                        style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">
+                        <!-- 采集配置预览将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSingleCaptureModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmSingleCapture()">确认采集</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/common.js"></script>
+    <script>
+        // 全局变量
+        let currentProject = '';
+        let selectedFiles = [];
+        let detectionResults = [];
+        let calibrationType = 'extrinsic'; // 默认外参标定
+        let fileTreeData = [];
+        let currentDisplayedFilePath = ''; // 记住当前显示的文件完整路径
+        let autoCaptureInterval = null; // 自动采集定时器
+        let isSingleCaptureRunning = false; // 单次采集中互斥控制
+        let isAutoCaptureRunning = false;
+        // 自动采集中互斥控制
+
+        // 注意: API_BASE 已移至 common.js，可以直接使用
+
+        // 公共API请求函数
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const defaultOptions = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                };
+                const response = await fetch(`${API_BASE}${endpoint}`, defaultOptions);
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                return { success: false, message: error.message };
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeEventListeners();
+            updateCalibrationType();
+            scanProjects();
+        });
+
+        // 事件监听器初始化
+        function initializeEventListeners() { // 标定类型切换
+            document.querySelectorAll('input[name="calibrationType"]').forEach(radio => {
+                radio.addEventListener('change', updateCalibrationType);
+            });
+
+            // 项目管理
+            document.getElementById('scanProjectsBtn').addEventListener('click', scanProjects);
+            document.getElementById('createProjectBtn').addEventListener('click', createProject);
+            document.getElementById('projectSelect').addEventListener('change', selectProject);
+            document.getElementById('fileUpload').addEventListener('change', handleFileUpload);
+
+            // 数据采集
+            document.getElementById('loadDefaultParamsBtn').addEventListener('click', loadDefaultParams);
+            document.getElementById('singleCaptureBtn').addEventListener('click', showSingleCaptureModal);
+            document.getElementById('autoCaptureBtn').addEventListener('click', toggleAutoCapture);
+
+            // 检测和标定
+            document.getElementById('detectBtn').addEventListener('click', startDetection);
+            document.getElementById('addFileBtn').addEventListener('click', addFile);
+            document.getElementById('removeFileBtn').addEventListener('click', removeFile);
+            document.getElementById('deleteFileBtn').addEventListener('click', deleteFile);
+            document.getElementById('clearImagePathBtn').addEventListener('click', clearImagePath);
+            document.getElementById('calibrateBtn').addEventListener('click', startCalibration);
+        }
+
+        // 更新标定类型（只更新后端配置，不切换界面）
+        async function updateCalibrationType() {
+            calibrationType = document.querySelector('input[name="calibrationType"]:checked').value;
+
+            const result = await apiRequest('/config/update', {
+                method: 'PUT',
+                body: JSON.stringify(
+                    {
+                        config: {
+                            calibration_type: calibrationType
+                        }
+                    }
+                )
+            });
+
+            if (!result.success) {
+                updateStatus('warning', '配置更新失败: ' + result.message);
+            } else {
+                updateStatus('info', `已选择${calibrationType === 'intrinsic' ? '内参' : '外参'
+                    }标定模式`);
+            }
+        }
+
+        // 处理文件上传
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('fileUpload');
+            const directoryInput = document.getElementById('uploadDirectory');
+            const files = fileInput.files;
+
+            if (files.length === 0) {
+                updateStatus('warning', '请选择要上传的文件');
+                return;
+            }
+
+            const targetDirectory = directoryInput.value.trim();
+            if (!targetDirectory) {
+                updateStatus('warning', '请选择或输入目标目录');
+                return;
+            }
+
+            if (!currentProject) {
+                updateStatus('warning', '请先选择一个项目');
+                return;
+            }
+
+            try {
+                updateStatus('info', `正在上传 ${files.length
+                    } 个文件到 ${targetDirectory}...`);
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('directory', targetDirectory);
+
+                    const response = await fetch(`${API_BASE}/files/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        updateStatus('error', `上传文件 ${file.name
+                            } 失败: ${result.message
+                            }`);
+                        return;
+                    }
+                }
+
+                updateStatus('success', `成功上传 ${files.length
+                    } 个文件到 ${targetDirectory}`);
+
+                // 清空文件输入
+                fileInput.value = '';
+
+                // 刷新目录（保持折叠状态）
+                await refreshFileTreeKeepState();
+
+            } catch (error) {
+                updateStatus('error', '文件上传失败: ' + error.message);
+            }
+        }
+
+        // 扫描项目
+        async function scanProjects() {
+            try {
+                showLoading('scanProjectsBtn');
+                const response = await fetch(`${API_BASE}/folders/get_all`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const select = document.getElementById('projectSelect');
+                    select.innerHTML = '<option value="">请选择项目...</option>';
+
+                    if (result.data && result.data.length > 0) {
+                        result.data.forEach(folderName => {
+                            const option = document.createElement('option');
+                            option.value = folderName;
+                            option.textContent = folderName;
+                            select.appendChild(option);
+                        });
+
+                        // 构建文件树（只显示文件夹名称，点击时再获取结构）
+                        buildFileTree(result.data);
+                    }
+                    updateStatus('success', `找到 ${result.data ? result.data.length : 0
+                        } 个项目`);
+                    // 重新渲染文件树以反映当前选择状态
+                    renderFileTree('treeContent', fileTreeData);
+                } else {
+                    updateStatus('error', '扫描项目失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '扫描项目失败: ' + error.message);
+            } finally {
+                hideLoading('scanProjectsBtn');
+            }
+        }
+
+        // 构建文件树
+        function buildFileTree(projectNames) {
+            fileTreeData = projectNames.map(projectName => ({
+                name: projectName, type: 'folder', fullPath: projectName, children: [] // 初始为空，点击时再获取
+            }));
+
+            // 不直接渲染，让调用者决定何时渲染
+            // renderFileTree('treeContent', fileTreeData);
+        }
+
+        // 渲染文件树
+        function renderFileTree(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            // 检查是否已选择项目
+            const selectedProject = document.getElementById('projectSelect').value;
+            if (!selectedProject) {
+                container.innerHTML = '<div class="text-muted text-center" style="padding: 20px;">请先选择项目</div>';
+                return;
+            }
+
+            // 只显示当前选中的项目
+            const selectedProjectData = data.filter(item => item.name === selectedProject);
+            if (selectedProjectData.length > 0) {
+                const itemElement = createTreeItem(selectedProjectData[0], 0);
+                container.appendChild(itemElement);
+            } else {
+                container.innerHTML = '<div class="text-muted text-center" style="padding: 20px;">项目数据未找到</div>';
+            }
+        }
+
+        // 获取当前已展开的目录路径集合
+        function getExpandedPaths() {
+            const expanded = new Set();
+            document.querySelectorAll('.tree-item[data-type="folder"]').forEach(el => {
+                const next = el.nextElementSibling;
+                if (next && next.classList.contains('tree-children')) {
+                    const fullPath = el.dataset.fullPath;
+                    if (fullPath)
+                        expanded.add(fullPath);
+
+
+
+                }
+            });
+            return expanded;
+        }
+
+        // 根据状态更新采集按钮的可用性和提示
+        function updateCaptureButtonsState() {
+            const singleBtn = document.getElementById('singleCaptureBtn');
+            const autoBtn = document.getElementById('autoCaptureBtn');
+            if (!singleBtn || !autoBtn)
+                return;
+
+
+
+            // 单次采集中 -> 禁用自动采集
+            autoBtn.disabled = isSingleCaptureRunning;
+            // 自动采集中 -> 禁用单次采集
+            singleBtn.disabled = isAutoCaptureRunning;
+
+            // 提示
+            if (isSingleCaptureRunning && !isAutoCaptureRunning) {
+                updateStatus('info', '单次采集中，已禁用自动采集');
+            } else if (isAutoCaptureRunning && !isSingleCaptureRunning) {
+                updateStatus('info', '自动采集中，已禁用单次采集');
+            }
+        }
+
+        // 在 fileTreeData 中查找节点
+        function findNodeByPath(nodes, path) {
+            for (const node of nodes) {
+                if (node.fullPath === path)
+                    return node;
+
+
+
+                if (node.children && node.children.length > 0) {
+                    const found = findNodeByPath(node.children, path);
+                    if (found)
+                        return found;
+
+
+
+                }
+            }
+            return null;
+        }
+
+        // 更新指定节点的子节点数据（重新从后端获取）
+        async function refreshNodeChildren(path) {
+            const node = findNodeByPath(fileTreeData, path);
+            if (!node)
+                return;
+
+
+
+            try {
+                const resp = await fetch(`${API_BASE}/folders/structure?folder_path=${encodeURIComponent(path)
+                    }`);
+                const result = await resp.json();
+                if (!result.success)
+                    return;
+
+
+
+                const structure = result.data || {};
+                const children = [];
+                if (structure.folders && structure.folders.length > 0) {
+                    structure.folders.forEach(folderPath => {
+                        const folderName = folderPath.split('/').pop();
+                        children.push({ name: folderName, type: 'folder', fullPath: folderPath, children: [] });
+                    });
+                }
+                if (structure.files && structure.files.length > 0) {
+                    structure.files.forEach(filePath => {
+                        const fileName = filePath.split('/').pop();
+                        children.push({ name: fileName, type: 'file', fullPath: filePath });
+                    });
+                }
+                node.children = children;
+            } catch (e) {
+                console.error('刷新子目录失败', e);
+            }
+        }
+
+        // 重新渲染并恢复展开状态
+        async function refreshFileTreeKeepState() {
+            const selectedProject = document.getElementById('projectSelect').value;
+            if (!selectedProject)
+                return;
+
+
+
+            const expanded = getExpandedPaths();
+            // 确保顶层项目节点存在
+            if (fileTreeData.length === 0) {
+                await scanProjects(); // 会重建 fileTreeData
+            }
+            // 逐个刷新已展开的目录
+            for (const path of expanded) {
+                await refreshNodeChildren(path);
+            }
+            // 重新渲染
+            renderFileTree('treeContent', fileTreeData);
+            // 恢复展开
+            for (const path of expanded) {
+                const el = document.querySelector(`.tree-item[data-type="folder"][data-full-path="${CSS.escape(path)
+                    }"]`);
+                if (el) {
+                    const next = el.nextElementSibling;
+                    if (!(next && next.classList.contains('tree-children'))) { // 需要展开
+                        await loadSubfolderContent(el, 1);
+                    }
+                }
+            }
+        }
+
+        // 创建树节点
+        function createTreeItem(item, level) {
+            const div = document.createElement('div');
+            div.className = 'tree-item';
+            div.style.paddingLeft = (level * 20) + 'px';
+
+            // 设置完整路径数据属性
+            if (item.fullPath) {
+                div.dataset.fullPath = item.fullPath;
+            }
+
+            // 设置类型属性
+            div.setAttribute('data-type', item.type);
+
+            const icon = item.type === 'folder' ? '📁' : '📄';
+            const name = item.name;
+
+            div.innerHTML = `
+                <span class="tree-icon">${icon}</span>
+                <span class="tree-name">${name}</span>
+            `;
+
+            if (item.type === 'file') {
+                div.addEventListener('click', () => selectFile(item.name, div));
+            } else if (item.children) {
+                div.addEventListener('click', () => toggleTreeItem(div, item.children, level + 1));
+            }
+
+            return div;
+        }
+
+        // 切换树节点展开/收起
+        async function toggleTreeItem(element, children, level) { // 检查是否已选择项目
+            const selectedProject = document.getElementById('projectSelect').value;
+            if (!selectedProject) {
+                updateStatus('warning', '请先选择项目');
+                return;
+            }
+
+            // 如果是目录，更新目录输入框
+            const itemType = element.getAttribute('data-type');
+            if (itemType === 'folder') {
+                const fullPath = element.dataset.fullPath;
+                if (fullPath) {
+                    document.getElementById('uploadDirectory').value = fullPath;
+                    updateStatus('success', `已选择目录: ${fullPath}`);
+                }
+            }
+
+            const existingChildren = element.nextElementSibling;
+
+            if (existingChildren && existingChildren.classList.contains('tree-children')) {
+                existingChildren.remove();
+            } else { // 如果是文件夹且没有子内容，则动态获取
+                if (children.length === 0 && element.dataset.fullPath) {
+                    await loadSubfolderContent(element, level);
+                } else {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'tree-children';
+
+                    children.forEach(child => {
+                        const childElement = createTreeItem(child, level);
+                        childrenDiv.appendChild(childElement);
+                    });
+
+                    element.parentNode.insertBefore(childrenDiv, element.nextSibling);
+                }
+            }
+        }
+
+        // 动态加载子文件夹内容
+        async function loadSubfolderContent(element, level) { // 检查是否已选择项目
+            const selectedProject = document.getElementById('projectSelect').value;
+            if (!selectedProject) {
+                updateStatus('warning', '请先选择项目');
+                return;
+            }
+
+            const folderPath = element.dataset.fullPath;
+            if (!folderPath)
+                return;
+
+
+
+            try {
+                updateStatus('info', `正在加载文件夹: ${folderPath}`);
+
+                const response = await fetch(`${API_BASE}/folders/structure?folder_path=${encodeURIComponent(folderPath)
+                    }`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'tree-children';
+
+                    const structure = result.data;
+                    const children = [];
+
+                    // 先添加子文件夹（目录在上）
+                    if (structure.folders && structure.folders.length > 0) {
+                        structure.folders.forEach(folderPath => {
+                            const folderName = folderPath.split('/').pop();
+                            children.push({
+                                name: folderName, type: 'folder', fullPath: folderPath, children: [] // 子文件夹暂时为空，点击时再加载
+                            });
+                        });
+                    }
+
+                    // 再添加文件（文件在下）
+                    if (structure.files && structure.files.length > 0) {
+                        structure.files.forEach(filePath => {
+                            const fileName = filePath.split('/').pop();
+                            children.push({
+                                name: fileName, type: 'file', fullPath: filePath // 确保使用完整路径
+                            });
+                        });
+                    }
+
+                    children.forEach(child => {
+                        const childElement = createTreeItem(child, level);
+                        childrenDiv.appendChild(childElement);
+                    });
+
+                    element.parentNode.insertBefore(childrenDiv, element.nextSibling);
+                    updateStatus('success', `已加载文件夹: ${folderPath}`);
+                } else {
+                    updateStatus('error', '加载文件夹失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '加载文件夹失败: ' + error.message);
+            }
+        }
+
+        // 选择文件或目录
+        async function selectFile(fileName, element) { // 检查是否已选择项目
+            const selectedProject = document.getElementById('projectSelect').value;
+            if (!selectedProject) {
+                updateStatus('warning', '请先选择项目');
+                return;
+            }
+
+            // 使用完整路径或文件名
+            let fullPath = element.dataset.fullPath || fileName;
+
+            // 如果没有完整路径，尝试构建完整路径
+            if (!element.dataset.fullPath) {
+                const selectedProject = document.getElementById('projectSelect').value;
+                if (selectedProject) {
+                    fullPath = `${selectedProject}/${fileName}`;
+                }
+            }
+
+            // 检查是否是目录
+            const itemType = element.getAttribute('data-type');
+            if (itemType === 'folder') { // 如果是目录，更新目录输入框
+                document.getElementById('uploadDirectory').value = fullPath;
+                updateStatus('success', `已选择目录: ${fullPath}`);
+                return;
+            }
+
+            // 如果是内参或外参标定模式，确保文件路径是origin文件
+            if (calibrationType === 'intrinsic' || calibrationType === 'extrinsic') { // 如果选中的是detection文件，转换为对应的origin文件
+                if (fullPath.includes('/detection/')) {
+                    fullPath = fullPath.replace('/detection/', '/origin/');
+                    // 移除_detected后缀（如果存在）
+                    const pathParts = fullPath.split('/');
+                    const fileName = pathParts[pathParts.length - 1];
+                    if (fileName.includes('_detected')) {
+                        const baseName = fileName.replace('_detected', '');
+                        pathParts[pathParts.length - 1] = baseName;
+                        fullPath = pathParts.join('/');
+                    }
+                }
+            }
+
+            // 清除之前的选中状态
+            const treeItems = document.querySelectorAll('.tree-item');
+            treeItems.forEach(item => item.classList.remove('selected'));
+
+            // 设置新的选中状态
+            element.classList.add('selected');
+
+            updateStatus('info', `已选择文件: ${fullPath}`);
+
+            // 如果是yaml文件，设置到内参文件路径并显示内容
+            if (fullPath.toLowerCase().endsWith('.yaml') || fullPath.toLowerCase().endsWith('.yml')) {
+                document.getElementById('cameraParamsFile').value = fullPath;
+                updateStatus('success', `已选择内参文件: ${fullPath.split('/').pop()
+                    }`);
+                showTextFileContent(fullPath);
+            }
+
+            // 如果是txt文件，显示文件内容
+            if (fullPath.toLowerCase().endsWith('.txt')) {
+                showTextFileContent(fullPath);
+            } else if (!fullPath.toLowerCase().endsWith('.yaml') && !fullPath.toLowerCase().endsWith('.yml') && !isImageFile(fullPath)) { // 如果不是文本文件且不是图像文件，清空中间栏
+                const textViewer = document.getElementById('textContentViewer');
+                textViewer.innerHTML = '<div class="text-muted text-center">请选择文件查看内容</div>';
+                // 清空记住的文件路径
+                currentDisplayedFilePath = '';
+            }
+            // 注意：选中图像文件时，不改变中栏内容
+
+            // 只有选中图像文件时，才更新到图像路径框中
+            if (isImageFile(fullPath)) {
+                document.getElementById('imagePathDisplay').value = fullPath;
+            }
+
+            // 如果是图像文件，直接显示
+            if (isImageFile(fullPath)) {
+                showImageInViewer(fullPath);
+
+                // 如果是origin图像，尝试显示对应的detection图像
+                if (fullPath.includes('/origin/')) {
+                    const correspondingDetectionPath = await findCorrespondingDetectionFile(fullPath);
+                    if (correspondingDetectionPath) {
+                        showImageInViewer(correspondingDetectionPath);
+                    } else {
+                        clearImageViewer('detection');
+                    }
+                }
+                // 如果是detection图像，尝试显示对应的origin图像 else if (fullPath.includes('/detection/')) {
+                const correspondingOriginPath = await findCorrespondingOriginFile(fullPath);
+                if (correspondingOriginPath) {
+                    showImageInViewer(correspondingOriginPath);
+                } else {
+                    clearImageViewer('origin');
+                }
+            }
+        }
+
+        // 将文件内容中的文件路径转换为可点击链接
+        function makeFilePathsClickable(content, filePath) { // 如果是txt文件，尝试查找其中的文件路径
+            if (filePath.toLowerCase().endsWith('.txt')) { // 匹配可能的文件路径模式（相对路径或绝对路径）
+                const pathRegex = /([a-zA-Z0-9_\-\.\/\\]+\.(jpg|jpeg|png|bmp|tiff|txt|yaml|yml))/gi;
+
+                return content.replace(pathRegex, (match, fullMatch) => { // 构建完整路径
+                    let fullPath = fullMatch;
+
+                    // 如果路径不是绝对路径，需要构建完整路径
+                    if (!fullMatch.startsWith('/')) { // 获取当前文件所在的目录
+                        const currentDir = filePath.substring(0, filePath.lastIndexOf('/'));
+
+                        // 如果文件路径已经包含项目名，直接使用
+                        if (fullMatch.includes('/')) {
+                            fullPath = fullMatch;
+                        } else { // 如果只是文件名，则基于当前目录构建
+                            fullPath = `${currentDir}/${fullMatch}`;
+                        }
+                    }
+
+                    return `<span class="file-path-link" onclick="handleFilePathClick('${fullPath}')">${fullMatch}</span>`;
+                });
+            }
+
+            return content;
+        }
+
+        // 处理文件路径点击事件
+        async function handleFilePathClick(filePath) { // 检查是否是图像文件
+            if (isImageFile(filePath)) { // 如果是图像文件，显示在图像查看器中
+                showImageInViewer(filePath);
+
+                // 更新图像路径显示框
+                document.getElementById('imagePathDisplay').value = filePath;
+
+                // 尝试查找并显示对应的detection图像
+                const detectionPath = await findCorrespondingDetectionFile(filePath);
+                if (detectionPath) {
+                    showImageInViewer(detectionPath);
+                }
+
+                // 更新状态
+                updateStatus('info', `已选择图像文件: ${filePath.split('/').pop()
+                    }${detectionPath ? ' (含检测结果)' : ''
+                    }`);
+            } else { // 如果不是图像文件，更新状态提示
+                updateStatus('info', `已选择文件: ${filePath.split('/').pop()
+                    }`);
+            }
+        }
+
+        // 检查是否为图像文件
+        function isImageFile(filePath) {
+            return filePath.toLowerCase().match(/\.(jpg|jpeg|png|bmp|tiff)$/);
+        }
+
+        // 查找对应的detection文件
+        async function findCorrespondingDetectionFile(originPath) {
+            try { // 从origin路径中提取文件名（不含扩展名）
+                const fileName = originPath.split('/').pop();
+                const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+
+                // 构建对应的detection文件名（使用_detected后缀）
+                const detectionFileName = nameWithoutExt + '_detected' + getFileExtension(fileName);
+
+                // 将origin路径转换为detection路径
+                const detectionPath = originPath.replace('/origin/', '/detection/').replace(fileName, detectionFileName);
+
+                console.log('查找detection文件:', {
+                    originPath: originPath,
+                    fileName: fileName,
+                    nameWithoutExt: nameWithoutExt,
+                    detectionFileName: detectionFileName,
+                    detectionPath: detectionPath
+                });
+
+                // 简化文件存在性检查 - 直接返回路径，让showImageInViewer处理错误
+                console.log('构建detection路径:', detectionPath);
+                return detectionPath;
+            } catch (error) {
+                console.error('查找对应detection文件失败:', error);
+                return null;
+            }
+        }
+
+        // 查找对应的origin文件
+        async function findCorrespondingOriginFile(detectionPath) {
+            try { // 从detection路径中提取文件名（不含扩展名）
+                const fileName = detectionPath.split('/').pop();
+                const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+
+                // 移除_detected后缀，构建对应的origin文件名
+                const originFileName = nameWithoutExt.replace('_detected', '') + getFileExtension(fileName);
+
+                // 将detection路径转换为origin路径
+                const originPath = detectionPath.replace('/detection/', '/origin/').replace(fileName, originFileName);
+
+                console.log('查找origin文件:', {
+                    detectionPath: detectionPath,
+                    fileName: fileName,
+                    nameWithoutExt: nameWithoutExt,
+                    originFileName: originFileName,
+                    originPath: originPath
+                });
+
+                // 简化文件存在性检查 - 直接返回路径，让showImageInViewer处理错误
+                console.log('构建origin路径:', originPath);
+                return originPath;
+            } catch (error) {
+                console.error('查找对应origin文件失败:', error);
+                return null;
+            }
+        }
+
+        // 获取文件扩展名
+        function getFileExtension(fileName) {
+            return fileName.substring(fileName.lastIndexOf('.'));
+        }
+
+        // 清空图像查看器
+        function clearImageViewer(viewerType) {
+            const viewer = document.getElementById(`${viewerType}ImageViewer`);
+            const path = document.getElementById(`${viewerType}ImagePath`);
+
+            viewer.innerHTML = '<div class="text-muted text-center">文件对应失败<br>如: 15.png 和 15_detected.png</div>';
+            path.textContent = '文件对应失败';
+        }
+
+        // 在对应的查看器中显示图像
+        async function showImageInViewer(imagePath) {
+            try {
+                console.log('showImageInViewer 被调用:', imagePath);
+
+                // 使用直接文件服务接口，避免Base64编码开销，添加时间戳防止缓存
+                const encodedPath = encodeURIComponent(imagePath);
+                const timestamp = new Date().getTime();
+                const imageUrl = `${API_BASE}/images/${encodedPath}?t=${timestamp}`;
+
+                console.log('图像URL:', imageUrl);
+
+                // 根据路径判断是origin还是detection图像
+                const isOrigin = imagePath.includes('/origin/');
+                const viewerId = isOrigin ? 'originImageViewer' : 'detectionImageViewer';
+                const pathId = isOrigin ? 'originImagePath' : 'detectionImagePath';
+
+                console.log('图像类型判断:', {
+                    isOrigin: isOrigin,
+                    viewerId: viewerId,
+                    pathId: pathId
+                });
+
+                // 更新图像查看器
+                const viewer = document.getElementById(viewerId);
+                console.log('图像查看器元素:', viewer);
+
+                if (viewer) {
+                    viewer.innerHTML = `<img src="${imageUrl}" alt="${imagePath}" onerror="handleImageError(this, '${imagePath}')">`;
+                    console.log('图像HTML已设置');
+                } else {
+                    console.error('找不到图像查看器元素:', viewerId);
+                }
+
+                // 更新图像路径显示
+                const pathElement = document.getElementById(pathId);
+                console.log('路径显示元素:', pathElement);
+
+                if (pathElement) {
+                    pathElement.textContent = imagePath;
+                    console.log('路径文本已设置');
+                } else {
+                    console.error('找不到路径显示元素:', pathId);
+                } updateStatus('success', `已显示图像: ${imagePath.split('/').pop()
+                    }`);
+
+            } catch (error) {
+                console.error('showImageInViewer 错误:', error);
+                updateStatus('error', '显示图像失败: ' + error.message);
+            }
+        }
+
+        // 处理图像加载错误
+        function handleImageError(img, imagePath) {
+            const viewer = img.parentElement;
+            viewer.innerHTML = '<div class="text-muted text-center">图像加载失败<br>文件可能不存在或格式不支持</div>';
+
+            // 清空对应的路径显示
+            const isOrigin = imagePath.includes('/origin/');
+            const pathId = isOrigin ? 'originImagePath' : 'detectionImagePath';
+            const pathElement = document.getElementById(pathId);
+            pathElement.textContent = '图像加载失败';
+
+            updateStatus('error', `图像加载失败: ${imagePath.split('/').pop()
+                }`);
+        }
+
+        // 添加文件
+        async function addFile() {
+            const imagePath = document.getElementById('imagePathDisplay').value;
+            if (!imagePath) {
+                updateStatus('warning', '请先选择图像文件');
+                return;
+            }
+
+            try {
+                showLoading('addFileBtn');
+
+                const response = await fetch(`${API_BASE}/detections/add_detection`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { image_path: imagePath, add_flag: true, calibration_type: calibrationType }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateStatus('success', `已添加检测结果: ${imagePath.split('/').pop()
+                        }`);
+                    // 重新加载当前显示的文件
+                    await reloadCurrentFile();
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+                } else {
+                    updateStatus('error', '添加检测结果失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '添加检测结果失败: ' + error.message);
+            } finally {
+                hideLoading('addFileBtn');
+            }
+        }
+
+        // 移除文件
+        async function removeFile() {
+            const imagePath = document.getElementById('imagePathDisplay').value;
+            if (!imagePath) {
+                updateStatus('warning', '请先选择要移除的图像文件');
+                return;
+            }
+
+            try {
+                showLoading('removeFileBtn');
+
+                const response = await fetch(`${API_BASE}/detections/add_detection`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { image_path: imagePath, add_flag: false, calibration_type: calibrationType }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateStatus('success', `已移除检测结果: ${imagePath.split('/').pop()
+                        }`);
+                    // 重新加载当前显示的文件
+                    await reloadCurrentFile();
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+                } else {
+                    updateStatus('error', '移除检测结果失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '移除检测结果失败: ' + error.message);
+            } finally {
+                hideLoading('removeFileBtn');
+            }
+        }
+
+        // 删除文件（物理删除），并尝试从路径列表中移除；若为origin文件，同步删除对应detection文件
+        async function deleteFile() {
+            const imagePath = document.getElementById('imagePathDisplay').value;
+            if (!imagePath) {
+                updateStatus('warning', '请先选择要删除的图像文件');
+                return;
+            }
+
+            const confirmed = window.confirm(`确认删除该文件吗？\n${imagePath}`);
+            if (!confirmed) {
+                updateStatus('info', '已取消删除');
+                return;
+            }
+
+            try {
+                showLoading('deleteFileBtn');
+
+                // 如果是origin文件，先计算对应的detection文件
+                let detectionPath = null;
+                if (imagePath.includes('/origin/')) {
+                    detectionPath = await findCorrespondingDetectionFile(imagePath);
+                }
+
+                // 先物理删除文件
+                const delResp = await fetch(`${API_BASE}/files/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { file_path: imagePath }
+                    )
+                });
+                const delResult = await delResp.json();
+
+                if (!delResult.success) {
+                    updateStatus('error', '删除文件失败: ' + delResult.message);
+                    return;
+                }
+
+                // 如果有对应的detection文件，尝试删除（忽略失败）
+                if (detectionPath) {
+                    try {
+                        await fetch(`${API_BASE}/files/delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(
+                                { file_path: detectionPath }
+                            )
+                        });
+                    } catch (e) {
+                        console.warn('删除对应detection文件失败（已忽略）', e);
+                    }
+                }
+
+                updateStatus('success', `已删除文件: ${imagePath}`);
+                // 若当前显示 *_used 等文本文件，刷新内容
+                await reloadCurrentFile();
+                // 清空显示
+                clearImageViewer('origin');
+                clearImageViewer('detection');
+                document.getElementById('imagePathDisplay').value = '';
+                // 刷新目录（保持折叠状态）
+                await refreshFileTreeKeepState();
+            } catch (error) {
+                updateStatus('error', '删除文件失败: ' + error.message);
+            } finally {
+                hideLoading('deleteFileBtn');
+            }
+        }
+
+        // 清空图像路径
+        function clearImagePath() {
+            document.getElementById('imagePathDisplay').value = '';
+            updateStatus('info', '已清空图像路径');
+        }
+
+        // 创建项目
+        async function createProject() {
+            const projectName = document.getElementById('newProjectName').value.trim();
+
+            try {
+                showLoading('createProjectBtn');
+                const response = await fetch(`${API_BASE}/folders/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        {
+                            calibration_folder: projectName || '' // 允许传空字符串
+                        }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateStatus('success', '项目创建成功: ' + (
+                        projectName || '默认项目'
+                    ));
+                    document.getElementById('newProjectName').value = '';
+                    scanProjects(); // 重新扫描项目列表
+                } else {
+                    updateStatus('error', '创建项目失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '创建项目失败: ' + error.message);
+            } finally {
+                hideLoading('createProjectBtn');
+            }
+        }
+
+        // 选择项目
+        async function selectProject() {
+            const projectName = document.getElementById('projectSelect').value;
+
+            // 如果项目被清空，重新渲染文件树显示提示
+            if (!projectName) {
+                currentProject = '';
+                renderFileTree('treeContent', fileTreeData);
+                return;
+            }
+
+            try {
+                showLoading('projectSelect');
+                const response = await fetch(`${API_BASE}/folders/select`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { calibration_folder: projectName }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentProject = projectName;
+                    updateStatus('success', '已选择项目: ' + projectName);
+                    // 重新渲染文件树
+                    renderFileTree('treeContent', fileTreeData);
+                } else {
+                    updateStatus('error', '选择项目失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '选择项目失败: ' + error.message);
+            } finally {
+                hideLoading('projectSelect');
+            }
+        }
+
+        // 加载默认参数
+        async function loadDefaultParams() {
+            try {
+                showLoading('loadDefaultParamsBtn');
+                updateStatus('info', '正在加载默认参数...');
+
+                const response = await fetch(`${API_BASE}/config/get_default_capture_params`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const params = result.data;
+
+                    // 填充表单
+                    if (params.image_topic) {
+                        document.getElementById('imageTopic').value = params.image_topic;
+                    }
+                    if (params.camera_frame) {
+                        document.getElementById('cameraFrame').value = params.camera_frame;
+                    }
+                    if (params.board_frame) {
+                        document.getElementById('boardFrame').value = params.board_frame;
+                    }
+                    if (params.joint_topic) {
+                        document.getElementById('jointTopic').value = params.joint_topic;
+                    }
+                    if (params.tool_frame) {
+                        document.getElementById('toolFrame').value = params.tool_frame;
+                    }
+                    if (params.base_frame) {
+                        document.getElementById('baseFrame').value = params.base_frame;
+                    }
+                    // 根据 sample_type 和 sample_file 自动设置采样类型和文件路径
+                    // 总是使用后端返回的数据
+                    if (params.sample_type) {
+                        // 设置采样类型（random 或 file）
+                        document.getElementById('sampleType').value = params.sample_type;
+                    } else if (params.sample_file !== undefined && params.sample_file !== null && params.sample_file !== '') {
+                        // 如果没有 sample_type 但有 sample_file，则自动设置为"文件"类型
+                        document.getElementById('sampleType').value = 'file';
+                    } else {
+                        // 如果既没有 sample_type 也没有 sample_file，默认设置为"随机"
+                        document.getElementById('sampleType').value = 'random';
+                    }
+
+                    // 总是使用后端返回的 sample_file 数据
+                    // 如果后端返回了 sample_file（包括空字符串），就使用它
+                    // 如果后端没有返回 sample_file（undefined），则根据 sample_type 决定
+                    if (params.sample_file !== undefined) {
+                        // 后端返回了 sample_file，直接使用（即使是空字符串也使用）
+                        document.getElementById('sampleFile').value = params.sample_file || '';
+                    } else {
+                        // 后端没有返回 sample_file，根据 sample_type 决定
+                        if (params.sample_type === 'file') {
+                            // 如果类型是 file 但后端没有返回 sample_file，保持为空
+                            document.getElementById('sampleFile').value = '';
+                        } else {
+                            // 如果类型是 random 或其他，清空
+                            document.getElementById('sampleFile').value = '';
+                        }
+                    }
+                    // 加载采样数目
+                    if (params.sample_count !== undefined && params.sample_count !== null) {
+                        document.getElementById('sampleCount').value = params.sample_count;
+                    }
+
+                    updateStatus('success', '默认参数加载成功');
+                } else {
+                    updateStatus('error', '加载默认参数失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '加载默认参数失败: ' + error.message);
+            } finally {
+                hideLoading('loadDefaultParamsBtn');
+            }
+        }
+
+        // 显示单次采集确认弹窗
+        function showSingleCaptureModal() {
+            const config = getCaptureConfig();
+
+            // 构建配置预览（单次采集不使用采样文件、采样类型和采样数目）
+            let preview = '<strong>采集配置：</strong><br>';
+            if (config.enable_image) {
+                preview += `✓ 图像: ${config.image_topic || '未设置'
+                    }<br>`;
+            }
+            if (config.enable_board_tf) {
+                preview += `✓ 标定板TF: ${config.camera_frame || '未设置'
+                    } -> ${config.board_frame || '未设置'
+                    }<br>`;
+            }
+            if (config.enable_joint) {
+                preview += `✓ 关节: ${config.joint_topic || '未设置'
+                    }<br>`;
+            }
+            if (config.enable_end_tf) {
+                preview += `✓ 末端TF: ${config.base_frame || '未设置'
+                    } -> ${config.tool_frame || '未设置'
+                    }<br>`;
+            }
+            preview += `<br><strong>注意：单次采集不移动机器人，只记录当前数据</strong>`;
+
+            document.getElementById('captureConfigPreview').innerHTML = preview;
+            document.getElementById('singleCaptureModal').style.display = 'flex';
+        }
+
+        // 关闭单次采集弹窗
+        function closeSingleCaptureModal() {
+            document.getElementById('singleCaptureModal').style.display = 'none';
+        }
+
+        // 格式化 TF 为字符串，仅显示角度（度）
+        function formatPose(poseObj) {
+            if (!poseObj || !poseObj.position || !poseObj.orientation)
+                return '';
+
+
+
+            const { x, y, z } = poseObj.position;
+            const { qx, qy, qz, qw } = poseObj.orientation;
+            return `pos: [${x.toFixed(3)
+                }, ${y.toFixed(3)
+                }, ${z.toFixed(3)
+                }], ` + `quat: [${qx.toFixed(3)
+                }, ${qy.toFixed(3)
+                }, ${qz.toFixed(3)
+                }, ${qw.toFixed(3)
+                }]`;
+        }
+
+        // 格式化关节角度（度）
+        function formatJointDegrees(jointObj) {
+            if (!jointObj)
+                return '';
+
+
+
+            const entries = Object.entries(jointObj).map(([name, val]) => `${name}: ${val.toFixed(2)
+                }°`);
+            return entries.join(', ');
+        }
+
+        // 确认单次采集
+        async function confirmSingleCapture() {
+            try {
+                if (isAutoCaptureRunning) {
+                    updateStatus('warning', '自动采集中，无法进行单次采集');
+                    return;
+                }
+                if (isSingleCaptureRunning) {
+                    updateStatus('info', '单次采集已在进行中');
+                    return;
+                }
+                isSingleCaptureRunning = true;
+                updateCaptureButtonsState();
+
+                closeSingleCaptureModal();
+                showLoading('singleCaptureBtn');
+                updateStatus('info', '开始单次采集...');
+
+                // 获取采集配置
+                const config = getCaptureConfig();
+
+                // 单次采集不使用采样文件、采样类型和采样数目，只记录数据，不移动机器人
+                const singleCaptureConfig = {
+                    enable_image: config.enable_image,
+                    image_topic: config.image_topic,
+                    enable_board_tf: config.enable_board_tf,
+                    camera_frame: config.camera_frame,
+                    board_frame: config.board_frame,
+                    enable_joint: config.enable_joint,
+                    joint_topic: config.joint_topic,
+                    enable_end_tf: config.enable_end_tf,
+                    tool_frame: config.tool_frame,
+                    base_frame: config.base_frame
+                    // 不包含 sample_type, sample_file, sample_count
+                };
+
+                // 调用后端采集接口
+                const response = await fetch(`${API_BASE}/capture/single`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(singleCaptureConfig)
+                });
+
+                const result = await response.json();
+
+                if (result.success) { // 构建成功消息
+                    let successMsg = '✅ 单次采集完成！\n\n';
+                    const results = result.data?.results || {};
+
+                    // 显示采集结果
+                    if (results.image_path) {
+                        successMsg += `✓ 图像采集成功: ${results.image_path || '已保存'
+                            }\n`;
+                    }
+                    if (results.board_pose) {
+                        const boardPoseStr = formatPose(results.board_pose);
+                        successMsg += `✓ 标定板TF采集成功\n${boardPoseStr}\n`;
+                    }
+                    if (results.end_pose) {
+                        const endPoseStr = formatPose(results.end_pose);
+                        successMsg += `✓ 末端TF采集成功\n${endPoseStr}\n`;
+                    }
+                    if (results.joint_values) {
+                        const jointDegStr = formatJointDegrees(results.joint_values);
+                        successMsg += `✓ 关节角度采集成功\n${jointDegStr}\n`;
+                    }
+
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+
+                    // 显示警告信息
+                    if (result.data && result.data.warnings && result.data.warnings.length > 0) {
+                        successMsg += `\n⚠️ 警告:\n${result.data.warnings.join('\n')
+                            }`;
+                        updateStatus('warning', `采集完成，但有警告: ${result.data.warnings.join('; ')
+                            }`);
+                    } else {
+                        updateStatus('success', '单次采集完成');
+                    }
+
+                    // 显示成功提示弹窗
+                    alert(successMsg);
+                } else {
+                    updateStatus('error', '单次采集失败: ' + result.message);
+                    alert('❌ 单次采集失败:\n' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '单次采集失败: ' + error.message);
+            } finally {
+                isSingleCaptureRunning = false;
+                updateCaptureButtonsState();
+                hideLoading('singleCaptureBtn');
+            }
+        }
+
+        // 自动采集
+        async function toggleAutoCapture() {
+            const btn = document.getElementById('autoCaptureBtn');
+            if (isSingleCaptureRunning) {
+                updateStatus('warning', '单次采集中，无法启动自动采集');
+                return;
+            }
+            if (isAutoCaptureRunning) { // 停止自动采集（目前不支持中途停止，这里只是状态管理）
+                // 注意：自动采集是一次性调用，不支持中途停止
+                btn.textContent = '自动采集';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-success');
+                updateStatus('info', '自动采集已完成或已停止');
+                isAutoCaptureRunning = false;
+                updateCaptureButtonsState();
+            } else { // 开始自动采集
+                const config = getCaptureConfig();
+
+                // 验证必要参数
+                if (!config.image_topic && config.enable_image) {
+                    updateStatus('error', '请设置图像话题');
+                    return;
+                }
+                if (!config.camera_frame && config.enable_board_tf) {
+                    updateStatus('error', '请设置相机Frame');
+                    return;
+                }
+                if (!config.board_frame && config.enable_board_tf) {
+                    updateStatus('error', '请设置标定板Frame');
+                    return;
+                }
+                if (!config.joint_topic && config.enable_joint) {
+                    updateStatus('error', '请设置关节话题');
+                    return;
+                }
+                if (!config.tool_frame && config.enable_end_tf) {
+                    updateStatus('error', '请设置末端Frame');
+                    return;
+                }
+                if (!config.base_frame && config.enable_end_tf) {
+                    updateStatus('error', '请设置基坐标系Frame');
+                    return;
+                }
+
+                // 如果采样类型为文件，检查采样文件
+                if (config.sample_type === 'file' && !config.sample_file) {
+                    updateStatus('error', '采样类型为文件时，请设置采样文件路径');
+                    return;
+                }
+
+                btn.textContent = '采集中...';
+                btn.disabled = true;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-warning');
+                updateStatus('info', '正在启动自动采集...');
+                isAutoCaptureRunning = true;
+                updateCaptureButtonsState();
+
+                try {
+                    showLoading('autoCaptureBtn');
+
+                    // 调用自动采集接口
+                    const response = await fetch(`${API_BASE}/capture/auto`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image_topic: config.image_topic,
+                            camera_frame: config.camera_frame,
+                            board_frame: config.board_frame,
+                            joints_topic: config.joint_topic,
+                            tool_frame: config.tool_frame,
+                            base_frame: config.base_frame,
+                            wait_after_motion: 3.0,
+                            sample_type: config.sample_type,
+                            sample_file: config.sample_file || null,
+                            sample_count: config.sample_count || null
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        updateStatus('success', result.message || '自动采集完成');
+                        // 显示采集结果
+                        if (result.data && result.data.samples) {
+                            updateStatus('info', `共采集 ${result.data.samples.length} 个样本`);
+                        }
+                        if (result.data && result.data.poses_recorded_path) {
+                            updateStatus('info', `位姿记录文件: ${result.data.poses_recorded_path}`);
+                        }
+                    } else {
+                        updateStatus('error', result.message || '自动采集失败');
+                    }
+                } catch (error) {
+                    updateStatus('error', '自动采集失败: ' + error.message);
+                } finally {
+                    hideLoading('autoCaptureBtn');
+                    btn.textContent = '自动采集';
+                    btn.disabled = false;
+                    btn.classList.remove('btn-warning');
+                    btn.classList.add('btn-success');
+                    isAutoCaptureRunning = false;
+                    updateCaptureButtonsState();
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+                }
+            }
+        }
+
+        // 获取采集配置
+        function getCaptureConfig() {
+            return {
+                enable_image: document.getElementById('enableImageCapture').checked,
+                image_topic: document.getElementById('imageTopic').value.trim(),
+                enable_board_tf: document.getElementById('enableBoardTF').checked,
+                camera_frame: document.getElementById('cameraFrame').value.trim(),
+                board_frame: document.getElementById('boardFrame').value.trim(),
+                enable_joint: document.getElementById('enableJoint').checked,
+                joint_topic: document.getElementById('jointTopic').value.trim(),
+                enable_end_tf: document.getElementById('enableEndTF').checked,
+                tool_frame: document.getElementById('toolFrame').value.trim(),
+                base_frame: document.getElementById('baseFrame').value.trim(),
+                sample_type: document.getElementById('sampleType').value,
+                sample_file: document.getElementById('sampleFile').value.trim(),
+                sample_count: document.getElementById('sampleCount').value ? parseInt(document.getElementById('sampleCount').value) : null
+            };
+        }
+
+
+        // 开始检测
+        async function startDetection() {
+            const calibrationType = document.querySelector('input[name="calibrationType"]:checked').value;
+
+            const resultsDiv = document.getElementById('detectionResults');
+            resultsDiv.innerHTML = '';
+            detectionResults = [];
+
+            showLoading('detectBtn');
+            updateStatus('info', '开始检测标定板...');
+
+            try { // 获取图像路径
+                const imagePath = document.getElementById('imagePathDisplay').value;
+
+                const response = await fetch(`${API_BASE}/detections/get`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { image_path: imagePath, calibration_type: calibrationType, ignore_board_pose: false, ignore_end_pose: false }
+                    )
+                });
+
+                const result = await response.json();
+
+                const detectionItem = document.createElement('div');
+                detectionItem.className = `detection-item ${result.detection_success ? 'success' : 'error'
+                    }`;
+
+                let content = `
+                    <div>
+                        <strong>${imagePath || '无图像路径'
+                    }</strong>
+                        <span class="status-indicator ${result.detection_success ? 'success' : 'error'
+                    }"></span>
+                        ${result.detection_success ? '检测成功' : '检测失败'
+                    }
+                    </div>
+                    <div class="text-muted">${result.message || ''
+                    }</div>
+                `;
+
+                if (result.detection_success && result.image_path) { // 检测成功后，将原始图像和检测后的图像分别显示在对应的图像显示框中
+                    if (result.image_path) {
+                        showImageInViewer(result.image_path);
+                        // 更新图像路径显示框
+                        document.getElementById('imagePathDisplay').value = result.image_path;
+                    }
+                    if (result.detection_image_path) {
+                        showImageInViewer(result.detection_image_path);
+                    }
+                }
+
+                detectionItem.innerHTML = content;
+                resultsDiv.appendChild(detectionItem);
+
+                detectionResults.push({
+                    fileName: imagePath || '无图像路径',
+                    result: result,
+                    added: false
+                });
+
+                // 刷新目录（保持折叠状态）
+                await refreshFileTreeKeepState();
+
+            } catch (error) {
+                const detectionItem = document.createElement('div');
+                detectionItem.className = 'detection-item error';
+                detectionItem.innerHTML = `
+                    <div>
+                        <strong>${imagePath || '无图像路径'
+                    }</strong>
+                        <span class="status-indicator error"></span>
+                        检测失败
+                    </div>
+                    <div class="text-muted">错误: ${error.message
+                    }</div>
+                `;
+                resultsDiv.appendChild(detectionItem);
+            }
+
+            hideLoading('detectBtn');
+            updateStatus('success', '检测完成');
+        }
+
+        // 添加检测结果
+        async function addDetection() {
+            if (detectionResults.length === 0) {
+                updateStatus('warning', '没有检测结果可添加');
+                return;
+            }
+
+            const detection = detectionResults[0];
+            if (detection.added) {
+                updateStatus('warning', '检测结果已添加');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/detections/add_detection`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { image_path: detection.fileName, calibration_type: calibrationType, add_flag: true }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    detection.added = true;
+                    updateStatus('success', `已添加检测结果: ${detection.fileName
+                        }`);
+
+                    // 更新按钮状态
+                    const button = document.querySelector(`[onclick="addDetection()"]`);
+                    if (button) {
+                        button.textContent = '已添加';
+                        button.disabled = true;
+                        button.className = 'btn btn-secondary';
+                    }
+
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+                } else {
+                    updateStatus('error', '添加检测结果失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '添加检测结果失败: ' + error.message);
+            }
+        }
+
+        // 开始标定
+        async function startCalibration() {
+            const calibrationType = document.querySelector('input[name="calibrationType"]:checked').value;
+
+            // 如果未选择标定类型，不允许标定
+            if (!currentProject) {
+                updateStatus('warning', '请先选择项目');
+                return;
+            }
+
+            try {
+                showLoading('calibrateBtn');
+                showProgress();
+
+                const response = await fetch(`${API_BASE}/calibrate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { calibration_type: calibrationType, use_selected_data: document.getElementById('useSelectedData').checked }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateStatus('success', '标定完成！');
+                    showCalibrationResults(result.data);
+                    // 刷新目录（保持折叠状态）
+                    await refreshFileTreeKeepState();
+                } else {
+                    updateStatus('error', '标定失败: ' + result.message);
+                }
+            } catch (error) {
+                updateStatus('error', '标定失败: ' + error.message);
+            } finally {
+                hideLoading('calibrateBtn');
+                hideProgress();
+            }
+        }
+
+        // 显示标定结果
+        function showCalibrationResults(data) {
+            const modalContent = document.getElementById('calibrationModalContent');
+            modalContent.innerHTML = `
+                <div class="calibration-result">
+                    <h4>📊 标定数据</h4>
+                    <pre>${JSON.stringify(data, null, 2)
+                }</pre>
+                </div>
+            `;
+
+            // 显示弹窗
+            document.getElementById('calibrationModal').style.display = 'flex';
+
+            // 保存结果数据供导出使用
+            window.currentCalibrationResults = data;
+        }
+
+        // 关闭标定结果弹窗
+        function closeCalibrationModal() {
+            document.getElementById('calibrationModal').style.display = 'none';
+        }
+
+        // 导出标定结果
+        function exportCalibrationResults() {
+            if (!window.currentCalibrationResults) {
+                updateStatus('warning', '没有可导出的标定结果');
+                return;
+            }
+
+            try {
+                const dataStr = JSON.stringify(window.currentCalibrationResults, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `calibration_results_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+                    }.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                updateStatus('success', '标定结果已导出');
+            } catch (error) {
+                updateStatus('error', '导出失败: ' + error.message);
+            }
+        }
+
+        // 点击弹窗外部关闭弹窗
+        window.onclick = function (event) {
+            const calibrationModal = document.getElementById('calibrationModal');
+            const singleCaptureModal = document.getElementById('singleCaptureModal');
+            if (event.target === calibrationModal) {
+                closeCalibrationModal();
+            }
+            if (event.target === singleCaptureModal) {
+                closeSingleCaptureModal();
+            }
+        }
+
+        // 显示进度条
+        function showProgress() {
+            document.getElementById('progressBar').classList.remove('hidden');
+            // 模拟进度更新
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90)
+                    progress = 90;
+
+
+
+                document.getElementById('progressFill').style.width = progress + '%';
+            }, 200);
+
+            // 保存interval ID以便清理
+            document.getElementById('progressBar').dataset.interval = interval;
+        }
+
+        // 隐藏进度条
+        function hideProgress() {
+            const progressBar = document.getElementById('progressBar');
+            const interval = progressBar.dataset.interval;
+            if (interval) {
+                clearInterval(interval);
+            }
+            document.getElementById('progressFill').style.width = '100%';
+            setTimeout(() => {
+                progressBar.classList.add('hidden');
+                document.getElementById('progressFill').style.width = '0%';
+            }, 1000);
+        }
+
+        // 显示加载状态
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.disabled = true;
+                // 对select元素特殊处理，不修改innerHTML
+                if (element.tagName === 'SELECT') {
+                    element.style.opacity = '0.6';
+                    element.style.cursor = 'not-allowed';
+                } else {
+                    element.innerHTML = '<span class="loading"></span> 处理中...';
+                }
+            }
+        }
+
+        // 隐藏加载状态
+        function hideLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.disabled = false;
+                // 对select元素特殊处理
+                if (element.tagName === 'SELECT') {
+                    element.style.opacity = '1';
+                    element.style.cursor = 'pointer';
+                } else { // 恢复原始文本（这里简化处理）
+                    const originalTexts = {
+                        'scanProjectsBtn': '扫描项目',
+                        'createProjectBtn': '创建项目',
+                        'loadCameraParamsBtn': '加载内参',
+                        'loadDefaultParamsBtn': '加载默认参数',
+                        'detectBtn': '检测',
+                        'addFileBtn': '添加',
+                        'removeFileBtn': '移除',
+                        'deleteFileBtn': '删除文件',
+                        'calibrateBtn': '开始标定',
+                        'singleCaptureBtn': '单次采集',
+                        'autoCaptureBtn': '自动采集'
+                    };
+                    element.innerHTML = originalTexts[elementId] || '完成';
+                }
+            }
+        }
+
+        // 更新状态（现在通过控制台输出，因为系统状态section已删除）
+        function updateStatus(type, message) {
+            console.log(`[${type.toUpperCase()
+                }] ${message}`);
+        }
+
+        // 刷新中栏内容
+        async function refreshMiddleColumn() {
+            try { // 获取当前选中的项目
+                const selectedProject = document.getElementById('projectSelect').value;
+                if (!selectedProject) {
+                    const textViewer = document.getElementById('textContentViewer');
+                    textViewer.innerHTML = '<div class="text-muted text-center">请先选择项目</div>';
+                    return;
+                }
+
+                // 获取项目结构
+                const response = await fetch(`${API_BASE}/folders/structure?folder_path=${encodeURIComponent(selectedProject)
+                    }`);
+                const result = await response.json();
+
+                console.log('刷新中栏API响应:', result);
+
+                if (result.success) {
+                    const textViewer = document.getElementById('textContentViewer');
+                    const structure = result.data;
+
+                    // 显示项目概览信息
+                    let content = `<div class="text-center mb-3"><strong>项目: ${selectedProject}</strong></div>`;
+
+                    if (structure.files && structure.files.length > 0) {
+                        content += `<div class="mb-2"><strong>文件列表 (${structure.files.length
+                            }个):</strong></div>`;
+                        content += '<div class="file-list">';
+                        structure.files.forEach(filePath => {
+                            const fileName = filePath.split('/').pop();
+                            const fileExt = fileName.split('.').pop().toLowerCase();
+                            let icon = '📄';
+                            if ([
+                                'jpg',
+                                'jpeg',
+                                'png',
+                                'bmp',
+                                'tiff'
+                            ].includes(fileExt)) {
+                                icon = '🖼️';
+                            } else if (['yaml', 'yml'].includes(fileExt)) {
+                                icon = '⚙️';
+                            } else if (['txt'].includes(fileExt)) {
+                                icon = '📝';
+                            }
+                            content += `<div class="file-item">${icon} ${fileName}</div>`;
+                        });
+                        content += '</div>';
+                    }
+
+                    if (structure.folders && structure.folders.length > 0) {
+                        content += `<div class="mb-2 mt-3"><strong>文件夹 (${structure.folders.length
+                            }个):</strong></div>`;
+                        content += '<div class="folder-list">';
+                        structure.folders.forEach(folderPath => {
+                            const folderName = folderPath.split('/').pop();
+                            content += `<div class="folder-item">📁 ${folderName}</div>`;
+                        });
+                        content += '</div>';
+                    }
+
+                    textViewer.innerHTML = content;
+                    // 清空记住的文件路径，因为现在显示的是项目概览
+                    currentDisplayedFilePath = '';
+                } else {
+                    const textViewer = document.getElementById('textContentViewer');
+                    textViewer.innerHTML = `<div class="text-muted text-center">加载项目信息失败: ${result.message || '未知错误'
+                        }</div>`;
+                    // 清空记住的文件路径
+                    currentDisplayedFilePath = '';
+                }
+            } catch (error) {
+                console.error('刷新中栏失败:', error);
+                const textViewer = document.getElementById('textContentViewer');
+                textViewer.innerHTML = `<div class="text-muted text-center">刷新失败: ${error.message
+                    }</div>`;
+                // 清空记住的文件路径
+                currentDisplayedFilePath = '';
+            }
+        }
+
+        // 重新加载当前显示的文件内容
+        async function reloadCurrentFile() { // 如果有记住的文件路径，直接重新加载
+            if (currentDisplayedFilePath) {
+                console.log('重新加载文件:', currentDisplayedFilePath);
+                await showTextFileContent(currentDisplayedFilePath);
+                return;
+            }
+
+            // 如果没有记住的文件路径，尝试从显示内容中解析
+            const textViewer = document.getElementById('textContentViewer');
+            const currentContent = textViewer.innerHTML;
+
+            // 检查是否显示的是文件内容（包含文件路径）
+            const filePathMatch = currentContent.match(/<strong>📄 (.+?)<\/strong>/);
+            if (filePathMatch) {
+                const filePath = filePathMatch[1];
+                console.log('从显示内容解析路径:', filePath);
+                await showTextFileContent(filePath);
+            } else { // 如果不是文件内容，则刷新项目概览
+                await refreshMiddleColumn();
+            }
+        }
+        // 显示文本文件内容
+        async function showTextFileContent(filePath) {
+            const textViewer = document.getElementById('textContentViewer');
+
+            // 记住当前显示的文件路径
+            currentDisplayedFilePath = filePath;
+
+            try {
+                textViewer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><br>正在加载文件内容...</div>';
+
+                const response = await fetch(`${API_BASE}/files/content`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(
+                        { file_path: filePath }
+                    )
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const content = result.data.content;
+
+                    // 调试信息
+                    console.log('API Response:', result);
+                    console.log('Content:', content);
+                    console.log('Content type:', typeof content);
+                    console.log('Content length:', content ? content.length : 'null/undefined');
+
+                    // 检查内容是否为空
+                    if (!content || content.trim() === '') {
+                        textViewer.innerHTML = `<div class="mb-2"><strong>📄 <span class="file-path-link" onclick="handleFilePathClick('${filePath}')">${filePath}</span></strong></div><div class="text-muted">文件内容为空</div>`;
+                        updateStatus('warning', `文件内容为空: ${filePath}`);
+                        return;
+                    }
+
+                    // 根据文件类型进行不同的格式化
+                    if (filePath.toLowerCase().endsWith('.yaml') || filePath.toLowerCase().endsWith('.yml')) {
+                        const clickableContent = makeFilePathsClickable(content, filePath);
+                        // 如果内容包含HTML标签，则不进行转义
+                        const displayContent = clickableContent !== content ? clickableContent : escapeHtml(content);
+                        textViewer.innerHTML = `<div class="mb-2"><strong>📄 <span class="file-path-link" onclick="handleFilePathClick('${filePath}')">${filePath}</span></strong></div><pre class="mb-0">${displayContent}</pre>`;
+                    } else if (filePath.toLowerCase().endsWith('.txt')) {
+                        const clickableContent = makeFilePathsClickable(content, filePath);
+                        // 如果内容包含HTML标签，则不进行转义
+                        const displayContent = clickableContent !== content ? clickableContent : escapeHtml(content);
+                        textViewer.innerHTML = `<div class="mb-2"><strong>📄 <span class="file-path-link" onclick="handleFilePathClick('${filePath}')">${filePath}</span></strong></div><pre class="mb-0">${displayContent}</pre>`;
+                    } else {
+                        const clickableContent = makeFilePathsClickable(content, filePath);
+                        // 如果内容包含HTML标签，则不进行转义
+                        const displayContent = clickableContent !== content ? clickableContent : escapeHtml(content);
+                        textViewer.innerHTML = `<div class="mb-2"><strong>📄 <span class="file-path-link" onclick="handleFilePathClick('${filePath}')">${filePath}</span></strong></div><pre class="mb-0">${displayContent}</pre>`;
+                    } updateStatus('success', `已加载文件内容: ${filePath}`);
+                } else {
+                    textViewer.innerHTML = `<div class="text-danger text-center">加载失败: ${result.message
+                        }</div>`;
+                    updateStatus('error', '加载文件内容失败: ' + result.message);
+                }
+            } catch (error) {
+                textViewer.innerHTML = `<div class="text-danger text-center">加载失败: ${error.message
+                    }</div>`;
+                updateStatus('error', '加载文件内容失败: ' + error.message);
+            }
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

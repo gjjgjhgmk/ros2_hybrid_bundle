@@ -1,0 +1,1613 @@
+poses:
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5684625157454297
+        qx: -0.4577599293527933
+        qy: 0.425529965045197
+        qz: -0.5350051066297742
+      position:
+        x: 0.4126944917457436
+        y: 0.06356756862664785
+        z: 0.12888184960051446
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.06396496846982537
+        qx: 0.9973139956586659
+        qy: 0.007964999729290597
+        qz: 0.03478269183535751
+      position:
+        x: -0.10120587077323942
+        y: 0.3892843921340925
+        z: 0.4671473215610866
+    success: true
+  image_path: right_camera/origin/20251230_134315_770.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.9062350432025355
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8627492390074671
+    right_shoulder_pan_joint: 1.5029165744781494
+    right_wrist_1_joint: -1.7474132976927699
+    right_wrist_2_joint: -1.6303351561175745
+    right_wrist_3_joint: -0.08781987825502569
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.56004061212094
+        qx: -0.431060007789753
+        qy: 0.3565931169209679
+        qz: -0.6110508419305957
+      position:
+        x: 0.36854212450997775
+        y: 0.12928598250046455
+        z: 0.09187794849884086
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.01902944710731201
+        qx: 0.9978339803232625
+        qy: -0.057343090834780557
+        qz: 0.026019181165804265
+      position:
+        x: -0.033618850007784945
+        y: 0.46924151934375014
+        z: 0.43058893943777543
+    success: true
+  image_path: right_camera/origin/20251230_134448_960.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.783442799245016
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.647167821923727
+    right_shoulder_pan_joint: 1.3675954341888428
+    right_wrist_1_joint: -1.6769324741759242
+    right_wrist_2_joint: -1.627801243458883
+    right_wrist_3_joint: -0.08753616014589483
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3362214507393611
+        qx: 0.4832241594864591
+        qy: -0.3767155548931616
+        qz: 0.7152167073362183
+      position:
+        x: 0.41324723112088296
+        y: 0.18530358736615207
+        z: -0.007575514226660526
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.0710445252265967
+        qx: 0.9584679525852305
+        qy: -0.26189700481637557
+        qz: -0.08776000325099723
+      position:
+        x: 0.10367413011302187
+        y: 0.40524834676483135
+        z: 0.3843508489530725
+    success: true
+  image_path: right_camera/origin/20251230_135101_987.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 2.0631712118731897
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.799612661401266
+    right_shoulder_pan_joint: 0.9419480562210083
+    right_wrist_1_joint: -1.9063240490355433
+    right_wrist_2_joint: -1.356042210255758
+    right_wrist_3_joint: -0.087592903767721
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3767406180298163
+        qx: 0.4905947846096832
+        qy: -0.31698214137181047
+        qz: 0.7189614635650733
+      position:
+        x: 0.4819813187164052
+        y: 0.24145503820134273
+        z: 0.05525851558063583
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.021926509609666595
+        qx: 0.9628878275988666
+        qy: -0.26691511133784934
+        qz: -0.033504969448962384
+      position:
+        x: 0.10688962072906324
+        y: 0.3866048642710657
+        z: 0.4942582549294968
+    success: true
+  image_path: right_camera/origin/20251230_135129_014.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7978890577899378
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8511363468565882
+    right_shoulder_pan_joint: 0.9416520595550537
+    right_wrist_1_joint: -1.5351270635477086
+    right_wrist_2_joint: -1.49261981645693
+    right_wrist_3_joint: -0.08762818971742803
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.19465982423708453
+        qx: 0.4847652654376253
+        qy: -0.30874542729116405
+        qz: 0.7948499552619805
+      position:
+        x: 0.5864555012106887
+        y: 0.19818164178577863
+        z: -0.03355210007369656
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.05688435895564183
+        qx: 0.8964181797343885
+        qy: -0.417585740594011
+        qz: -0.1371887969203121
+      position:
+        x: 0.20301995020843727
+        y: 0.3430428366171597
+        z: 0.4957055236383012
+    success: true
+  image_path: right_camera/origin/20251230_135145_168.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.8000791708575647
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8650924168028773
+    right_shoulder_pan_joint: 0.6169474124908447
+    right_wrist_1_joint: -1.467494086628296
+    right_wrist_2_joint: -1.275052849446432
+    right_wrist_3_joint: -0.08762008348573858
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3664724105320786
+        qx: 0.4879414744944014
+        qy: -0.35036692261887264
+        qz: 0.710530864439834
+      position:
+        x: 0.5019569579732766
+        y: 0.19693477726053416
+        z: 0.05408428639449294
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.047774294807939564
+        qx: 0.9645106093579061
+        qy: -0.25371581914758096
+        qz: -0.05536410665690064
+      position:
+        x: 0.09133362826798891
+        y: 0.3898702746641758
+        z: 0.5027072132654195
+    success: true
+  image_path: right_camera/origin/20251230_135157_079.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.797079865132467
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8655849895873011
+    right_shoulder_pan_joint: 0.9650865793228149
+    right_wrist_1_joint: -1.5546392996660252
+    right_wrist_2_joint: -1.4340489546405237
+    right_wrist_3_joint: -0.08762485185732061
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.47625101808239856
+        qx: 0.4710363161567112
+        qy: -0.3935844604055065
+        qz: 0.6296038668593928
+      position:
+        x: 0.4606372969337431
+        y: 0.13136738334737777
+        z: 0.11409085576834319
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.05136547234514127
+        qx: 0.9914296558868635
+        qy: -0.11931607498048304
+        qz: -0.013874434405333463
+      position:
+        x: -0.009120413134508794
+        y: 0.40024113000952843
+        z: 0.5030477408142612
+    success: true
+  image_path: right_camera/origin/20251230_135212_129.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.807235066090719
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.867763181725973
+    right_shoulder_pan_joint: 1.2412868738174438
+    right_wrist_1_joint: -1.6050454578795375
+    right_wrist_2_joint: -1.522315804158346
+    right_wrist_3_joint: -0.08763152757753545
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5764828398617553
+        qx: -0.466610536372291
+        qy: 0.39226437211124354
+        qz: -0.5441238876059944
+      position:
+        x: 0.43062517103554526
+        y: 0.11232066069495296
+        z: 0.16129479858472903
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.042321849225471886
+        qx: 0.997248613343018
+        qy: -0.010469424194505757
+        qz: 0.05995377736723391
+      position:
+        x: -0.08287848041851414
+        y: 0.3859008366715797
+        z: 0.5039843589749824
+    success: true
+  image_path: right_camera/origin/20251230_135221_366.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.807218376790182
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8690062961974085
+    right_shoulder_pan_joint: 1.4675569534301758
+    right_wrist_1_joint: -1.6048585377135218
+    right_wrist_2_joint: -1.6823113600360315
+    right_wrist_3_joint: -0.08764058748354131
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.6767784537470236
+        qx: -0.48558337999682866
+        qy: 0.3621827417340466
+        qz: -0.4183340378270124
+      position:
+        x: 0.4063115849654022
+        y: 0.13291003491352332
+        z: 0.16990515353167948
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.0471941062642614
+        qx: 0.9772559839197766
+        qy: 0.10067727487384362
+        qz: 0.18057559234537549
+      position:
+        x: -0.1497288514207006
+        y: 0.37995478517067316
+        z: 0.4943625318229159
+    success: true
+  image_path: right_camera/origin/20251230_135232_039.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.8068721930133265
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8157860241331996
+    right_shoulder_pan_joint: 1.7046606540679932
+    right_wrist_1_joint: -1.6493731937804164
+    right_wrist_2_joint: -1.9364445845233362
+    right_wrist_3_joint: -0.08766061464418584
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.7306994329948597
+        qx: -0.5116714622655629
+        qy: 0.3451886290869023
+        qz: -0.2917455461067333
+      position:
+        x: 0.42242022153194475
+        y: 0.15979299111279438
+        z: 0.17077165257720178
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.08265245015383002
+        qx: 0.9382583335090596
+        qy: 0.18747532757083687
+        qz: 0.27873441415903133
+      position:
+        x: -0.20586112678456542
+        y: 0.3507522254364119
+        z: 0.5021361770182478
+    success: true
+  image_path: right_camera/origin/20251230_135244_436.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.8107150236712855
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8097130260863246
+    right_shoulder_pan_joint: 1.9073095321655273
+    right_wrist_1_joint: -1.6708208523192347
+    right_wrist_2_joint: -2.1533754507647913
+    right_wrist_3_joint: -0.08768302599062139
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5765665195402857
+        qx: -0.44940565312725556
+        qy: 0.4128768857557256
+        qz: -0.543266311021694
+      position:
+        x: 0.468839409601276
+        y: 0.07220538348508093
+        z: 0.19460609658112285
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.044189926919235754
+        qx: 0.9982806178227611
+        qy: 0.005462005339371296
+        qz: 0.03812118749398649
+      position:
+        x: -0.09996570961391626
+        y: 0.3644607283272053
+        z: 0.5431890588455632
+    success: true
+  image_path: right_camera/origin/20251230_135257_835.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7276032606707972
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.903149267236227
+    right_shoulder_pan_joint: 1.497329592704773
+    right_wrist_1_joint: -1.4896568593433877
+    right_wrist_2_joint: -1.63977557817568
+    right_wrist_3_joint: -0.08764392534364873
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.413251524552223
+        qx: 0.5166158412298892
+        qy: -0.43126366965678153
+        qz: 0.6134679268549937
+      position:
+        x: 0.5676242513166124
+        y: 0.1164763194120258
+        z: 0.08127097216620713
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.13231464564235795
+        qx: 0.9793529785028843
+        qy: -0.1501161466863887
+        qz: -0.02873535366229039
+      position:
+        x: -0.005295988634133398
+        y: 0.35499627058702227
+        z: 0.5769913158565706
+    success: true
+  image_path: right_camera/origin/20251230_135311_181.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7412245909320276
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.9978682003416957
+    right_shoulder_pan_joint: 1.1638442277908325
+    right_wrist_1_joint: -1.5576434054276724
+    right_wrist_2_joint: -1.4492862860309046
+    right_wrist_3_joint: -0.08785897890199834
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.4056394586982911
+        qx: 0.5328739065777903
+        qy: -0.4409885746420401
+        qz: 0.5975207998644597
+      position:
+        x: 0.6315654882595177
+        y: 0.1095065535710162
+        z: 0.08703598672525546
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.15722779260116626
+        qx: 0.9761468714079783
+        qy: -0.1480624032741944
+        qz: -0.02223131599456893
+      position:
+        x: -0.018161206026511875
+        y: 0.32507738617802184
+        z: 0.6351915799806424
+    success: true
+  image_path: right_camera/origin/20251230_135320_645.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.6212642828570765
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.0381633243956507
+    right_shoulder_pan_joint: 1.1637482643127441
+    right_wrist_1_joint: -1.449542098944523
+    right_wrist_2_joint: -1.4492676893817347
+    right_wrist_3_joint: -0.08785897890199834
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.45939587753229133
+        qx: 0.4811155745942095
+        qy: -0.4694581484328852
+        qz: 0.5805964850558318
+      position:
+        x: 0.6048326021087701
+        y: 0.027126721713837225
+        z: 0.1941025787627222
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.1269856217970673
+        qx: 0.9883280719500146
+        qy: -0.07438612014119839
+        qz: -0.03935707284235161
+      position:
+        x: -0.07665463302031698
+        y: 0.2846494369610914
+        z: 0.63406647814847
+    success: true
+  image_path: right_camera/origin/20251230_135350_632.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.6301830450641077
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.0979725323119105
+    right_shoulder_pan_joint: 1.3181405067443848
+    right_wrist_1_joint: -1.3409788471511384
+    right_wrist_2_joint: -1.4492676893817347
+    right_wrist_3_joint: -0.08785564104189092
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5130448111121989
+        qx: -0.5480534375299826
+        qy: 0.481563056716711
+        qz: -0.4522382931686302
+      position:
+        x: 0.7089062809691447
+        y: 0.11738830118798983
+        z: 0.30486741036678416
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.20164194994820203
+        qx: 0.9769385445736739
+        qy: 0.009212089598658213
+        qz: 0.06961854316620653
+      position:
+        x: -0.1134508342811393
+        y: 0.08213649065414179
+        z: 0.6998973770807971
+    success: true
+  image_path: right_camera/origin/20251230_135407_678.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.5226576964007776
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.4309874973692835
+    right_shoulder_pan_joint: 1.3181164264678955
+    right_wrist_1_joint: -1.0914774698070069
+    right_wrist_2_joint: -1.6001022497760218
+    right_wrist_3_joint: -0.277928654347555
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.4184005521529087
+        qx: 0.6606022189961838
+        qy: -0.3753063474618361
+        qz: 0.4976854747431501
+      position:
+        x: 0.7053033524126555
+        y: 0.3430646291594141
+        z: 0.14999871458029454
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.22618221331321392
+        qx: 0.9502937150961024
+        qy: -0.1600540356549961
+        qz: 0.14200763042925907
+      position:
+        x: -0.07398599347017741
+        y: 0.11644029231187542
+        z: 0.7152546749511524
+    success: true
+  image_path: right_camera/origin/20251230_135421_948.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.5200303236590784
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.430126806298727
+    right_shoulder_pan_joint: 0.9782103896141052
+    right_wrist_1_joint: -1.1973441702178498
+    right_wrist_2_joint: -1.6400912443744105
+    right_wrist_3_joint: -0.2779167334185999
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.2730548699431126
+        qx: 0.6215588945558018
+        qy: -0.4285667181722317
+        qz: 0.5961846582007981
+      position:
+        x: 0.7485003596128641
+        y: 0.1520956632883601
+        z: 0.0036011857986964005
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.25626876336384496
+        qx: 0.9294164031530794
+        qy: -0.2650893181789095
+        qz: -0.01546363027879553
+      position:
+        x: -0.002353024208469524
+        y: 0.20791639213000435
+        z: 0.6964639283131084
+    success: true
+  image_path: right_camera/origin/20251230_135440_071.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.56476337114443
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.3173076115050257
+    right_shoulder_pan_joint: 0.66917884349823
+    right_wrist_1_joint: -1.2352598470500489
+    right_wrist_2_joint: -1.2518022696124476
+    right_wrist_3_joint: -0.2778995672809046
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.23518411197081232
+        qx: 0.5375668403631161
+        qy: -0.36918789411254643
+        qz: 0.7207014808221638
+      position:
+        x: 0.6745785249323629
+        y: 0.18162758626681494
+        z: 0.035372844493468364
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.13633099656848086
+        qx: 0.9224390287620204
+        qy: -0.3483656110315999
+        qz: -0.095715717840933
+      position:
+        x: 0.1229381036910348
+        y: 0.26953772734632814
+        z: 0.6183216309348681
+    success: true
+  image_path: right_camera/origin/20251230_135505_578.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.6440346876727503
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.100300451318258
+    right_shoulder_pan_joint: 0.5540534853935242
+    right_wrist_1_joint: -1.2180009645274659
+    right_wrist_2_joint: -1.2518742720233362
+    right_wrist_3_joint: -0.27789241472353154
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.23115714933649137
+        qx: 0.5339779844727761
+        qy: -0.383615714124051
+        qz: 0.7171282090994001
+      position:
+        x: 0.6572758777500339
+        y: 0.1639620347131868
+        z: 0.032013853440459164
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.14597038733422069
+        qx: 0.9223923075157189
+        qy: -0.3414139338668943
+        qz: -0.10640302072242691
+      position:
+        x: 0.1166092335094877
+        y: 0.271930916857123
+        z: 0.5970110228436566
+    success: true
+  image_path: right_camera/origin/20251230_135534_340.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7186911741839808
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.1283346615233363
+    right_shoulder_pan_joint: 0.5651176571846008
+    right_wrist_1_joint: -1.2693073016456147
+    right_wrist_2_joint: -1.2233222166644495
+    right_wrist_3_joint: -0.27771312395204717
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.6443804869149607
+        qx: -0.41618724737203944
+        qy: 0.4342225034792281
+        qz: -0.47224229022860154
+      position:
+        x: 0.45627740097848624
+        y: 0.0727358181501042
+        z: 0.1741189976479919
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.03986451391672536
+        qx: 0.9913455069887701
+        qy: 0.10803447720351503
+        qz: 0.06303537133010834
+      position:
+        x: -0.10051001324208672
+        y: 0.39751696882321963
+        z: 0.5307516058467846
+    success: true
+  image_path: right_camera/origin/20251230_135705_091.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7093871275531214
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.8258544407286585
+    right_shoulder_pan_joint: 1.5157325267791748
+    right_wrist_1_joint: -1.5540905513665457
+    right_wrist_2_joint: -1.682131592427389
+    right_wrist_3_joint: -0.2777336279498499
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.6277200418078741
+        qx: -0.5968975888858277
+        qy: 0.35472874897239076
+        qz: -0.35192091746227405
+      position:
+        x: 0.5094929747038444
+        y: 0.3242714136441578
+        z: 0.18881184617871055
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.15609579647068186
+        qx: 0.9516800719602447
+        qy: 0.062216340768590124
+        qz: 0.2570374873423982
+      position:
+        x: -0.10381818637918595
+        y: 0.2583787515388639
+        z: 0.6209653582544309
+    success: true
+  image_path: right_camera/origin/20251230_135840_255.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.7446401754962366
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.1212808094420375
+    right_shoulder_pan_joint: 1.6457395553588867
+    right_wrist_1_joint: -1.5376010213843365
+    right_wrist_2_joint: -2.086464230214254
+    right_wrist_3_joint: -0.147074047719137
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5001979148800957
+        qx: -0.60798222552499
+        qy: 0.5215381659869864
+        qz: -0.3288732290932407
+      position:
+        x: 0.6629766141405303
+        y: 0.15669828286411258
+        z: 0.12396711686952072
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.31892668357078785
+        qx: 0.9372917284436695
+        qy: 0.06413727305915835
+        qz: 0.12512552298452934
+      position:
+        x: -0.11858738462161378
+        y: 0.1188012882709177
+        z: 0.5969024640070361
+    success: true
+  image_path: right_camera/origin/20251230_135903_301.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.9796207586871546
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.523959299127096
+    right_shoulder_pan_joint: 1.6438276767730713
+    right_wrist_1_joint: -1.6898333034911097
+    right_wrist_2_joint: -1.81108266512026
+    right_wrist_3_joint: -0.14668542543520147
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.48683809710084147
+        qx: -0.5514385820532799
+        qy: 0.5703747620173054
+        qz: -0.36548158406136183
+      position:
+        x: 0.666821746577235
+        y: 0.021437816630437808
+        z: 0.13404539248171587
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3058587863310028
+        qx: 0.9480211550408741
+        qy: 0.07752277684834954
+        qz: 0.04118873011897387
+      position:
+        x: -0.13245871612794274
+        y: 0.12399892225020999
+        z: 0.5895522656915269
+    success: true
+  image_path: right_camera/origin/20251230_135932_719.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.9794657866107386
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.523503442803854
+    right_shoulder_pan_joint: 1.6034574508666992
+    right_wrist_1_joint: -1.6524492702879847
+    right_wrist_2_joint: -1.6206257979022425
+    right_wrist_3_joint: -0.14666492143739873
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3740417856047677
+        qx: 0.5696948835225384
+        qy: -0.5019553451211997
+        qz: 0.5325235335777149
+      position:
+        x: 0.6077360755814756
+        y: 0.0654974526984767
+        z: 0.13545097325046934
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.2531440764700973
+        qx: 0.9597810312957192
+        qy: -0.11927769848972901
+        qz: -0.022611482835504165
+      position:
+        x: -0.08339951756458139
+        y: 0.18078859120727994
+        z: 0.5624674636216308
+    success: true
+  image_path: right_camera/origin/20251230_135955_436.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 2.004514519368307
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -2.523198267022604
+    right_shoulder_pan_joint: 1.128946304321289
+    right_wrist_1_joint: -1.5302548606744786
+    right_wrist_2_joint: -1.3747981230365198
+    right_wrist_3_joint: -0.14663535753359014
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.45216651194272856
+        qx: 0.43650701639817013
+        qy: -0.39827195430799955
+        qz: 0.668121636024759
+      position:
+        x: 0.5001986843000512
+        y: 0.13035881650452705
+        z: 0.0661942490063798
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.028816845284018386
+        qx: 0.9878651050479419
+        qy: -0.13951083823835325
+        qz: -0.06187769929892119
+      position:
+        x: 0.05481708000001989
+        y: 0.46592969235210346
+        z: 0.5146727888448472
+    success: true
+  image_path: right_camera/origin/20251230_140018_182.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.614530388508932
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.6823469601073207
+    right_shoulder_pan_joint: 1.135575294494629
+    right_wrist_1_joint: -1.5223248836449166
+    right_wrist_2_joint: -1.4355352560626429
+    right_wrist_3_joint: -0.15329295793642217
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.665885406839008
+        qx: -0.32310928953154794
+        qy: 0.25040304608274594
+        qz: -0.6240956068502239
+      position:
+        x: 0.3224740212112439
+        y: 0.1837453661265856
+        z: 0.09809519444644456
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.19101395566681922
+        qx: 0.9795775217719924
+        qy: -0.0025891124765430366
+        qz: 0.06272833551227064
+      position:
+        x: 0.0010112984939811454
+        y: 0.5996487930230976
+        z: 0.4036192035263798
+    success: true
+  image_path: right_camera/origin/20251230_140039_226.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.3248947302447718
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.2379640203765412
+    right_shoulder_pan_joint: 1.3774385452270508
+    right_wrist_1_joint: -1.2994688314250489
+    right_wrist_2_joint: -1.7635811010943812
+    right_wrist_3_joint: -0.15304547945131475
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.3784133424677057
+        qx: 0.38657322163955027
+        qy: -0.32317646088412594
+        qz: 0.7764801746883491
+      position:
+        x: 0.5574888096624318
+        y: 0.18795316895630823
+        z: 0.0415761230966048
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.05823328629781101
+        qx: 0.9578458795663509
+        qy: -0.2542129144340747
+        qz: -0.12048215427877516
+      position:
+        x: 0.19955459986472812
+        y: 0.5084168770663284
+        z: 0.5126515529897407
+    success: true
+  image_path: right_camera/origin/20251230_140057_687.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.3197677771197718
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.435247616176941
+    right_shoulder_pan_joint: 0.9169549942016602
+    right_wrist_1_joint: -1.25249137104068
+    right_wrist_2_joint: -1.3937700430499476
+    right_wrist_3_joint: -0.15309316316713506
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.7308349708110712
+        qx: -0.36572938640618596
+        qy: 0.2847161948722407
+        qz: -0.5010578307301541
+      position:
+        x: 0.37046452189093876
+        y: 0.14263297186133292
+        z: 0.14425153024166337
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.12270499655838742
+        qx: 0.9765654823801968
+        qy: 0.1024848980008163
+        qz: 0.14408396206692115
+      position:
+        x: -0.11451477726942097
+        y: 0.5557923078099007
+        z: 0.4770694499278223
+    success: true
+  image_path: right_camera/origin/20251230_140111_624.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.3194201628314417
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.3561536830714722
+    right_shoulder_pan_joint: 1.5911173820495605
+    right_wrist_1_joint: -1.305136041050293
+    right_wrist_2_joint: -1.877815071736471
+    right_wrist_3_joint: -0.15318233171571904
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.27785578459392063
+        qx: 0.3556666699216221
+        qy: -0.24443730014245627
+        qz: 0.8582236242225143
+      position:
+        x: 0.5945451143149973
+        y: 0.2665336008081976
+        z: 0.005759675691038184
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.11467656801069696
+        qx: 0.9030731250440679
+        qy: -0.3785924446788132
+        qz: -0.1672602056812953
+      position:
+        x: 0.3361143903169842
+        y: 0.4490485534623485
+        z: 0.46248502103465206
+    success: true
+  image_path: right_camera/origin/20251230_140125_564.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.3234213034259241
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.3550130140832444
+    right_shoulder_pan_joint: 0.6564094424247742
+    right_wrist_1_joint: -1.1679704946330567
+    right_wrist_2_joint: -1.3963306585894983
+    right_wrist_3_joint: -0.15327245393861944
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: -0.13632033657079826
+        qx: 0.3839994585389238
+        qy: -0.18878071854285525
+        qz: 0.8934892399942379
+      position:
+        x: 0.7153163625158225
+        y: 0.2904891219552439
+        z: -0.019390196799388956
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: 0.0886398369960702
+        qx: 0.8308561287827316
+        qy: -0.5150088229325704
+        qz: -0.19127724606730254
+      position:
+        x: 0.39900470878371885
+        y: 0.30410429453300597
+        z: 0.5211028633723681
+    success: true
+  image_path: right_camera/origin/20251230_140137_527.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.3256209532367151
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.4874486935189744
+    right_shoulder_pan_joint: 0.3440573513507843
+    right_wrist_1_joint: -1.0246883195689698
+    right_wrist_2_joint: -1.3849332968341272
+    right_wrist_3_joint: -0.15324145952333623
+- board_pose:
+    message: 标定板位姿采集成功
+    pose:
+      orientation:
+        qw: 0.5586057599924836
+        qx: -0.4381798576513762
+        qy: 0.37424329108560367
+        qz: -0.5965735296920704
+      position:
+        x: 0.45272183719427456
+        y: 0.04606702166197855
+        z: 0.08685286661326012
+    success: true
+  end_pose:
+    message: 末端位姿采集成功
+    pose:
+      orientation:
+        qw: -0.001027795287275665
+        qx: 0.9985785562028499
+        qy: -0.04738328472196648
+        qz: 0.024385140098765728
+      position:
+        x: -0.11276478494812697
+        y: 0.5024680476931112
+        z: 0.5019464390785411
+    success: true
+  image_path: right_camera/origin/20251230_140202_155.jpg
+  joint_values:
+    left_elbow_joint: 0.0
+    left_gripper_robotiq_85_left_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_left_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    left_gripper_robotiq_85_right_inner_knuckle_joint: 0.0
+    left_gripper_robotiq_85_right_knuckle_joint: 0.0
+    left_shoulder_lift_joint: -1.5707963267948966
+    left_shoulder_pan_joint: 1.5707963267948966
+    left_wrist_1_joint: 0.0
+    left_wrist_2_joint: 0.0
+    left_wrist_3_joint: 0.0
+    right_elbow_joint: 1.5191600958453577
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.1711546255506608
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_left_knuckle_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.1711546255506608
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.1711546255506608
+    right_gripper_robotiq_85_right_knuckle_joint: -0.1711546255506608
+    right_shoulder_lift_joint: -1.5545411196402092
+    right_shoulder_pan_joint: 1.5394634008407593
+    right_wrist_1_joint: -1.5367041391185303
+    right_wrist_2_joint: -1.6196296850787562
+    right_wrist_3_joint: 0.06346218287944794

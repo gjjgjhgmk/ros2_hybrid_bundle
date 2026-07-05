@@ -1,0 +1,48 @@
+# Real-hardware dual-arm concurrent execution demo config.
+# ur_move plans on port 5605; trajectories are sent concurrently to
+# left/right executor servers on 5660/5661 when concurrent_remote_execution=true.
+
+zmq:
+  arm:
+    ur_move:
+      host: "192.168.56.122"
+      timeout_ms: 120000
+      executor:
+        left_arm_host: 192.168.56.222
+        right_arm_host: 192.168.56.122
+      use_remote_execution: true
+      concurrent_remote_execution: true
+
+  vision:
+    left:
+      host: "192.168.56.222"
+      port: 7020
+      timeout: 30
+    right:
+      host: "192.168.56.122"
+      port: 7020
+      timeout: 30
+
+  tf:
+    host: "192.168.56.122"
+    port: 5609
+    timeout: 5
+
+  gripper:
+    left:
+      host: 192.168.56.222
+      port: 5630
+      timeout_ms: 20000
+    right:
+      host: "192.168.56.122"
+      port: 5640
+      timeout_ms: 20000
+
+behavior_tree:
+  tick_rate: 10
+  timeout: 300.0
+  debug: true
+
+logging:
+  level: "INFO"
+  file: "both_execution_real_demo.log"

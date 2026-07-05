@@ -1,0 +1,56 @@
+# 相机标定默认配置文件
+
+# 存储配置
+root_folder: /home/yw/workspace/data/vision_calibration # 标定数据根目录
+
+# 标定板配置
+board_config:
+  board_type: ChArUco # 标定板类型：ChArUco 或 Chessboard
+  x_num: 12 # 横向格子数（内部角点数）
+  y_num: 9 # 纵向格子数（内部角点数）
+  square_length: 0.03 # 方格大小（米）
+  marker_length: 0.0225 # ArUco标记大小（米）- 仅ChArUco使用
+  dict_type: DICT_5X5_100 # ArUco字典类型 - 仅ChArUco使用
+
+image_config:
+  topic: "/camera_right/color/image_raw" # ROS2 topic名称（source_type为ros2_topic时使用）
+  extensions: ["jpg", "jpeg", "png", "bmp"] # 支持的图像文件扩展名
+  timeout: 10.0 # 图像超时时间（秒）
+  camera_frame: "camera_right_link" # 相机坐标系
+  board_frame: "charuco" # 标定板坐标系
+
+end_effector_config:
+  base_frame: right_base_link # 基座坐标系（通常是机器人基座）
+  tool_frame: right_tool0 # 工具坐标系（通常是工具末端）
+  joint_topic: "/joint_states" # 关节状态topic
+  use_sim_time: false # 使用仿真时间
+
+calibration_sampler_config:
+  group_name: right_arm
+  use_sim_time: false
+  service_name: example_move_robot
+  camera_base_pose: [0.6, 0.7, 1.36, 3.14159, 0.0, -1.57079]
+  position_range: [[-0.15, 0.15], [-0.15, 0.15], [-0.1, 0.2]]
+  rpy_range: [[-0.2, 0.2], [-0.2, 0.2], [-1.57079, 1.57079]]
+  num_poses: 30
+  execute: True
+  wait_time: 3.0
+  mode: "auto"
+  sample_type: "file"
+  sample_file: "samples.yaml"
+  move_to_pose_timeout: 180.0
+
+robot_move_config:
+  server_address: "tcp://192.168.56.13:5605"
+  timeout_ms: 60000
+  group: "right_arm"
+  planner: "ptp" # ptp or lin or ompl
+  type: "joint" # joint or cart
+  max_velocity_scaling_factor: 0.3
+  max_acceleration_scaling_factor: 0.3
+  description: "关节空间路径点" # 描述
+  joint_names: ["right_shoulder_pan_joint", "right_shoulder_lift_joint", "right_elbow_joint", "right_wrist_1_joint", "right_wrist_2_joint", "right_wrist_3_joint"]
+
+extrinsic_config:
+  handeye_type: eye_in_hand # 手眼标定类型：eye_to_hand（眼在手外）或 eye_in_hand（眼在手上）
+  handeye_method: Tsai # 手眼标定算法：Tsai, Park, Horaud, Andreff, Daniilidis

@@ -1,0 +1,146 @@
+{
+  "left_home": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "Left arm home pose for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "right_home": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "Right arm home pose for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "right_joint1",
+      "right_joint2",
+      "right_joint3",
+      "right_joint4",
+      "right_joint5",
+      "right_joint6"
+    ],
+    "joint_values": [
+      90.0,
+      -90.0,
+      90.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "left_goal1": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "Left arm first target for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      70.0,
+      -95.0,
+      95.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "right_goal1": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "Right arm first target for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "right_joint1",
+      "right_joint2",
+      "right_joint3",
+      "right_joint4",
+      "right_joint5",
+      "right_joint6"
+    ],
+    "joint_values": [
+      110.0,
+      -95.0,
+      95.0,
+      -90.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "left_goal2": {
+    "group": "left_arm",
+    "planner": "ptp",
+    "description": "Left arm second target for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "left_joint1",
+      "left_joint2",
+      "left_joint3",
+      "left_joint4",
+      "left_joint5",
+      "left_joint6"
+    ],
+    "joint_values": [
+      105.0,
+      -90.0,
+      100.0,
+      -95.0,
+      -90.0,
+      0.0
+    ]
+  },
+  "right_goal2": {
+    "group": "right_arm",
+    "planner": "ptp",
+    "description": "Right arm second target for dual-arm simulation demo",
+    "type": "joint",
+    "max_velocity_scaling_factor": 0.1,
+    "max_acceleration_scaling_factor": 0.1,
+    "joint_names": [
+      "right_joint1",
+      "right_joint2",
+      "right_joint3",
+      "right_joint4",
+      "right_joint5",
+      "right_joint6"
+    ],
+    "joint_values": [
+      75.0,
+      -90.0,
+      100.0,
+      -95.0,
+      -90.0,
+      0.0
+    ]
+  }
+}

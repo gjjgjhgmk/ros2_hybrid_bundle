@@ -553,6 +553,56 @@ class IntentHybridEvaluator(Node):
         fig.savefig(str(out_png))
         plt.close(fig)
 
+    def _make_dynamics_plot(
+        self,
+        out_png: Path,
+        nominal: np.ndarray,
+        modulated: np.ndarray,
+        dt: float,
+    ) -> None:
+        dof = nominal.shape[0]
+        step = max(float(dt), 1e-6)
+
+        def _vel_acc(traj: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+            vel = np.diff(traj, axis=1) / step if traj.shape[1] >= 2 else np.zeros((dof, 0), dtype=float)
+            acc = np.diff(vel, axis=1) / step if vel.shape[1] >= 2 else np.zeros((dof, 0), dtype=float)
+            return vel, acc
+
+        nom_v, nom_a = _vel_acc(nominal)
+        mod_v, mod_a = _vel_acc(modulated)
+        t_v_nom = np.arange(1, nominal.shape[1], dtype=float) * step
+        t_a_nom = np.arange(2, nominal.shape[1], dtype=float) * step
+        t_v_mod = np.arange(1, modulated.shape[1], dtype=float) * step
+        t_a_mod = np.arange(2, modulated.shape[1], dtype=float) * step
+
+        fig, axes = plt.subplots(dof, 2, figsize=(12, max(2.0 * dof, 6.0)), dpi=140, sharex=False)
+        axes_arr = np.atleast_2d(axes)
+        for j in range(dof):
+            ax_v = axes_arr[j, 0]
+            ax_a = axes_arr[j, 1]
+            if nom_v.shape[1] > 0:
+                ax_v.plot(t_v_nom, nom_v[j, :], "--", lw=1.2, color="#2b5de5", label="nominal")
+            if mod_v.shape[1] > 0:
+                ax_v.plot(t_v_mod, mod_v[j, :], "-", lw=1.4, color="#1a9a2a", label="modulated")
+            if nom_a.shape[1] > 0:
+                ax_a.plot(t_a_nom, nom_a[j, :], "--", lw=1.2, color="#2b5de5", label="nominal")
+            if mod_a.shape[1] > 0:
+                ax_a.plot(t_a_mod, mod_a[j, :], "-", lw=1.4, color="#1a9a2a", label="modulated")
+            ax_v.set_title(f"q{j + 1} velocity")
+            ax_a.set_title(f"q{j + 1} acceleration")
+            ax_v.set_ylabel("rad/s")
+            ax_a.set_ylabel("rad/s^2")
+            ax_v.grid(True, ls="--", alpha=0.35)
+            ax_a.grid(True, ls="--", alpha=0.35)
+        axes_arr[-1, 0].set_xlabel("time (s)")
+        axes_arr[-1, 1].set_xlabel("time (s)")
+        handles, labels = axes_arr[0, 0].get_legend_handles_labels()
+        if handles:
+            fig.legend(handles, labels, loc="upper right")
+        fig.tight_layout()
+        fig.savefig(str(out_png))
+        plt.close(fig)
+
     def _make_collision_timeline(
         self,
         out_png: Path,
@@ -686,11 +736,27 @@ class IntentHybridEvaluator(Node):
         clr = _clearance_stats(ee_mod, obstacles)
         length_nom = compute_joint_metrics(nominal, dt)["joint_path_length"]
         length_ratio = (smooth["joint_path_length"] / length_nom) if length_nom > 1e-12 else 0.0
+        common_points = min(int(nominal.shape[1]), int(modulated.shape[1]))
+        max_mod_delta = 0.0
+        if common_points > 0:
+            max_mod_delta = float(np.max(np.abs(modulated[:, :common_points] - nominal[:, :common_points])))
+        via_times = scenario.get("via_times", [])
+        via_points = scenario.get("via_points", [])
+        via_count = 0
+        if isinstance(via_times, list) and via_times:
+            via_count = int(len(via_times))
+        elif isinstance(via_points, list) and via_points:
+            try:
+                via_arr = normalize_traj_dofxn(via_points, dof, f"{name}.via_points")
+                via_count = int(via_arr.shape[1])
+            except Exception:
+                via_count = 0
 
         scenario_out = out_root / name
         scenario_out.mkdir(parents=True, exist_ok=True)
         if bool(self.args.enable_plot):
             self._make_joint_plot(scenario_out / "joint_traj_compare.png", nominal, modulated, dt)
+            self._make_dynamics_plot(scenario_out / "joint_dynamics_compare.png", nominal, modulated, dt)
             self._make_collision_timeline(
                 scenario_out / "collision_timeline.png", nominal_motion, modulated_motion
             )
@@ -730,6 +796,11 @@ class IntentHybridEvaluator(Node):
             "smoothness": {
                 **smooth,
                 "trajectory_length_ratio": float(length_ratio),
+            },
+            "fmp_effect": {
+                "via_count": int(via_count),
+                "max_abs_modulated_minus_nominal": float(max_mod_delta),
+                "effectively_passthrough": bool(via_count == 0 and max_mod_delta <= 1e-9),
             },
             "executability": {
                 **dispatch,
@@ -812,6 +883,9 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
             "estimated_max_velocity",
             "estimated_max_acceleration",
             "trajectory_length_ratio",
+            "fmp_via_count",
+            "fmp_max_abs_modulated_minus_nominal",
+            "fmp_effectively_passthrough",
             "dispatch_action_status",
             "dispatch_error_code",
             "execution_aborted",
@@ -846,6 +920,9 @@ def _write_summary(out_dir: Path, results: List[Dict[str, Any]]) -> None:
                     "estimated_max_velocity": r["smoothness"]["estimated_max_velocity"],
                     "estimated_max_acceleration": r["smoothness"]["estimated_max_acceleration"],
                     "trajectory_length_ratio": r["smoothness"]["trajectory_length_ratio"],
+                    "fmp_via_count": r["fmp_effect"]["via_count"],
+                    "fmp_max_abs_modulated_minus_nominal": r["fmp_effect"]["max_abs_modulated_minus_nominal"],
+                    "fmp_effectively_passthrough": int(r["fmp_effect"]["effectively_passthrough"]),
                     "dispatch_action_status": r["executability"]["dispatch_action_status"],
                     "dispatch_error_code": r["executability"]["dispatch_error_code"],
                     "execution_aborted": int(r["executability"]["execution_aborted"]),
@@ -885,6 +962,8 @@ def _load_planner_output(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any
         "nominal_dt": float(data.get("nominal_dt", nominal_dt)),
         "nominal_trajectory": data.get("nominal_trajectory", data.get("nominal_traj", [])),
         "modulated_trajectory": data.get("modulated_trajectory", data.get("modulated_traj", [])),
+        "via_points": data.get("via_points", []),
+        "via_times": data.get("via_times", []),
         "local_paths": data.get("local_paths", []),
         "rrt_stop_reason": data.get("rrt_stop_reason", ""),
         "rrt_elapsed_ms": data.get("rrt_elapsed_ms", 0.0),

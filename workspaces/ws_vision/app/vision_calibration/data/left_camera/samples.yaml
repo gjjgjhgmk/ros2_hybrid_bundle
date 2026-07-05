@@ -1,0 +1,277 @@
+poses:
+- board_pose:
+    orientation:
+      qw: 0.6037014017915336
+      qx: -0.5323384230452068
+      qy: 0.42995554108772105
+      qz: -0.4090215807419516
+    position:
+      x: 0.42860856831115046
+      y: 0.23030618088795876
+      z: 0.16509663569441843
+  end_pose:
+    orientation:
+      qw: -0.14826979247972094
+      qx: 0.9734297087271707
+      qy: 0.1015736592269687
+      qz: 0.14189243304912227
+    position:
+      x: -0.16393728260942325
+      y: 0.37816090605784014
+      z: 0.5028516661498836
+  image_path: left_camera/origin/20260106_152839_767.jpg
+  joint_values:
+    left_elbow_joint: 1.8635886351214808
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -1.8486024341978968
+    left_shoulder_pan_joint: 1.7244138717651367
+    left_wrist_1_joint: -1.8767725429930628
+    left_wrist_2_joint: -1.863992993031637
+    left_wrist_3_joint: -0.09749061266054326
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709
+- board_pose:
+    orientation:
+      qw: 0.6028550841148881
+      qx: -0.45185795603263307
+      qy: 0.5043882190772677
+      qz: -0.42187991132892827
+    position:
+      x: 0.4522402375385348
+      y: 0.06657942780139038
+      z: 0.17905954349320244
+  end_pose:
+    orientation:
+      qw: -0.13976707814515524
+      qx: 0.9763821998924022
+      qy: 0.15710656793377195
+      qz: 0.049603325615429884
+    position:
+      x: -0.21428957197800408
+      y: 0.3695870196808521
+      z: 0.4877218095789405
+  image_path: left_camera/origin/20260106_152913_262.jpg
+  joint_values:
+    left_elbow_joint: 1.8670814673053187
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -1.8206030331053675
+    left_shoulder_pan_joint: 1.8083432912826538
+    left_wrist_1_joint: -1.8888045750060023
+    left_wrist_2_joint: -1.6874874273883265
+    left_wrist_3_joint: -0.09746343294252569
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709
+- board_pose:
+    orientation:
+      qw: 0.5513243573974689
+      qx: -0.41030438701271776
+      qy: 0.5805222144868476
+      qz: -0.4366757623519684
+    position:
+      x: 0.4946075366451144
+      y: -0.04233205857714812
+      z: 0.13112251106932896
+  end_pose:
+    orientation:
+      qw: -0.1731730920614277
+      qx: 0.9697275601170205
+      qy: 0.16631454733087223
+      qz: -0.04448607289367913
+    position:
+      x: -0.23008941551594
+      y: 0.3694434810979171
+      z: 0.5028094506062427
+  image_path: left_camera/origin/20260106_152934_746.jpg
+  joint_values:
+    left_elbow_joint: 1.8583524862872522
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -1.8278490505614222
+    left_shoulder_pan_joint: 1.8006587028503418
+    left_wrist_1_joint: -1.9530946216978968
+    left_wrist_2_joint: -1.5008233229266565
+    left_wrist_3_joint: -0.09752160707582647
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709
+- board_pose:
+    orientation:
+      qw: 0.5364236887211506
+      qx: -0.45641598766819097
+      qy: 0.574502083809246
+      qz: -0.4169909208585936
+    position:
+      x: 0.5796429766168635
+      y: 0.01241840264607709
+      z: 0.16490336163904742
+  end_pose:
+    orientation:
+      qw: -0.21107013291295743
+      qx: 0.9662095734156565
+      qy: 0.1472653313406428
+      qz: -0.014190892049908196
+    position:
+      x: -0.1992147115132658
+      y: 0.3031659202695542
+      z: 0.5672712147723389
+  image_path: left_camera/origin/20260106_152946_857.jpg
+  joint_values:
+    left_elbow_joint: 1.8321002165423792
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -2.010646482507223
+    left_shoulder_pan_joint: 1.7746667861938477
+    left_wrist_1_joint: -1.8168255291380824
+    left_wrist_2_joint: -1.5618537108050745
+    left_wrist_3_joint: -0.09738666216005498
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709
+- board_pose:
+    orientation:
+      qw: 0.5505849200029053
+      qx: -0.49444690768101635
+      qy: 0.5398178492483012
+      qz: -0.40121713695082034
+    position:
+      x: 0.5722823090288551
+      y: 0.09330579154495003
+      z: 0.16786041937395033
+  end_pose:
+    orientation:
+      qw: -0.21398435240992036
+      qx: 0.9666810541188721
+      qy: 0.13493078606052258
+      qz: 0.03914229814948069
+    position:
+      x: -0.18805985414409848
+      y: 0.3053979158875394
+      z: 0.5679256094897154
+  image_path: left_camera/origin/20260106_152955_998.jpg
+  joint_values:
+    left_elbow_joint: 1.832071606312887
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -2.0108043156065882
+    left_shoulder_pan_joint: 1.7729437351226807
+    left_wrist_1_joint: -1.8173614941039027
+    left_wrist_2_joint: -1.6708315054522913
+    left_wrist_3_joint: -0.0973900000201624
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709
+- board_pose:
+    orientation:
+      qw: 0.5783721919009607
+      qx: -0.5547139974867564
+      qy: 0.4472664813532193
+      qz: -0.39715322393989383
+    position:
+      x: 0.4934311802712636
+      y: 0.2526182782629701
+      z: 0.168153545490901
+  end_pose:
+    orientation:
+      qw: -0.18677055191211425
+      qx: 0.9682261501552887
+      qy: 0.09121312591287005
+      qz: 0.13905052590736727
+    position:
+      x: -0.15522234863507528
+      y: 0.33539767528088166
+      z: 0.5505688104993138
+  image_path: left_camera/origin/20260106_153010_731.jpg
+  joint_values:
+    left_elbow_joint: 1.8408873716937464
+    left_gripper_robotiq_85_left_finger_tip_joint: -0.29690088105726875
+    left_gripper_robotiq_85_left_inner_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_left_knuckle_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_finger_tip_joint: 0.29690088105726875
+    left_gripper_robotiq_85_right_inner_knuckle_joint: -0.29690088105726875
+    left_gripper_robotiq_85_right_knuckle_joint: -0.29690088105726875
+    left_shoulder_lift_joint: -1.9632202587523402
+    left_shoulder_pan_joint: 1.718000888824463
+    left_wrist_1_joint: -1.8191076717772425
+    left_wrist_2_joint: -1.8615019957171839
+    left_wrist_3_joint: -0.09581500688661748
+    right_elbow_joint: 1.604058090840475
+    right_gripper_robotiq_85_left_finger_tip_joint: -0.0
+    right_gripper_robotiq_85_left_inner_knuckle_joint: 0.0
+    right_gripper_robotiq_85_left_knuckle_joint: 0.0
+    right_gripper_robotiq_85_right_finger_tip_joint: 0.0
+    right_gripper_robotiq_85_right_inner_knuckle_joint: -0.0
+    right_gripper_robotiq_85_right_knuckle_joint: -0.0
+    right_shoulder_lift_joint: -1.6311313114561976
+    right_shoulder_pan_joint: 1.4255642890930176
+    right_wrist_1_joint: -1.6229282818236292
+    right_wrist_2_joint: -1.507623020802633
+    right_wrist_3_joint: -0.11348611513246709

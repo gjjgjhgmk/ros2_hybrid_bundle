@@ -1,0 +1,14 @@
+--trusted-host mirrors.aliyun.com
+--index-url https://mirrors.aliyun.com/pypi/simple/
+docker==7.0.0
+PyYAML==6.0.1
+click==8.1.7
+rich==13.7.0 
+flask>=2.0.0
+flask-cors>=3.0.0
+websockets>=10.0
+loguru>=0.6.0
+pyyaml>=6.0
+requests>=2.25.0
+pyzmq>=24.0.0
+paramiko

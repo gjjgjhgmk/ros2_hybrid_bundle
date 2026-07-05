@@ -1,0 +1,49 @@
+# Welding demo configuration for real dual-arm execution.
+# - ur_move host is the planning server.
+# - executor hosts are the left/right arm driver PCs.
+# - concurrent_remote_execution sends left/right trajectories to executors in parallel.
+
+zmq:
+  arm:
+    ur_move:
+      host: "192.168.56.122"
+      timeout_ms: 120000
+      executor:
+        left_arm_host: 192.168.56.222
+        right_arm_host: 192.168.56.122
+      use_remote_execution: true
+      concurrent_remote_execution: true
+
+  vision:
+    left:
+      host: "192.168.56.222"
+      port: 7020
+      timeout: 5
+    right:
+      host: "192.168.56.122"
+      port: 7020
+      timeout: 5
+
+  tf:
+    host: "192.168.56.122"
+    port: 5609
+    timeout: 5
+
+  gripper:
+    left:
+      host: "192.168.56.222"
+      port: 5630
+      timeout_ms: 20000
+    right:
+      host: "192.168.56.122"
+      port: 5640
+      timeout_ms: 20000
+
+behavior_tree:
+  tick_rate: 10
+  timeout: 300.0
+  debug: true
+
+logging:
+  level: "INFO"
+  file: "welding_demo.log"

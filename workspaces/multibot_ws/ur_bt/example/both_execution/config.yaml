@@ -1,0 +1,45 @@
+# Local simulation config for comparing dual-arm waypoint request patterns.
+
+zmq:
+  arm:
+    ur_move:
+      host: "127.0.0.1"
+      timeout_ms: 120000
+      executor:
+        left_arm_host: null
+        right_arm_host: null
+      use_remote_execution: false
+
+  vision:
+    left:
+      host: "127.0.0.1"
+      port: 7020
+      timeout: 5
+    right:
+      host: "127.0.0.1"
+      port: 7020
+      timeout: 5
+
+  tf:
+    host: "127.0.0.1"
+    port: 5609
+    timeout: 5
+
+  gripper:
+    left:
+      host: "127.0.0.1"
+      port: 5630
+      timeout_ms: 20000
+    right:
+      host: "127.0.0.1"
+      port: 5640
+      timeout_ms: 20000
+
+behavior_tree:
+  tick_rate: 10
+  timeout: 300.0
+  debug: true
+
+logging:
+  level: "INFO"
+  file: "both_execution_demo.log"

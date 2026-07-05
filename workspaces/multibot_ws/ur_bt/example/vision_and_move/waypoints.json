@@ -1,0 +1,23 @@
+{
+  "right_above_charuco_board": {
+    "group": "right_arm",
+    "planner": "lin",
+    "description": "Runtime target generated from right_base_link <- charuco.",
+    "type": "cart",
+    "max_velocity_scaling_factor": 0.05,
+    "max_acceleration_scaling_factor": 0.05,
+    "ik_frame": "right_ee_link",
+    "frame_id": "right_base_link",
+    "position": [
+      0.4,
+      0.0,
+      0.3
+    ],
+    "orientation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  }
+}

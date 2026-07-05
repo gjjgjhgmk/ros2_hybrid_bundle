@@ -52,7 +52,13 @@ export ENABLE_OBSTACLES=1
 ./one_click.sh start --prealign
 ```
 
-### 2.3 启动规划节点（CPP Bridge 碰撞）
+重复运行规划前，如 Gazebo 中机械臂已经停在上一轮轨迹中途，可只执行预对齐：
+```bash
+cd ~/simple_fmp_v1
+./one_click.sh prealign
+```
+
+### 2.3 启动规划节点与评估（CPP Bridge 碰撞）
 ```bash
 export ROS_LOCALHOST_ONLY=1
 export ROS_DOMAIN_ID=0
@@ -60,13 +66,12 @@ source /opt/ros/humble/setup.bash
 source ~/ws_ur_sim/install/setup.bash
 source ~/simple_fmp_v1/install/setup.bash
 
-ros2 run intent_hybrid_planner intent_hybrid_planner_node --ros-args \
-  -p runtime_backend:=cpp_bridge \
-  -p cpp_bridge_collision_required:=true \
-  -p use_sim_time:=true \
-  -p execution_mode:=offline \
-  -p hybrid_mode:=matlab_compat \
-  -p trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory
+ros2 run intent_hybrid_planner run_plan_and_eval \
+  --run-planner \
+  --enable-plot \
+  --require-collision-backend true \
+  --collision-service-timeout-sec 6.0 \
+  --planner-extra "--ros-args -p runtime_backend:=cpp_bridge -p use_cpp_local_planner:=true -p execution_mode:=offline -p hybrid_mode:=matlab_compat -p trajectory_action_name:=/joint_trajectory_controller/follow_joint_trajectory -p cpp_bridge_collision_required:=true -p execute_only_if_postcheck_passed:=true -p postcheck_check_edges:=true"
 ```
 
 ### 2.4 结束
