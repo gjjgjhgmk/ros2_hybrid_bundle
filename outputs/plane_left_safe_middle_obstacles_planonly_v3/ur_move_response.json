@@ -1,0 +1,43 @@
+{
+  "available": true,
+  "planning_success": false,
+  "execution_requested": false,
+  "execution_success": null,
+  "execution_id": "",
+  "error": "Trajectory planning failed: no valid trajectories generated",
+  "error_kind": "",
+  "transport": "workspace_client",
+  "workspace_client_error": "",
+  "request": {
+    "waypoints": [
+      {
+        "group": "left_arm",
+        "planner": "ompl",
+        "type": "cart",
+        "ik_frame": "left_ee_link",
+        "frame_id": "left_interface_link",
+        "position": [
+          0.5175077020971355,
+          0.14989868063366252,
+          0.35
+        ],
+        "orientation": [
+          0.38268289803626016,
+          0.0,
+          0.0,
+          0.9238797538373538
+        ],
+        "max_velocity_scaling_factor": 0.1,
+        "max_acceleration_scaling_factor": 0.1,
+        "name": "plane_wp_000"
+      }
+    ],
+    "execute": false
+  },
+  "response": {
+    "error": "Trajectory planning failed: no valid trajectories generated",
+    "success": false
+  },
+  "requested": true,
+  "planner": "ompl"
+}

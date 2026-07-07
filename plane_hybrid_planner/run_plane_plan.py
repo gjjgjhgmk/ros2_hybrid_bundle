@@ -259,6 +259,7 @@ def _log_dispatch_summary(summary: Dict[str, Any]) -> None:
         "group",
         "planner",
         "frame_id",
+        "coordinate_mode",
         "ik_frame",
         "preposition_requested",
         "scene_sync_success",
@@ -428,18 +429,6 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         },
     )
     _write_json(out_dir / "scene_obstacles.json", scene_sync_result)
-    _write_json(
-        out_dir / "planning_path_debug.json",
-        _path_debug_payload(
-            nominal=nominal,
-            rrt_path=rrt_path,
-            modulated=modulated,
-            simplified=simplified_path,
-            resampled=resampled_path,
-            cart_waypoints=cart_waypoints,
-            dispatch_summary=dispatch_summary,
-        ),
-    )
 
     ur_move_result: Dict[str, Any] = {
         "available": False,
@@ -543,6 +532,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "group": group_name,
         "planner": planner_name,
         "frame_id": mapper.frame_id,
+        "coordinate_mode": mapper.coordinate_mode,
         "ik_frame": ik_frame,
         "blocked_stage": blocked_stage,
         "blocked_reason": blocked_reason,
@@ -550,6 +540,18 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "scene_sync_success": bool(scene_sync_result.get("success", False)),
     }
     _log_dispatch_summary(dispatch_summary)
+    _write_json(
+        out_dir / "planning_path_debug.json",
+        _path_debug_payload(
+            nominal=nominal,
+            rrt_path=rrt_path,
+            modulated=modulated,
+            simplified=simplified_path,
+            resampled=resampled_path,
+            cart_waypoints=cart_waypoints,
+            dispatch_summary=dispatch_summary,
+        ),
+    )
 
     _write_json(out_dir / "ur_move_response.json", ur_move_result)
     _write_json(out_dir / "preposition_response.json", preposition_result)
@@ -579,6 +581,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "matlab_rrt_parameters": matlab_result.get("matlab_rrt_parameters", {}),
             "corner_smoothing_metadata": matlab_result.get("corner_smoothing_metadata", {}),
             "plane_frame_id": mapper.frame_id,
+            "plane_coordinate_mode": mapper.coordinate_mode,
             "dispatch_summary": dispatch_summary,
             "dispatch_requested": bool(dispatch),
             "scene_sync": scene_sync_result,

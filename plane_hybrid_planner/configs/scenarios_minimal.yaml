@@ -79,6 +79,54 @@ scenarios:
       enabled: true
       smoothing: true
 
+  matlab_sine_verified_obstacles:
+    nominal:
+      type: matlab_sine
+      num_points: 150
+      u_range: [0.10, 0.88]
+      v_range: [0.28, 0.72]
+      cycles: 1.0
+      amplitude_raw: 30.0
+      center_raw: 50.0
+    obstacles:
+      - type: circle
+        center: [0.28, 0.67]
+        radius: 0.08
+      - type: circle
+        center: [0.50, 0.50]
+        radius: 0.08
+      - type: circle
+        center: [0.72, 0.33]
+        radius: 0.08
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
+  matlab_sine_left_safe_middle_obstacles:
+    nominal:
+      type: matlab_sine
+      num_points: 150
+      u_range: [0.10, 0.88]
+      v_range: [0.28, 0.72]
+      cycles: 1.0
+      amplitude_raw: 30.0
+      center_raw: 50.0
+    obstacles:
+      - type: circle
+        center: [0.42, 0.62]
+        radius: 0.06
+      - type: circle
+        center: [0.50, 0.60]
+        radius: 0.06
+      - type: circle
+        center: [0.58, 0.62]
+        radius: 0.06
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
   no_obstacle_line:
     nominal:
       type: line

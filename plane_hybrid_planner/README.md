@@ -127,16 +127,16 @@ python3 -m plane_hybrid_planner.run_plane_plan \
   --out-dir outputs/plane_no_obstacle_left
 ```
 
-## Run an Obstacle Scenario
+## Run the Verified Obstacle Demo
 
 ```bash
 python3 -m plane_hybrid_planner.run_plane_plan \
   --config plane_hybrid_planner/configs/table_plane_left.yaml \
   --scenario plane_hybrid_planner/configs/scenarios_minimal.yaml \
-  --scenario-name obstacle_middle \
+  --scenario-name matlab_sine_verified_obstacles \
   --group left_arm \
   --plan-only \
-  --out-dir outputs/plane_obstacle_middle_left
+  --out-dir outputs/plane_matlab_sine_left_planonly
 ```
 
 Use the right arm by selecting `table_plane_right.yaml` and
@@ -148,10 +148,10 @@ To request mock-controller execution instead of plan-only:
 python3 -m plane_hybrid_planner.run_plane_plan \
   --config plane_hybrid_planner/configs/table_plane_left.yaml \
   --scenario plane_hybrid_planner/configs/scenarios_minimal.yaml \
-  --scenario-name obstacle_middle \
+  --scenario-name matlab_sine_verified_obstacles \
   --group left_arm \
   --execute \
-  --out-dir outputs/plane_obstacle_middle_left_execute
+  --out-dir outputs/plane_matlab_sine_left_execute
 ```
 
 ## Outputs

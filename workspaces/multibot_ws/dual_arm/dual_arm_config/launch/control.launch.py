@@ -233,7 +233,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "description_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("dual_arm_config"), "description", "urdf", "dual_arm.urdf.xacro"]
+                [FindPackageShare("dual_arm_moveit_config"), "config", "双臂机器人.urdf.xacro"]
             ),
             description="URDF/XACRO description file (absolute path) with the robot.",
         )

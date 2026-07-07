@@ -12,7 +12,8 @@ group_name: "left_arm"
 ik_frame: "left_ee_link"
 
 plane:
-  frame_id: "left_base_link"
+  frame_id: "left_interface_link"
+  coordinate_mode: "metric"
   x_min: 0.50
   x_max: 0.68
   y_min: 0.06
@@ -23,9 +24,9 @@ orientation_xyzw: [0.382683, 0.0, 0.0, 0.923880]
 
 scene_obstacles:
   sync_to_moveit: true
-  frame_id: "left_base_link"
+  frame_id: "left_interface_link"
   cylinder_height: 0.18
-  center_z: 0.35
+  center_z: 0.08
   radius_scale_mode: "min"
   publish_repeats: 3
   clear_slots: 8

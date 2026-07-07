@@ -1,0 +1,44 @@
+{
+  "attempted": true,
+  "success": false,
+  "obstacle_count": 3,
+  "frame_id": "left_interface_link",
+  "objects": [
+    {
+      "id": "plane_demo_left_01",
+      "frame_id": "left_interface_link",
+      "position": [
+        0.5720000000000001,
+        0.15360000000000001,
+        0.08
+      ],
+      "radius": 0.0126,
+      "height": 0.18
+    },
+    {
+      "id": "plane_demo_left_02",
+      "frame_id": "left_interface_link",
+      "position": [
+        0.5900000000000001,
+        0.15,
+        0.08
+      ],
+      "radius": 0.0126,
+      "height": 0.18
+    },
+    {
+      "id": "plane_demo_left_03",
+      "frame_id": "left_interface_link",
+      "position": [
+        0.608,
+        0.14639999999999997,
+        0.08
+      ],
+      "radius": 0.0126,
+      "height": 0.18
+    }
+  ],
+  "rviz_marker_topic": "/visualization_marker_array",
+  "rviz_markers_published": true,
+  "reason": "apply_planning_scene_unavailable"
+}

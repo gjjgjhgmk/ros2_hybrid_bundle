@@ -1,0 +1,8 @@
+{
+  "attempted": true,
+  "success": false,
+  "obstacle_count": 0,
+  "frame_id": "left_base_link",
+  "objects": [],
+  "reason": "apply_planning_scene_unavailable"
+}

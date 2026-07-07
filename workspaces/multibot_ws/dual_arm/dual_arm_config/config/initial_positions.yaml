@@ -18,3 +18,7 @@ initial_positions:
     wrist_1_joint: -2.1
     wrist_2_joint: -1.57
     wrist_3_joint: 0
+
+  # 夹爪初始位置
+  left_gripper_robotiq_85_left_knuckle_joint: 0
+  right_gripper_robotiq_85_left_knuckle_joint: 0

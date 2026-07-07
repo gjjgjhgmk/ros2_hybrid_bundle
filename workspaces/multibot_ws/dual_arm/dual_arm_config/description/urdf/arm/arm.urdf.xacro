@@ -41,9 +41,6 @@
         safety_limits="${safety_limits}"
         safety_pos_margin="${safety_pos_margin}"
         safety_k_position="${safety_k_position}"
-        use_fake_hardware="${use_mock_hardware}"
-        fake_sensor_commands="${mock_sensor_commands}"
-        initial_positions="${initial_positions}"
         >
         <xacro:insert_block name="origin" />
     </xacro:ur_robot>

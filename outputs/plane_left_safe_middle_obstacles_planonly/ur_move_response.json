@@ -1,0 +1,12 @@
+{
+  "available": false,
+  "planning_success": false,
+  "execution_requested": false,
+  "execution_success": null,
+  "execution_id": "",
+  "error": "2D path not safe; request not sent",
+  "error_kind": "algorithm_failure",
+  "transport": "",
+  "request": {},
+  "response": {}
+}

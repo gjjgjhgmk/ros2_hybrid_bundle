@@ -1,0 +1,7 @@
+{
+  "scenario_name": "matlab_sine_left_safe_middle_obstacles",
+  "group_name": "left_arm",
+  "frame_id": "left_interface_link",
+  "start_waypoint": null,
+  "waypoints": []
+}

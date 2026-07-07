@@ -1,0 +1,22 @@
+{
+  "attempted": true,
+  "success": false,
+  "obstacle_count": 1,
+  "frame_id": "left_base_link",
+  "objects": [
+    {
+      "id": "plane_demo_left_01",
+      "frame_id": "left_base_link",
+      "position": [
+        0.5900000000000001,
+        0.15,
+        0.35
+      ],
+      "radius": 0.021599999999999998,
+      "height": 0.18
+    }
+  ],
+  "rviz_marker_topic": "/visualization_marker_array",
+  "rviz_markers_published": true,
+  "reason": "apply_planning_scene_returned_false"
+}

@@ -128,6 +128,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         {
             "group_name": group_name,
             "frame_id": mapper.frame_id,
+            "coordinate_mode": mapper.coordinate_mode,
             "ik_frame": ik_frame,
             "waypoints": cart_waypoints,
         },
@@ -141,6 +142,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "group_name": group_name,
             "planner": planner_name,
             "frame_id": mapper.frame_id,
+            "coordinate_mode": mapper.coordinate_mode,
             "ik_frame": ik_frame,
         },
     )
@@ -175,6 +177,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "group": group_name,
         "planner": planner_name,
         "frame_id": mapper.frame_id,
+        "coordinate_mode": mapper.coordinate_mode,
         "ik_frame": ik_frame,
         "path_mode": demo_mode,
         "uv_point_count": int(uv_path.shape[0]),
@@ -194,6 +197,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     LOGGER.info("[plane_hybrid] group=%s", group_name)
     LOGGER.info("[plane_hybrid] planner=%s", planner_name)
     LOGGER.info("[plane_hybrid] frame_id=%s", mapper.frame_id)
+    LOGGER.info("[plane_hybrid] coordinate_mode=%s", mapper.coordinate_mode)
     LOGGER.info("[plane_hybrid] ik_frame=%s", ik_frame)
     LOGGER.info("[plane_hybrid] uv_point_count=%d", int(uv_path.shape[0]))
     LOGGER.info("[plane_hybrid] cart_waypoint_count=%d", len(cart_waypoints))

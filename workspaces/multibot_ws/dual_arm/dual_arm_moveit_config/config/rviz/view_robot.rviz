@@ -318,6 +318,14 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Marker Topic: /visualization_marker_array
+      Name: Plane Obstacles
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
     - Class: rviz_default_plugins/TF
       Enabled: true
       Filter (blacklist): "left_tool0 right_tool0"

@@ -1,4 +1,4 @@
-"""Map normalized table-plane coordinates to Cartesian poses and scene objects."""
+"""Map table-plane coordinates to Cartesian poses and scene objects."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
@@ -9,6 +9,7 @@ import numpy as np
 @dataclass(frozen=True)
 class PlaneMapper:
     frame_id: str
+    coordinate_mode: str
     x_min: float
     x_max: float
     y_min: float
@@ -36,9 +37,15 @@ class PlaneMapper:
         y_max = float(plane["y_max"])
         if not x_max > x_min or not y_max > y_min:
             raise ValueError("plane x/y ranges must have max > min")
+        coordinate_mode = str(
+            plane.get("coordinate_mode", config.get("coordinate_mode", "normalized"))
+        ).strip().lower()
+        if coordinate_mode not in {"normalized", "metric"}:
+            raise ValueError("coordinate_mode must be 'normalized' or 'metric'")
 
         return cls(
             frame_id=str(plane.get("frame_id", "world")),
+            coordinate_mode=coordinate_mode,
             x_min=x_min,
             x_max=x_max,
             y_min=y_min,

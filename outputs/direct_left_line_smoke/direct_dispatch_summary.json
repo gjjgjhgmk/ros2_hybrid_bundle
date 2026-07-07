@@ -1,0 +1,18 @@
+{
+  "dispatch": true,
+  "group": "left_arm",
+  "planner": "lin",
+  "frame_id": "left_base_link",
+  "ik_frame": "left_ee_link",
+  "path_mode": "line",
+  "uv_point_count": 8,
+  "cart_waypoint_count": 8,
+  "ur_move_available": true,
+  "moveit_plan_success": true,
+  "execution_requested": false,
+  "execution_success": null,
+  "execution_id": "0000000000000000",
+  "error_kind": "",
+  "error": "",
+  "transport": "workspace_client"
+}

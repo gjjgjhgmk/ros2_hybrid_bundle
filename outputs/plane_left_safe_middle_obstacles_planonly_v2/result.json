@@ -1,0 +1,220 @@
+{
+  "scenario_name": "matlab_sine_left_safe_middle_obstacles",
+  "group_name": "left_arm",
+  "nominal_collision_count": 0,
+  "nominal_invalid_point_count": 0,
+  "nominal_invalid_edge_count": 0,
+  "nominal_min_clearance": 0.15607125216139647,
+  "modulated_collision_count": 0,
+  "modulated_invalid_point_count": 0,
+  "modulated_invalid_edge_count": 0,
+  "modulated_min_clearance": 0.16110307648066743,
+  "safety_margin": 0.005,
+  "avoidance_success": true,
+  "path_length_nominal": 0.8562165414225186,
+  "path_length_modulated": 0.8464117930677308,
+  "path_length_ratio": 0.988548751536033,
+  "jerk_nominal": 13.957240304822255,
+  "jerk_modulated": 1986.7282115542457,
+  "smoothness_gain": -1972.7709712494234,
+  "rrt_stop_reason": "not_required",
+  "rrt_iter_used": 0,
+  "rrt_collision_queries": 0,
+  "rrt_elapsed_ms": 0.0,
+  "cart_waypoint_count": 30,
+  "ur_move_available": true,
+  "ur_move_transport": "workspace_client",
+  "moveit_plan_success": false,
+  "execution_requested": false,
+  "execution_success": null,
+  "execution_id": "",
+  "result_interpretable": true,
+  "failure_reason": "preposition_failed",
+  "nominal_path_points": 150,
+  "rrt_path_points": 0,
+  "modulated_path_points": 150,
+  "fmp_fallback_used": false,
+  "algorithm": "matlab_intent_informed_rrt_star_ta_hdi_fmp",
+  "danger_count": 0,
+  "danger_segment_count": 0,
+  "via_point_count": 0,
+  "matlab_parameters": {
+    "demo_len": 150,
+    "demo_dt": 0.1,
+    "alpha": 0.1,
+    "n_clusters": 20,
+    "online_dt": 0.05,
+    "interp_dist": 0.5,
+    "via_trim": 0.05,
+    "transition_ratio": 0.1,
+    "transition_gamma": 1.0,
+    "safe_margin": 0.2,
+    "danger_segment_gap": 10,
+    "segment_padding": 4,
+    "corner_smoothing_enabled": true,
+    "corner_angle_threshold_rad": 0.01,
+    "corner_window_mode": "time",
+    "corner_window_value": 0.1,
+    "enabled": true,
+    "smoothing": true
+  },
+  "matlab_rrt_parameters": {
+    "step_size": 1.5,
+    "r_neighbor": 4.0,
+    "max_iter": 6000,
+    "edge_sample_step": 0.5,
+    "rrt_inflation": 0.5,
+    "convergence_window": 200,
+    "convergence_epsilon_rel": 0.001,
+    "convergence_hits": 3,
+    "lambda_k": 0.15,
+    "enable_refine": true,
+    "refine_budget": 100,
+    "enable_intent_bias": true,
+    "p_intent_pre": 0.55,
+    "p_goal_pre": 0.15,
+    "p_uniform_pre": 0.3,
+    "p_intent_post": 0.65,
+    "p_informed_post": 0.3,
+    "p_goal_post": 0.05,
+    "sigma_intent": 1.2,
+    "post_intent_max_retry": 10
+  },
+  "corner_smoothing_metadata": {
+    "enabled": true,
+    "window_mode": "time",
+    "configured_window_value": 0.1,
+    "sample_interval_sec": 0.09999999999999964,
+    "resolved_window_samples": 1,
+    "angle_threshold_rad": 0.01,
+    "sharp_point_count": 104,
+    "region_count": 2,
+    "applied": true,
+    "max_displacement_uv": 0.020601307346057772,
+    "mean_displacement_uv": 0.005054626594871534,
+    "interpretation": "0.1 seconds converted using trajectory sample interval"
+  },
+  "plane_frame_id": "left_interface_link",
+  "plane_coordinate_mode": "metric",
+  "dispatch_summary": {
+    "nominal_count": 150,
+    "modulated_count": 150,
+    "algorithm_failure": "preposition_failed",
+    "safety_pass": true,
+    "simplified_count": 150,
+    "resampled_count": 30,
+    "cart_waypoint_count": 30,
+    "dispatch": false,
+    "group": "left_arm",
+    "planner": "lin",
+    "frame_id": "left_interface_link",
+    "coordinate_mode": "metric",
+    "ik_frame": "left_ee_link",
+    "blocked_stage": "preposition",
+    "blocked_reason": "Trajectory planning failed: no valid trajectories generated",
+    "preposition_requested": true,
+    "scene_sync_success": false
+  },
+  "dispatch_requested": false,
+  "scene_sync": {
+    "attempted": true,
+    "success": false,
+    "obstacle_count": 3,
+    "frame_id": "left_interface_link",
+    "objects": [
+      {
+        "id": "plane_demo_left_01",
+        "frame_id": "left_interface_link",
+        "position": [
+          0.5756,
+          0.16799999999999998,
+          0.08
+        ],
+        "radius": 0.010799999999999999,
+        "height": 0.18
+      },
+      {
+        "id": "plane_demo_left_02",
+        "frame_id": "left_interface_link",
+        "position": [
+          0.5900000000000001,
+          0.1644,
+          0.08
+        ],
+        "radius": 0.010799999999999999,
+        "height": 0.18
+      },
+      {
+        "id": "plane_demo_left_03",
+        "frame_id": "left_interface_link",
+        "position": [
+          0.6044,
+          0.16799999999999998,
+          0.08
+        ],
+        "radius": 0.010799999999999999,
+        "height": 0.18
+      }
+    ],
+    "rviz_marker_topic": "/visualization_marker_array",
+    "rviz_markers_published": true,
+    "reason": "apply_planning_scene_unavailable"
+  },
+  "preposition_result": {
+    "available": true,
+    "planning_success": false,
+    "execution_requested": false,
+    "execution_success": null,
+    "execution_id": "",
+    "error": "Trajectory planning failed: no valid trajectories generated",
+    "error_kind": "",
+    "transport": "workspace_client",
+    "workspace_client_error": "",
+    "request": {
+      "waypoints": [
+        {
+          "group": "left_arm",
+          "planner": "ompl",
+          "type": "cart",
+          "ik_frame": "left_ee_link",
+          "frame_id": "left_interface_link",
+          "position": [
+            0.5216,
+            0.11579999999999999,
+            0.35
+          ],
+          "orientation": [
+            0.38268289803626016,
+            0.0,
+            0.0,
+            0.9238797538373538
+          ],
+          "max_velocity_scaling_factor": 0.1,
+          "max_acceleration_scaling_factor": 0.1,
+          "name": "plane_wp_000"
+        }
+      ],
+      "execute": false
+    },
+    "response": {
+      "error": "Trajectory planning failed: no valid trajectories generated",
+      "success": false
+    },
+    "requested": true,
+    "planner": "ompl"
+  },
+  "start_cart_waypoint": {
+    "frame_id": "left_interface_link",
+    "position": [
+      0.5216,
+      0.11579999999999999,
+      0.35
+    ],
+    "orientation": [
+      0.38268289803626016,
+      0.0,
+      0.0,
+      0.9238797538373538
+    ]
+  }
+}

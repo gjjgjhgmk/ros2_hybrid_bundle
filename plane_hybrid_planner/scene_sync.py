@@ -22,6 +22,8 @@ def sync_circular_obstacles_to_moveit(
         "obstacle_count": 0,
         "frame_id": str(config.get("frame_id", mapper.frame_id)),
         "objects": [],
+        "rviz_marker_topic": "/visualization_marker_array",
+        "rviz_markers_published": False,
         "reason": "",
     }
     if not bool(config.get("sync_to_moveit", False)):
@@ -33,8 +35,15 @@ def sync_circular_obstacles_to_moveit(
         from geometry_msgs.msg import Pose  # pylint: disable=import-outside-toplevel
         from moveit_msgs.msg import CollisionObject, PlanningScene  # pylint: disable=import-outside-toplevel
         from moveit_msgs.srv import ApplyPlanningScene  # pylint: disable=import-outside-toplevel
+        from rclpy.qos import (  # pylint: disable=import-outside-toplevel
+            DurabilityPolicy,
+            HistoryPolicy,
+            QoSProfile,
+            ReliabilityPolicy,
+        )
         from shape_msgs.msg import SolidPrimitive  # pylint: disable=import-outside-toplevel
         from std_msgs.msg import Header  # pylint: disable=import-outside-toplevel
+        from visualization_msgs.msg import Marker, MarkerArray  # pylint: disable=import-outside-toplevel
     except Exception as exc:  # pragma: no cover - depends on ROS runtime.
         result["reason"] = f"ros_import_failed: {exc}"
         return result
@@ -60,11 +69,27 @@ def sync_circular_obstacles_to_moveit(
     node = rclpy.create_node("plane_hybrid_scene_sync")
     planning_scene_pub = node.create_publisher(PlanningScene, "/planning_scene", 10)
     collision_object_pub = node.create_publisher(CollisionObject, "/collision_object", 10)
+    marker_qos = QoSProfile(
+        history=HistoryPolicy.KEEP_LAST,
+        depth=1,
+        reliability=ReliabilityPolicy.RELIABLE,
+        durability=DurabilityPolicy.TRANSIENT_LOCAL,
+    )
+    marker_pub = node.create_publisher(MarkerArray, result["rviz_marker_topic"], marker_qos)
     client = node.create_client(ApplyPlanningScene, "/apply_planning_scene")
     result["objects"] = []
 
     try:
         collision_objects: List[CollisionObject] = []
+        marker_array = MarkerArray()
+
+        delete_all = Marker()
+        delete_all.header.frame_id = frame_id
+        delete_all.ns = id_prefix
+        delete_all.id = 0
+        delete_all.action = Marker.DELETEALL
+        marker_array.markers.append(delete_all)
+
         for index in range(clear_slots):
             remove_obj = CollisionObject()
             remove_obj.header = Header(frame_id=frame_id)
@@ -102,6 +127,23 @@ def sync_circular_obstacles_to_moveit(
             obj.primitive_poses.append(pose)
             collision_objects.append(obj)
 
+            marker = Marker()
+            marker.header.frame_id = frame_id
+            marker.ns = id_prefix
+            marker.id = index
+            marker.type = Marker.CYLINDER
+            marker.action = Marker.ADD
+            marker.pose = pose
+            marker.scale.x = 2.0 * float(mapped["radius"])
+            marker.scale.y = 2.0 * float(mapped["radius"])
+            marker.scale.z = float(mapped["height"])
+            marker.color.r = 0.92
+            marker.color.g = 0.25
+            marker.color.b = 0.18
+            marker.color.a = 0.55
+            marker.frame_locked = False
+            marker_array.markers.append(marker)
+
         if client.wait_for_service(timeout_sec=float(timeout_sec)):
             request = ApplyPlanningScene.Request()
             request.scene = PlanningScene()
@@ -127,8 +169,11 @@ def sync_circular_obstacles_to_moveit(
             planning_scene_pub.publish(scene_msg)
             for obj in collision_objects:
                 collision_object_pub.publish(obj)
+            marker_pub.publish(marker_array)
             rclpy.spin_once(node, timeout_sec=0.05)
             time.sleep(0.10)
+
+        result["rviz_markers_published"] = True
 
         if not result["success"] and not result["reason"]:
             result["reason"] = "published_only"

@@ -23,6 +23,7 @@ services:
     # 卷挂载 - 开发时挂载源代码
     volumes:
       - ../:/workspace/src:rw
+      - ../../..:/workspace/ros2_hybrid_bundle:rw
       # X11转发（Linux）
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
@@ -38,7 +39,7 @@ services:
     command: >
       bash -c "
       source /opt/ros/jazzy/setup.bash &&
-      colcon build &&
+      colcon build --base-paths /workspace/src &&
       source /workspace/install/setup.bash &&
       ros2 launch single_arm_config left_arm.launch.py
       "
@@ -86,6 +87,7 @@ services:
     # 卷挂载 - 开发时挂载源代码
     volumes:
       - ../:/workspace/src:rw
+      - ../../..:/workspace/ros2_hybrid_bundle:rw
       # X11转发（Linux）
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
@@ -101,7 +103,7 @@ services:
     command: >
       bash -c "
       source /opt/ros/jazzy/setup.bash &&
-      colcon build &&
+      colcon build --base-paths /workspace/src &&
       source /workspace/install/setup.bash &&
       ros2 launch single_arm_config right_arm.launch.py
       "
@@ -151,6 +153,7 @@ services:
     # 卷挂载 - 开发时挂载源代码
     volumes:
       - ../:/workspace/src:rw
+      - ../../..:/workspace/ros2_hybrid_bundle:rw
       # X11转发（Linux）
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
@@ -166,7 +169,7 @@ services:
     command: >
       bash -c "
       source /opt/ros/jazzy/setup.bash &&
-      colcon build &&
+      colcon build --base-paths /workspace/src &&
       source /workspace/install/setup.bash &&
       bash
       "
@@ -216,6 +219,7 @@ services:
     # 卷挂载 - 开发时挂载源代码
     volumes:
       - ../:/workspace/src:rw
+      - ../../..:/workspace/ros2_hybrid_bundle:rw
       # X11转发（Linux）
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${HOME}/.Xauthority:/home/developer/.Xauthority:rw
@@ -231,7 +235,7 @@ services:
     command: >
       bash -c "
       source /opt/ros/jazzy/setup.bash &&
-      colcon build &&
+      colcon build --base-paths /workspace/src &&
       echo '' &&
       echo '✅ 构建完成，容器保持运行' &&
       echo '使用以下命令进入容器:' &&

@@ -1,0 +1,7 @@
+{
+  "scenario_name": "matlab_sine_verified_obstacles",
+  "group_name": "left_arm",
+  "frame_id": "left_base_link",
+  "start_waypoint": null,
+  "waypoints": []
+}

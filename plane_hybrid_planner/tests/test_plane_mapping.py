@@ -8,6 +8,7 @@ def _config(clamp=True):
     return {
         "plane": {
             "frame_id": "world",
+            "coordinate_mode": "metric",
             "x_min": 0.3,
             "x_max": 0.7,
             "y_min": 0.1,
@@ -21,6 +22,7 @@ def _config(clamp=True):
 
 def test_uv_mapping_and_quaternion_normalization():
     mapper = PlaneMapper.from_config(_config())
+    assert mapper.coordinate_mode == "metric"
     assert np.allclose(mapper.uv_to_xyz(0.5, 0.25), [0.5, 0.2, 0.2])
     waypoint = mapper.uv_path_to_cart_waypoints([[0.0, 0.0], [1.0, 1.0]])[0]
     assert waypoint["frame_id"] == "world"

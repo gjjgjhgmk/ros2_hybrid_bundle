@@ -144,7 +144,7 @@ std::map<std::string, moveit_msgs::msg::RobotTrajectory> MoveItPlanner::planTraj
         for (const auto& waypoint : group_waypoints) {
             RCLCPP_INFO(getLogger(), "Planning waypoint: %s", waypoint.getName().c_str());
             auto plan = planSingleWaypoint(waypoint);
-            if (plan.trajectory_.joint_trajectory.points.empty()) {
+            if (plan.trajectory.joint_trajectory.points.empty()) {
                 move_group->setStartStateToCurrentState();
                 RCLCPP_ERROR(getLogger(), "Group %s planning failed: waypoint %s failed", 
                            group_name.c_str(), waypoint.getName().c_str());
@@ -154,7 +154,7 @@ std::map<std::string, moveit_msgs::msg::RobotTrajectory> MoveItPlanner::planTraj
             // Chain each segment from the previous segment endpoint. Planning every
             // waypoint from the live state and then concatenating produces jumps.
             auto next_start = move_group->getCurrentState(1.0);
-            const auto& joint_trajectory = plan.trajectory_.joint_trajectory;
+            const auto& joint_trajectory = plan.trajectory.joint_trajectory;
             if (!next_start || joint_trajectory.joint_names.size() !=
                                    joint_trajectory.points.back().positions.size()) {
                 move_group->setStartStateToCurrentState();
@@ -257,11 +257,11 @@ moveit_msgs::msg::RobotTrajectory MoveItPlanner::concatenateTrajectories(
     }
     
     // 使用第一个轨迹作为基础
-    moveit_msgs::msg::RobotTrajectory result = plans[0].trajectory_;
+    moveit_msgs::msg::RobotTrajectory result = plans[0].trajectory;
     
     // 合并后续轨迹，调整时间戳使其连续
     for (size_t i = 1; i < plans.size(); ++i) {
-        const auto& traj = plans[i].trajectory_;
+        const auto& traj = plans[i].trajectory;
         if (result.joint_trajectory.joint_names != traj.joint_trajectory.joint_names) {
             RCLCPP_WARN(getLogger(), "Joint names mismatch, skipping trajectory %zu", i);
             continue;
