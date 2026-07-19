@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import sys
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
 
-from intent_hybrid_planner.intent_hybrid_planner import fmp_core
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+for _candidate in (_REPO_ROOT, _REPO_ROOT / "intent_hybrid_planner"):
+    if _candidate.exists() and str(_candidate) not in sys.path:
+        sys.path.insert(0, str(_candidate))
+
+from intent_hybrid_planner import fmp_core
 
 from .matlab_rrt_star_2d import MATLAB_SCALE, MatlabRRTStarConfig, plan_intent_biased_informed_rrt_star
 

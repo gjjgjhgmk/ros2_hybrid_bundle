@@ -22,6 +22,7 @@
   <depend>builtin_interfaces</depend>
   <depend>intent_hybrid_interfaces</depend>
   <depend>ompl</depend>
+  <depend>nlohmann_json</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -103,6 +103,37 @@ scenarios:
       enabled: true
       smoothing: true
 
+  metric_measured_obstacles:
+    obstacle_input:
+      coordinate_mode: metric
+      frame_id: left_interface_link
+      radius_scale_mode: min
+    nominal:
+      type: matlab_sine
+      num_points: 150
+      u_range: [0.10, 0.88]
+      v_range: [0.28, 0.72]
+      cycles: 1.0
+      amplitude_raw: 30.0
+      center_raw: 50.0
+    obstacles:
+      - id: measured_obstacle_01
+        type: circle
+        center: [0.5504, 0.1806]
+        radius: 0.0144
+      - id: measured_obstacle_02
+        type: circle
+        center: [0.5900, 0.1500]
+        radius: 0.0144
+      - id: measured_obstacle_03
+        type: circle
+        center: [0.6296, 0.1194]
+        radius: 0.0144
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+
   matlab_sine_left_safe_middle_obstacles:
     nominal:
       type: matlab_sine
@@ -126,6 +157,11 @@ scenarios:
     fmp:
       enabled: true
       smoothing: true
+    execution:
+      plan_only: false
+      execute: true
+      move_to_start_first: false
+      preposition_planner: "ompl"
 
   no_obstacle_line:
     nominal:
@@ -157,6 +193,28 @@ scenarios:
       smoothing_window: 11
       smoothing_iterations: 2
       blend_strength: 1.0
+
+  left_safe_middle_line_obstacles:
+    nominal:
+      type: line
+      start: [0.1, 0.5]
+      goal: [0.9, 0.5]
+      num_points: 150
+    obstacles:
+      - type: circle
+        center: [0.38, 0.62]
+        radius: 0.06
+      - type: circle
+        center: [0.50, 0.60]
+        radius: 0.06
+      - type: circle
+        center: [0.62, 0.62]
+        radius: 0.06
+    safety_margin: 0.005
+    fmp:
+      enabled: true
+      smoothing: true
+      corner_smoothing_enabled: false
 
   obstacle_near_path:
     nominal:

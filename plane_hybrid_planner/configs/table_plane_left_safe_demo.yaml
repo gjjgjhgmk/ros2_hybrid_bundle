@@ -47,7 +47,7 @@ waypoints:
   clamp_uv: true
 
 execution:
-  plan_only: true
-  execute: false
-  move_to_start_first: true
+  plan_only: false
+  execute: true
+  move_to_start_first: false
   preposition_planner: "ompl"

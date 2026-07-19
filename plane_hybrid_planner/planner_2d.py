@@ -50,9 +50,9 @@ def normalize_obstacles(obstacles: Iterable[Dict[str, Any]]) -> List[Dict[str, A
         radius = float(obstacle["radius"])
         if not np.isfinite(radius) or radius <= 0.0:
             raise ValueError(f"obstacle {index}: radius must be positive")
-        normalized.append(
-            {"type": "circle", "center": center.tolist(), "radius": radius}
-        )
+        item = dict(obstacle)
+        item.update({"type": "circle", "center": center.tolist(), "radius": radius})
+        normalized.append(item)
     return normalized
 
 

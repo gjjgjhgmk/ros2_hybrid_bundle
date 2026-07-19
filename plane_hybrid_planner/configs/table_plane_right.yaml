@@ -12,7 +12,8 @@ group_name: "right_arm"
 ik_frame: "right_ee_link"
 
 plane:
-  frame_id: "right_base_link"
+  frame_id: "right_interface_link"
+  algorithm_coordinate_mode: "normalized"
   x_min: 0.50
   x_max: 0.68
   y_min: -0.24
@@ -21,11 +22,20 @@ plane:
 
 orientation_xyzw: [0.382683, 0.0, 0.0, 0.923880]
 
+obstacle_input:
+  coordinate_mode: "normalized"
+  frame_id: "right_interface_link"
+  radius_scale_mode: "min"
+
+drawing_plane:
+  table_surface_z: -0.0102
+
 scene_obstacles:
   sync_to_moveit: true
-  frame_id: "right_base_link"
+  frame_id: "right_interface_link"
   cylinder_height: 0.18
-  center_z: 0.35
+  center_z_mode: "from_table_surface"
+  table_surface_z: -0.0102
   radius_scale_mode: "min"
   publish_repeats: 3
   clear_slots: 8

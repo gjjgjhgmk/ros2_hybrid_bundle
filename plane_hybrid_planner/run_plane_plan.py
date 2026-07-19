@@ -14,16 +14,21 @@ import yaml
 
 from .evaluate_2d import build_evaluation, write_evaluation
 from .matlab_hybrid_2d import run_matlab_hybrid
+from .obstacle_coordinates import (
+    coordinate_debug_payload,
+    normalize_obstacles_to_uv,
+    obstacle_input_config,
+)
 from .path_resample import resample_path_by_arclength, simplify_path_optional
 from .plane_mapping import PlaneMapper
 from .planner_2d import (
     generate_nominal_path,
-    normalize_obstacles,
     path_collision_details,
     path_min_clearance,
     point_clearance,
 )
 from .scene_sync import sync_circular_obstacles_to_moveit
+from .tool_transform import ee_to_tip_from_config, transform_waypoints_tip_to_ee
 from .ur_move_zmq_client import UrMoveZmqClient
 
 
@@ -259,7 +264,12 @@ def _log_dispatch_summary(summary: Dict[str, Any]) -> None:
         "group",
         "planner",
         "frame_id",
-        "coordinate_mode",
+        "algorithm_coordinate_mode",
+        "algorithm_frame",
+        "metric_frame",
+        "obstacle_input_mode",
+        "obstacle_count",
+        "coordinate_roundtrip_pass",
         "ik_frame",
         "preposition_requested",
         "scene_sync_success",
@@ -286,8 +296,19 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     if group_name not in {"left_arm", "right_arm"}:
         raise ValueError("group must be left_arm or right_arm")
 
+    mapper = PlaneMapper.from_config(config)
+    input_config = obstacle_input_config(scenario, config)
+    obstacles = normalize_obstacles_to_uv(
+        scenario.get("obstacles", []),
+        mapper,
+        input_mode=str(input_config.get("coordinate_mode", "normalized")),
+        input_frame=str(input_config.get("frame_id", mapper.frame_id)),
+        radius_scale_mode=str(input_config.get("radius_scale_mode", "min")),
+    )
+    coordinate_debug = coordinate_debug_payload(obstacles, mapper)
+    _write_json(out_dir / "coordinate_debug.json", coordinate_debug)
+
     nominal = generate_nominal_path(scenario["nominal"])
-    obstacles = normalize_obstacles(scenario.get("obstacles", []))
     safety_margin = float(scenario.get("safety_margin", 0.015))
     nominal_details = path_collision_details(nominal, obstacles, margin=0.0)
     nominal_clearance = path_min_clearance(nominal, obstacles)
@@ -321,7 +342,54 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     resampled_path = np.empty((0, 2), dtype=float)
     planner_name = str(config.get("planner", "lin"))
     ik_frame = str(config.get("ik_frame", f"{group_name.split('_')[0]}_ee_link"))
-    mapper = PlaneMapper.from_config(config)
+    drawing_config = dict(config.get("drawing", {}) or {})
+    drawing_enabled = bool(drawing_config.get("enabled", False))
+    drawing_task_frame = str(drawing_config.get("task_frame", mapper.frame_id))
+    if drawing_enabled and drawing_task_frame != mapper.frame_id:
+        raise ValueError(
+            "drawing.task_frame must match plane.frame_id unless a real TF2 transform "
+            "is applied. Changing a frame_id label is not a coordinate transform. "
+            f"drawing_task_frame={drawing_task_frame}, plane_frame={mapper.frame_id}"
+        )
+    tip_waypoints: List[Dict[str, Any]] = []
+    ee_waypoints: List[Dict[str, Any]] = []
+    tool_transform_payload: Dict[str, Any] = {}
+    ee_to_tip = None
+    if drawing_enabled:
+        ee_to_tip, tool_transform_payload = ee_to_tip_from_config(config)
+        tool_transform_payload["used_for_dispatch"] = False
+    drawing_plane_payload: Dict[str, Any] = {
+        "enabled": drawing_enabled,
+        "task_frame": mapper.frame_id,
+        "planning_object": "tool_tip" if drawing_enabled else "configured_ik_frame",
+    }
+    drawing_tip_z = None
+    if drawing_enabled:
+        table_surface_z = float(
+            drawing_config.get(
+                "table_surface_z",
+                config.get("drawing_plane", {}).get("table_surface_z", -0.0102),
+            )
+        )
+        contact_clearance = float(drawing_config.get("contact_clearance", 0.002))
+        drawing_tip_z_value = drawing_config.get("drawing_tip_z", "auto")
+        drawing_tip_z = (
+            table_surface_z + contact_clearance
+            if str(drawing_tip_z_value).strip().lower() == "auto"
+            else float(drawing_tip_z_value)
+        )
+        drawing_plane_payload.update(
+            {
+                "task_frame": drawing_task_frame,
+                "tool_tip_link": str(drawing_config.get("tool_tip_link", "left_pen_tip_link")),
+                "dispatch_ik_frame": ik_frame,
+                "table_surface_z": table_surface_z,
+                "contact_clearance": contact_clearance,
+                "drawing_tip_z": drawing_tip_z,
+                "tip_waypoint_count": 0,
+                "ee_waypoint_count": 0,
+            }
+        )
     scene_sync_result = sync_circular_obstacles_to_moveit(
         obstacles,
         mapper,
@@ -415,7 +483,37 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             simplified_path, int(waypoint_config.get("resample_count", 30))
         )
         resampled_count = int(resampled_path.shape[0])
-        cart_waypoints = mapper.uv_path_to_cart_waypoints(resampled_path)
+        if drawing_enabled:
+            tip_waypoints = mapper.uv_path_to_cart_waypoints(
+                resampled_path,
+                z=drawing_tip_z,
+                orientation_xyzw=drawing_config.get("orientation_xyzw", mapper.orientation_xyzw),
+            )
+            requested_ik_frame = str(drawing_config.get("tool_tip_link", "left_pen_tip_link"))
+            if ik_frame == requested_ik_frame:
+                cart_waypoints = tip_waypoints
+                ee_waypoints = []
+                tool_transform_payload["used_for_dispatch"] = False
+            else:
+                if ee_to_tip is None:
+                    raise RuntimeError("drawing mode requires an ee_to_tip transform")
+                ee_waypoints = transform_waypoints_tip_to_ee(tip_waypoints, ee_to_tip)
+                cart_waypoints = ee_waypoints
+                tool_transform_payload["used_for_dispatch"] = True
+            drawing_plane_payload.update(
+                {
+                    "task_frame": drawing_task_frame,
+                    "tool_tip_link": requested_ik_frame,
+                    "dispatch_ik_frame": ik_frame,
+                    "table_surface_z": table_surface_z,
+                    "contact_clearance": contact_clearance,
+                    "drawing_tip_z": drawing_tip_z,
+                    "tip_waypoint_count": len(tip_waypoints),
+                    "ee_waypoint_count": len(ee_waypoints),
+                }
+            )
+        else:
+            cart_waypoints = mapper.uv_path_to_cart_waypoints(resampled_path)
         cart_waypoint_count = len(cart_waypoints)
 
     _write_json(
@@ -424,10 +522,15 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "scenario_name": args.scenario_name,
             "group_name": group_name,
             "frame_id": mapper.frame_id,
+            "drawing_enabled": drawing_enabled,
             "start_waypoint": cart_waypoints[0] if cart_waypoints else None,
             "waypoints": cart_waypoints,
         },
     )
+    _write_json(out_dir / "tip_waypoints.json", {"waypoints": tip_waypoints})
+    _write_json(out_dir / "ee_waypoints.json", {"waypoints": ee_waypoints})
+    _write_json(out_dir / "tool_transform.json", tool_transform_payload)
+    _write_json(out_dir / "drawing_plane.json", drawing_plane_payload)
     _write_json(out_dir / "scene_obstacles.json", scene_sync_result)
 
     ur_move_result: Dict[str, Any] = {
@@ -532,8 +635,15 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "group": group_name,
         "planner": planner_name,
         "frame_id": mapper.frame_id,
+        "algorithm_coordinate_mode": mapper.algorithm_coordinate_mode,
         "coordinate_mode": mapper.coordinate_mode,
+        "algorithm_frame": "normalized_uv",
+        "metric_frame": mapper.frame_id,
+        "obstacle_input_mode": str(input_config.get("coordinate_mode", "normalized")),
+        "obstacle_count": len(obstacles),
+        "coordinate_roundtrip_pass": bool(coordinate_debug["coordinate_roundtrip_pass"]),
         "ik_frame": ik_frame,
+        "drawing_enabled": drawing_enabled,
         "blocked_stage": blocked_stage,
         "blocked_reason": blocked_reason,
         "preposition_requested": bool(preposition_result.get("requested", False)),
@@ -582,6 +692,8 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "corner_smoothing_metadata": matlab_result.get("corner_smoothing_metadata", {}),
             "plane_frame_id": mapper.frame_id,
             "plane_coordinate_mode": mapper.coordinate_mode,
+            "drawing": drawing_plane_payload,
+            "tool_transform": tool_transform_payload,
             "dispatch_summary": dispatch_summary,
             "dispatch_requested": bool(dispatch),
             "scene_sync": scene_sync_result,

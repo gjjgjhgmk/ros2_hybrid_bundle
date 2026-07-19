@@ -20,6 +20,7 @@ find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(intent_hybrid_interfaces REQUIRED)
 find_package(ompl REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_executable(intent_runtime_bridge
   src/intent_runtime_bridge.cpp
@@ -53,7 +54,27 @@ target_link_libraries(intent_runtime_bridge
 
 target_compile_features(intent_runtime_bridge PUBLIC cxx_std_17)
 
+add_executable(ompl_2d_benchmark
+  src/ompl_2d_benchmark.cpp
+)
+target_include_directories(ompl_2d_benchmark PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${OMPL_INCLUDE_DIRS}
+)
+ament_target_dependencies(ompl_2d_benchmark
+  nlohmann_json
+)
+target_link_libraries(ompl_2d_benchmark
+  ${OMPL_LIBRARIES}
+)
+target_compile_features(ompl_2d_benchmark PUBLIC cxx_std_17)
+
 install(TARGETS intent_runtime_bridge
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ompl_2d_benchmark
   DESTINATION lib/${PROJECT_NAME}
 )
 

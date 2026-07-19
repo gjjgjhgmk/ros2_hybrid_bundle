@@ -28,6 +28,7 @@ def launch_setup(context):
     controller_spawner_timeout = LaunchConfiguration("controller_spawner_timeout")
     initial_joint_controller = LaunchConfiguration("initial_joint_controller")
     activate_joint_controller = LaunchConfiguration("activate_joint_controller")
+    use_left_drawing_tool = LaunchConfiguration("use_left_drawing_tool")
 
     # Gripper hardware arguments
     use_fake_gripper_hardware = LaunchConfiguration("use_fake_gripper_hardware")
@@ -56,6 +57,9 @@ def launch_setup(context):
             " ",
             "initial_positions_file:=",
             initial_positions_file,
+            " ",
+            "use_left_drawing_tool:=",
+            use_left_drawing_tool,
         ]
     )
     robot_description = {
@@ -207,6 +211,13 @@ def generate_launch_description():
             "use_mock_hardware",
             default_value="true",
             description="Start robot with mock hardware mirroring command to its states.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_left_drawing_tool",
+            default_value="false",
+            description="Attach the fixed drawing pen tool behind left_ee_link.",
         )
     )
     declared_arguments.append(

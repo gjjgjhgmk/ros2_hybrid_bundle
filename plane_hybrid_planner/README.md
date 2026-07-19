@@ -55,21 +55,45 @@ python3 -m pip install -r plane_hybrid_planner/requirements.txt
 planner, evaluator, and plots still run and report
 `failure_reason=ur_move_unavailable`.
 
-## UV-to-Cartesian Mapping
+## Coordinate Contract
 
-The planner works in normalized coordinates `u,v in [0,1]`. Mapping is defined
-by the selected table YAML:
+The 2D planner and MATLAB-compatible RRT/FMP always work in normalized
+coordinates `u,v in [0,1]`. No ROS frame is carried inside the 2D algorithms.
+Metric data enters or leaves only at the plane boundary:
 
 ```text
 x = x_min + u * (x_max - x_min)
 y = y_min + v * (y_max - y_min)
-z = fixed table-safe height
-orientation = fixed quaternion [x,y,z,w]
+u = (x - x_min) / (x_max - x_min)
+v = (y - y_min) / (y_max - y_min)
 ```
 
-Waypoints are expressed in `plane.frame_id` (`world` by default). The left and
-right configurations use `left_ee_link` and `right_ee_link` respectively.
-UV values can be clamped or rejected through `waypoints.clamp_uv`.
+For the current left-arm plane, `x=[0.50,0.68]` and `y=[0.06,0.24]`, so
+`[0.5504, 0.1806] m` maps to `[0.28, 0.67] UV` and maps back exactly within
+floating-point tolerance.
+
+Metric obstacles must declare their input contract:
+
+```yaml
+obstacle_input:
+  coordinate_mode: metric
+  frame_id: left_interface_link
+  radius_scale_mode: min
+```
+
+They are converted once by `obstacle_coordinates.normalize_obstacles_to_uv()`.
+Legacy scenarios without `obstacle_input` remain normalized UV. The deprecated
+`plane.coordinate_mode` field is ignored for algorithm semantics; use
+`plane.algorithm_coordinate_mode: normalized`.
+
+Waypoints, MoveIt collision objects, RViz obstacle markers, and debug metric
+XYZ values are expressed in `plane.frame_id`. Changing only a `frame_id` label
+is rejected unless code performs a real TF2 transform.
+
+The workstation URDF places `left_interface_link` at z=`0.9102` above
+`workstation_base`. The workstation collision box top is z=`0.9`, therefore the
+table surface in `left_interface_link` is z=`-0.0102`. Scene obstacle cylinders
+default to `center_z = table_surface_z + cylinder_height / 2`.
 
 Before sending, the final path is resampled by arc length to 30 points by
 default. This avoids forwarding the full 150/300 point MATLAB/FMP discretization to
@@ -142,6 +166,18 @@ python3 -m plane_hybrid_planner.run_plane_plan \
 Use the right arm by selecting `table_plane_right.yaml` and
 `--group right_arm`.
 
+Metric measured obstacle check:
+
+```bash
+python3 -m plane_hybrid_planner.run_plane_plan \
+  --config plane_hybrid_planner/configs/table_plane_left.yaml \
+  --scenario plane_hybrid_planner/configs/scenarios_minimal.yaml \
+  --scenario-name metric_measured_obstacles \
+  --group left_arm \
+  --plan-only \
+  --out-dir outputs/metric_obstacles_coordinate_fix
+```
+
 To request mock-controller execution instead of plan-only:
 
 ```bash
@@ -161,7 +197,13 @@ Each run writes:
 ```text
 result.json
 result.csv
+coordinate_debug.json
 cart_waypoints.json
+scene_obstacles.json
+tip_waypoints.json
+ee_waypoints.json
+tool_transform.json
+drawing_plane.json
 ur_move_response.json
 uv_path_compare.png
 clearance_plot.png
@@ -172,6 +214,33 @@ cart_xy_path.png
 jerk proxy, RRT diagnostics, waypoint count, MoveIt status, execution ID, and a
 failure reason. The 2D result remains interpretable if `ur_move` is offline;
 only the MoveIt planning status is unavailable.
+
+## Planner Comparison Mode
+
+To switch away from the demo path and compare the current MATLAB-compatible
+hybrid pipeline against OMPL planners, use the dedicated benchmark entry point:
+
+```bash
+python3 -m plane_hybrid_planner.run_algorithm_comparison \
+  --config plane_hybrid_planner/configs/table_plane_left.yaml \
+  --scenario plane_hybrid_planner/configs/scenarios_minimal.yaml \
+  --scenario-name matlab_sine_verified_obstacles \
+  --out-dir outputs/compare_matlab_vs_ompl \
+  --planners rrt,rrt_star,informed_rrt_star \
+  --ompl-mode raw
+```
+
+This writes:
+
+```text
+comparison_result.json
+comparison_result.csv
+comparison_paths.png
+comparison_clearance.png
+```
+
+Use `--ompl-mode both` after the raw round if you want a second pass that
+enables OMPL `PathSimplifier`.
 
 ## Dispatch Summary
 
@@ -241,7 +310,7 @@ client. A planning request has this shape:
       "planner": "lin",
       "type": "cart",
       "ik_frame": "left_ee_link",
-      "frame_id": "world",
+      "frame_id": "left_interface_link",
       "position": [0.34, 0.25, 0.20],
       "orientation": [0.0, 1.0, 0.0, 0.0],
       "velocity_scaling_factor": 0.1,
@@ -262,6 +331,65 @@ One current server-side limitation is important: the existing
 and concatenates the resulting trajectories. Phase 1 does not rewrite this
 behavior. Therefore, a successful ZMQ/MoveIt plan confirms integration, but
 trajectory continuity should be evaluated before physical execution.
+
+## Drawing Tool
+
+The left drawing tool is a real URDF fixed tool, not an RViz-only marker. Enable
+it when launching the robot model:
+
+```bash
+ros2 launch ur_move ur_move_server.launch.py \
+  use_mock_hardware:=true \
+  use_fake_gripper_hardware:=true \
+  use_left_drawing_tool:=true
+```
+
+The default remains `false`, so existing `left_arm` and `left_ee_link` workflows
+continue to work unchanged. When enabled, the URDF adds:
+
+```text
+left_ee_link
+  -> left_pen_body_link
+  -> left_pen_tip_link
+```
+
+The body has visual, collision, and non-zero inertial properties. The collision
+body stops slightly above the mathematical tip frame by
+`collision_tip_clearance`, while drawing uses a default
+`contact_clearance=0.002 m` above the table surface.
+
+`table_plane_left_pen.yaml` treats the UV path as the desired
+`left_pen_tip_link` path. Because the current `ur_move` server initializes only
+`left_arm/right_arm` and the SRDF `left_arm` chain ends at `left_ee_link`, the
+default dispatch uses a full SE(3) fallback:
+
+```text
+F_T_E_desired = F_T_T_desired * inverse(E_T_T)
+```
+
+where `F=left_interface_link`, `E=left_ee_link`, and
+`T=left_pen_tip_link`. The configured fallback transform is:
+
+```text
+E_T_T translation = [0.0, -0.10606601717798213, -0.10606601717798213]
+E_T_T rotation_xyzw = [-0.3826834323650898, 0.0, 0.0, 0.9238795325112867]
+```
+
+With the existing drawing orientation `Rx(+45deg)`, this places the pen axis
+along the table normal toward the surface. Runs write `tip_waypoints.json`,
+`ee_waypoints.json`, `tool_transform.json`, and `drawing_plane.json`.
+
+Plan-only drawing check:
+
+```bash
+python3 -m plane_hybrid_planner.run_plane_plan \
+  --config plane_hybrid_planner/configs/table_plane_left_pen.yaml \
+  --scenario plane_hybrid_planner/configs/scenarios_minimal.yaml \
+  --scenario-name metric_measured_obstacles \
+  --group left_arm \
+  --plan-only \
+  --out-dir outputs/left_pen_planonly
+```
 
 ## MATLAB Compatibility
 

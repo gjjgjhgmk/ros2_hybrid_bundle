@@ -10,6 +10,16 @@
     <!-- 初始位置文件参数 -->
     <xacro:arg name="initial_positions_file" default="$(find dual_arm_config)/config/initial_positions.yaml"/>
 
+    <!-- 绘图工具参数，默认关闭以保持旧配置兼容 -->
+    <xacro:arg name="use_left_drawing_tool" default="false"/>
+    <xacro:arg name="left_drawing_tool_mount_xyz" default="0 0 0"/>
+    <xacro:arg name="left_drawing_tool_mount_rpy" default="-0.7853981633974483 0 0"/>
+    <xacro:arg name="left_drawing_tool_length" default="0.15"/>
+    <xacro:arg name="left_drawing_tool_radius" default="0.006"/>
+    <xacro:arg name="left_drawing_tool_mass" default="0.05"/>
+    <xacro:arg name="left_drawing_tool_tip_radius" default="0.002"/>
+    <xacro:arg name="left_drawing_tool_collision_tip_clearance" default="0.003"/>
+
     <!-- 手眼标定参数文件路径（从单臂配置导入） -->
     <xacro:property name="left_handeye_calibration_params" 
                     value="$(find single_arm_config)/config/left_handeye_calibration.yaml"/>
@@ -104,6 +114,19 @@
         <parent link="left_tool0"/>
         <child link="left_ee_link"/>
     </joint>
+
+    <xacro:include filename="$(find dual_arm_config)/description/urdf/tools/drawing_tool.xacro"/>
+    <xacro:drawing_tool
+        prefix="left_"
+        parent_link="left_ee_link"
+        enabled="$(arg use_left_drawing_tool)"
+        mount_xyz="$(arg left_drawing_tool_mount_xyz)"
+        mount_rpy="$(arg left_drawing_tool_mount_rpy)"
+        tool_length="$(arg left_drawing_tool_length)"
+        tool_radius="$(arg left_drawing_tool_radius)"
+        tool_mass="$(arg left_drawing_tool_mass)"
+        tip_radius="$(arg left_drawing_tool_tip_radius)"
+        collision_tip_clearance="$(arg left_drawing_tool_collision_tip_clearance)"/>
 
     <link name="right_ee_link"/>
     <joint name="right_ee_joint" type="fixed">

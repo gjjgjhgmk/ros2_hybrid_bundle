@@ -230,7 +230,7 @@ JSON 格式路径点，key是路径点名称，value是路径点配置。
         "planner": "lin",
         "type": "cart",
         "ik_frame": "left_ee_link",
-        "frame_id": "left_base_link",
+        "frame_id": "left_interface_link",
         "position": [0.6, 0.2, 0.35],
         "orientation": [0.382683, 0, 0, 0.923880],
         "max_velocity_scaling_factor": 0.1,
@@ -380,7 +380,7 @@ lookup_transform(source_frame: str, target_frame: str) -> Optional[Dict[str, Any
 **示例：**
 ```python
 tf_client = TFZMQClient()
-transform = tf_client.lookup_transform("left_base_link", "left_ee_link")
+transform = tf_client.lookup_transform("left_interface_link", "left_ee_link")
 if transform and transform.get('success'):
     translation = transform['data']['translation']
     rotation = transform['data']['rotation']
@@ -405,7 +405,7 @@ get_translation(source_frame: str, target_frame: str) -> Optional[Dict[str, floa
 
 **示例：**
 ```python
-translation = tf_client.get_translation("left_base_link", "left_ee_link")
+translation = tf_client.get_translation("left_interface_link", "left_ee_link")
 if translation:
     print(f"平移: x={translation['x']}, y={translation['y']}, z={translation['z']}")
 ```
@@ -427,7 +427,7 @@ get_rotation(source_frame: str, target_frame: str) -> Optional[Dict[str, float]]
 
 **示例：**
 ```python
-rotation = tf_client.get_rotation("left_base_link", "left_ee_link")
+rotation = tf_client.get_rotation("left_interface_link", "left_ee_link")
 if rotation:
     print(f"旋转: x={rotation['x']}, y={rotation['y']}, z={rotation['z']}, w={rotation['w']}")
 ```
@@ -438,7 +438,7 @@ if rotation:
 
 ```python
 with TFZMQClient() as tf_client:
-    transform = tf_client.lookup_transform("left_base_link", "left_ee_link")
+    transform = tf_client.lookup_transform("left_interface_link", "left_ee_link")
     # 连接会在退出 with 块时自动关闭
 ```
 

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="drawing_tool" params="
+    prefix
+    parent_link
+    enabled
+    mount_xyz
+    mount_rpy
+    tool_length
+    tool_radius
+    tool_mass
+    tip_radius
+    collision_tip_clearance">
+    <xacro:if value="${enabled}">
+      <xacro:property name="body_link" value="${prefix}pen_body_link"/>
+      <xacro:property name="tip_link" value="${prefix}pen_tip_link"/>
+      <xacro:property name="collision_length" value="${tool_length - collision_tip_clearance}"/>
+      <xacro:property name="ixx_iyy" value="${tool_mass * (3 * tool_radius * tool_radius + tool_length * tool_length) / 12.0}"/>
+      <xacro:property name="izz" value="${tool_mass * tool_radius * tool_radius / 2.0}"/>
+
+      <link name="${body_link}">
+        <inertial>
+          <origin xyz="0 0 ${-tool_length / 2.0}" rpy="0 0 0"/>
+          <mass value="${tool_mass}"/>
+          <inertia ixx="${ixx_iyy}" ixy="0" ixz="0" iyy="${ixx_iyy}" iyz="0" izz="${izz}"/>
+        </inertial>
+        <visual>
+          <origin xyz="0 0 ${-tool_length / 2.0}" rpy="0 0 0"/>
+          <geometry>
+            <cylinder radius="${tool_radius}" length="${tool_length}"/>
+          </geometry>
+          <material name="${prefix}pen_body_material">
+            <color rgba="0.05 0.05 0.05 1.0"/>
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 ${-collision_length / 2.0}" rpy="0 0 0"/>
+          <geometry>
+            <cylinder radius="${tool_radius}" length="${collision_length}"/>
+          </geometry>
+        </collision>
+      </link>
+
+      <joint name="${prefix}pen_mount_joint" type="fixed">
+        <origin xyz="${mount_xyz}" rpy="${mount_rpy}"/>
+        <parent link="${parent_link}"/>
+        <child link="${body_link}"/>
+      </joint>
+
+      <link name="${tip_link}">
+        <visual>
+          <origin xyz="0 0 ${tip_radius}" rpy="0 0 0"/>
+          <geometry>
+            <sphere radius="${tip_radius}"/>
+          </geometry>
+          <material name="${prefix}pen_tip_material">
+            <color rgba="0.1 0.1 0.9 1.0"/>
+          </material>
+        </visual>
+      </link>
+
+      <joint name="${prefix}pen_tip_joint" type="fixed">
+        <origin xyz="0 0 ${-tool_length}" rpy="0 0 0"/>
+        <parent link="${body_link}"/>
+        <child link="${tip_link}"/>
+      </joint>
+    </xacro:if>
+  </xacro:macro>
+</robot>

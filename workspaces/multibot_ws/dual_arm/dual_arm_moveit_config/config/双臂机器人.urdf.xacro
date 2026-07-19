@@ -3,6 +3,7 @@
     <xacro:arg name="initial_positions_file" default="$(find dual_arm_moveit_config)/config/initial_positions.yaml" />
     <xacro:arg name="use_mock_hardware" default="true" />
     <xacro:arg name="use_fake_gripper_hardware" default="true" />
+    <xacro:arg name="use_left_drawing_tool" default="false" />
 
     <!-- Import 双臂机器人 urdf file -->
     <xacro:include filename="$(find dual_arm_config)/description/urdf/dual_arm.urdf.xacro" />

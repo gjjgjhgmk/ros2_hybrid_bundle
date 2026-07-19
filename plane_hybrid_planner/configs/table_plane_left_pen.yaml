@@ -20,7 +20,7 @@ plane:
   y_max: 0.24
   z: 0.35
 
-orientation_xyzw: [0.382683, 0.0, 0.0, 0.923880]
+orientation_xyzw: [0.3826834323650898, 0.0, 0.0, 0.9238795325112867]
 
 obstacle_input:
   coordinate_mode: "normalized"
@@ -29,6 +29,22 @@ obstacle_input:
 
 drawing_plane:
   table_surface_z: -0.0102
+
+drawing:
+  enabled: true
+  task_frame: "left_interface_link"
+  tool_tip_link: "left_pen_tip_link"
+  table_surface_z: -0.0102
+  contact_clearance: 0.002
+  drawing_tip_z: "auto"
+  orientation_xyzw: [0.3826834323650898, 0.0, 0.0, 0.9238795325112867]
+
+tool:
+  parent_link: "left_ee_link"
+  tip_link: "left_pen_tip_link"
+  ee_to_tip:
+    translation: [0.0, -0.10606601717798213, -0.10606601717798213]
+    rotation_xyzw: [-0.3826834323650898, 0.0, 0.0, 0.9238795325112867]
 
 scene_obstacles:
   sync_to_moveit: true

@@ -46,6 +46,13 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            'use_left_drawing_tool',
+            default_value='false',
+            description='Attach the fixed drawing pen tool behind left_ee_link'
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             'gripper_left_port',
             default_value='5630',
             description='左手夹爪 ZMQ 服务器端口'
@@ -78,13 +85,18 @@ def generate_launch_description():
     rviz = LaunchConfiguration('rviz')
     use_mock_hardware = LaunchConfiguration('use_mock_hardware')
     use_fake_gripper_hardware = LaunchConfiguration('use_fake_gripper_hardware')
+    use_left_drawing_tool = LaunchConfiguration('use_left_drawing_tool')
     gripper_left_port = LaunchConfiguration('gripper_left_port')
     gripper_right_port = LaunchConfiguration('gripper_right_port')
     tf_server_port = LaunchConfiguration('tf_server_port')
     initial_joint_controller = LaunchConfiguration('initial_joint_controller')
 
     # MoveIt 配置 - 使用 dual_arm_moveit_config
-    moveit_config = MoveItConfigsBuilder("双臂机器人", package_name="dual_arm_moveit_config").to_moveit_configs()
+    moveit_config = (
+        MoveItConfigsBuilder("双臂机器人", package_name="dual_arm_moveit_config")
+        .robot_description(mappings={'use_left_drawing_tool': use_left_drawing_tool})
+        .to_moveit_configs()
+    )
 
     # ros2_control 启动文件（包含 robot_state_publisher 和 joint_state_broadcaster）
     control_launch = IncludeLaunchDescription(
@@ -98,6 +110,7 @@ def generate_launch_description():
         launch_arguments={
             'use_mock_hardware': use_mock_hardware,
             'use_fake_gripper_hardware': use_fake_gripper_hardware,
+            'use_left_drawing_tool': use_left_drawing_tool,
             'launch_rviz': 'false',  # 不启用 control.launch.py 中的 RViz
             'initial_joint_controller': initial_joint_controller,
         }.items()

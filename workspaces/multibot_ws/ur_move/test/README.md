@@ -109,7 +109,7 @@ python3 test_client.py --mode gripper --gripper-position 0.5 --gripper-name righ
         "max_velocity_scaling_factor": 0.1,
         "max_acceleration_scaling_factor": 0.1,
         "ik_frame": "left_ee_link",
-        "frame_id": "left_base_link",
+        "frame_id": "left_interface_link",
         "position": [
             0.6,
             0.2,
